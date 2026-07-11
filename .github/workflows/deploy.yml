@@ -1,0 +1,30 @@
+name: Deploy to GCE
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.GCE_HOST }}
+          username: ${{ secrets.GCE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/cloudclip/backend
+            git pull origin main
+            
+            # Create .env file from GitHub Secrets if needed (optional based on your setup)
+            # echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" > .env
+            
+            docker-compose down
+            docker-compose up -d --build
+            docker image prune -f
+            echo "✅ Backend deploy complete at $(date)"
