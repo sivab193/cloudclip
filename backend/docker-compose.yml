@@ -1,28 +1,36 @@
-version: '3.8'
-
 services:
   backend:
     build: .
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"   # internal only — Caddy is the sole public entrypoint
     environment:
       - PORT=3000
       - MONGODB_URI=${MONGODB_URI}
-      - REDIS_URL=redis://redis:6379
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
       - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
       - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
-    depends_on:
-      - redis
     restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
-  redis:
-    image: redis:alpine
+  caddy:
+    image: caddy:2-alpine
     ports:
-      - "6379:6379"
+      - "80:80"
+      - "443:443"
     volumes:
-      - redis_data:/data
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
     restart: always
+    depends_on:
+      - backend
 
 volumes:
-  redis_data:
+  caddy_data:
+  caddy_config:

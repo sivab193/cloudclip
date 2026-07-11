@@ -5,7 +5,7 @@ import { View, Text, Image, StyleSheet } from 'react-native';
 const NoItemsComponent = () => {
     return (
         <View style={styles.container}>
-            <AntDesign name="aliwangwang-o1" size={24} color="black" />
+            <AntDesign name="aliwangwang" size={24} color="black" />
             <Text style={styles.text}>No items yet!</Text>
         </View>
     );

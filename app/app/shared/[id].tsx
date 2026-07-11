@@ -7,54 +7,58 @@ import { ThemedView } from '@/components/ThemedView';
 import { Ionicons } from '@expo/vector-icons';
 import { apiService } from '@/service/apiService';
 import { setClipboard } from '@/service/clipboardService';
+import { normalizeShareToken, shareCodeFromToken, DecryptionError } from '@/service/cryptoService';
+import { decryptSharedContent } from '@/service/shareService';
 import Alert from '@/components/Alert';
 
 export default function Page() {
-  // Get the route parameters
-  const id: any = useLocalSearchParams();
+  const params = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
-  const [data, setData] = useState("");
+  const [data, setData] = useState('');
+  const [error, setError] = useState('');
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
-  const [loading, setLoading] = useState(true); // Loader state
+  const [loading, setLoading] = useState(true);
 
   const showAlert = (message: string) => {
     setAlertMessage(message);
     setAlertVisible(true);
-    setTimeout(() => setAlertVisible(false), 3000); // Dismiss alert after 3 seconds
+    setTimeout(() => setAlertVisible(false), 3000);
   };
 
   const handleCopy = (text: string) => {
-    setClipboard(text, showAlert, "Copied to clipboard"); // Pass the showAlert function
+    setClipboard(text, showAlert, 'Copied to clipboard');
   };
 
   useEffect(() => {
-    navigation.setOptions({
-      headerShown: false,
-    });
-
-    // Fetch data from backend
     const fetchData = async () => {
-      if (id?.id) {
-        setLoading(true); // Start loading
-        try {
-          const sharedLink = await apiService.getSharedLinkByCode(id.id);
-          if (sharedLink) {
-            setData(sharedLink.content || "");
-          } else {
-            showAlert('Link has expired or does not exist');            
-          }
-        } catch (error) {
-          console.error('Error fetching document: ', error);
-          showAlert('Error fetching shared link');
-        } finally {
-          setLoading(false); // Stop loading
+      const raw = typeof params.id === 'string' ? params.id : '';
+      const token = normalizeShareToken(raw);
+      if (!token) {
+        setError('Invalid share link.');
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      setError('');
+      try {
+        // The server only ever sees the 8-char lookup prefix; the decryption
+        // key is derived from the full token client-side.
+        const shared = await apiService.getSharedLinkByCode(shareCodeFromToken(token));
+        setData(decryptSharedContent(token, shared.content));
+      } catch (e) {
+        if (e instanceof DecryptionError) {
+          setError('This link is incomplete or corrupted — make sure you copied the whole link or code.');
+        } else {
+          setError('This link has expired or does not exist.');
         }
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
-  }, [id?.id]);
+  }, [params.id]);
 
   return (
     <SafeAreaView style={styles.safeAreaLight}>
@@ -63,22 +67,25 @@ export default function Page() {
       <ThemedView style={styles.container}>
         <View style={styles.headerWithButton}>
           <ThemedText type="subtitle" style={styles.text}>Your Text</ThemedText>
-          <TouchableOpacity style={[styles.copyButton, { marginLeft: 10 }]} onPress={() => handleCopy(data || '')}>
-            <Ionicons name="clipboard-outline" size={24} color={'black'} />
-            {Platform.OS === 'web' && (
-              <Text style={[styles.copyButtonText, { color: 'black' }]}> Copy Text</Text>
-            )}
-          </TouchableOpacity>
+          {!error && !loading && (
+            <TouchableOpacity style={[styles.copyButton, { marginLeft: 10 }]} onPress={() => handleCopy(data || '')}>
+              <Ionicons name="clipboard-outline" size={24} color={'black'} />
+              {Platform.OS === 'web' && (
+                <Text style={[styles.copyButtonText, { color: 'black' }]}> Copy Text</Text>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
-        {loading ? ( 
+        {loading ? (
           <ActivityIndicator size="large" color="#000" style={styles.loader} />
+        ) : error ? (
+          <Text style={styles.errorText}>{error}</Text>
         ) : (
           <ScrollView contentContainerStyle={styles.scrollContainer}>
             <View style={styles.textBox}>
               <TextInput
                 style={[styles.text, styles.textInput]}
                 value={data}
-                onChangeText={setData}
                 multiline={true}
                 editable={false}
               />
@@ -123,20 +130,25 @@ const styles = StyleSheet.create({
   text: {
     color: '#000',
   },
+  errorText: {
+    color: '#b00020',
+    fontSize: 16,
+    marginTop: 20,
+  },
   textBox: {
     flex: 1,
-    borderWidth: 1, 
+    borderWidth: 1,
     borderColor: '#000',
-    borderRadius: 0, 
+    borderRadius: 0,
   },
   textInput: {
     minHeight: 180,
-    flex: 1, 
-    textAlignVertical: 'top', 
-    padding: 10, 
+    flex: 1,
+    textAlignVertical: 'top',
+    padding: 10,
   },
   loader: {
-    flex: 0.5 ,
+    flex: 0.5,
     justifyContent: 'center',
     alignItems: 'center',
   },

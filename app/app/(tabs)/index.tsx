@@ -1,185 +1,280 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, ScrollView, TextInput, Platform } from 'react-native';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, ScrollView, TextInput, Platform, AppState } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import Header from '../../components/Header';
 import Description from '@/components/Description';
 import { useNavigation } from 'expo-router';
-import { useAuth } from '@/auth/AuthContext'; // Import AuthContext
+import { useAuth } from '@/auth/AuthContext';
 import ClipboardScreen from '@/components/Clipboard';
 import { getClipboard, setClipboard } from '@/service/clipboardService';
 import { apiService } from '@/service/apiService';
 import { socketService } from '@/service/socketService';
 import { CustomClipboard } from '@/service/models';
+import { getMasterKey } from '@/service/keyService';
+import { decryptEntry, encryptEntry, isEnvelope, hashText } from '@/service/cryptoService';
+import { decide, getSyncState, setSyncState, getAutoReadSetting } from '@/service/syncEngine';
 import useDeviceDetails from '@/hooks/useDeviceDetails';
 import Alert from '@/components/Alert';
 import Confirmation from '@/components/Confirmation';
+import * as Clipboard from 'expo-clipboard';
+
+// A clipboard entry with content already decrypted for display.
+interface DecryptedClip extends CustomClipboard {
+	legacy?: boolean;
+}
+
+const clipId = (clip: CustomClipboard): string => clip._id || clip.id || '';
+
+const decryptClip = (mk: Uint8Array, clip: CustomClipboard): DecryptedClip => {
+	if (isEnvelope(clip.content)) {
+		try {
+			return { ...clip, content: decryptEntry(mk, clip.content) };
+		} catch {
+			return { ...clip, content: '[Unable to decrypt]' };
+		}
+	}
+	// Pre-encryption (legacy) plaintext entry.
+	return { ...clip, content: clip.content, legacy: true };
+};
 
 export default function Homepage() {
-	const colorScheme = useColorScheme();
-	const isDarkMode = colorScheme === 'dark';
-
-	interface ClipboardData {
-		content: string | null;
-		timestamp: string | null; // Use ISO string instead of Firestore Timestamp
-	}
-
-	const [saveTextData, setSaveTextData] = useState("");
-	const [clipboardEntries, setClipboardEntries] = useState<CustomClipboard[]>([]);
+	const [saveTextData, setSaveTextData] = useState('');
+	const [clipboardEntries, setClipboardEntries] = useState<DecryptedClip[]>([]);
+	const [latestText, setLatestText] = useState<string | null>(null);
 	const [alertVisible, setAlertVisible] = useState(false);
 	const [alertMessage, setAlertMessage] = useState('');
 	const [confirmationVisible, setConfirmationVisible] = useState(false);
-	const { user } = useAuth(); // Use AuthContext to get the user
-	const [data, setData] = useState<ClipboardData>({
-		content: null,
-		timestamp: null // Initialize with current timestamp or another default value
-	});
-	const [clipboardData, setclipboardData] = useState<ClipboardData>({
-		content: null,
-		timestamp: null // Initialize with current timestamp or another default value
-	});
+	const [legacyPromptVisible, setLegacyPromptVisible] = useState(false);
+	const { user, encryptionReady } = useAuth();
 	const navigation = useNavigation();
 	const { deviceId, deviceName } = useDeviceDetails();
-
-	const showConfirmation = () => {
-		setConfirmationVisible(true);
-	};
-
-	const handleCancel = () => {
-		setConfirmationVisible(false);
-	};
-
-	const handleRemove = () => {
-		setConfirmationVisible(false);
-		handleBulkDelete();
-	};
+	const legacyPromptShownRef = useRef(false);
+	const syncingRef = useRef(false);
 
 	const showAlert = (message: string) => {
 		setAlertMessage(message);
 		setAlertVisible(true);
-		setTimeout(() => setAlertVisible(false), 3000); // Dismiss alert after 3 seconds
+		setTimeout(() => setAlertVisible(false), 3000);
 	};
 
 	const handleCopy = (text: string) => {
-		setClipboard(text, showAlert, "Copied to clipboard"); // Pass the showAlert function
+		setClipboard(text, showAlert, 'Copied to clipboard');
 	};
 
-	const handleSave = (text: string) => {
-		if (user && deviceId) {
-			if (text) {
-				text = text.trim();
-				socketService.createClipboard(deviceId, deviceName, text);
-				showAlert("Text saved to clipboard");
-				setSaveTextData('');
-			} else {
-				showAlert("Please enter some text to save!")
+	const applyEntries = (entries: DecryptedClip[]) => {
+		setClipboardEntries(entries);
+		setLatestText(entries[0]?.content ?? null);
+		if (!legacyPromptShownRef.current && entries.some(e => e.legacy)) {
+			legacyPromptShownRef.current = true;
+			setLegacyPromptVisible(true);
+		}
+	};
+
+	/**
+	 * Foreground sync: newest side wins. Runs on mount, on app foreground and
+	 * on socket reconnect. Clipboard is only read/written when the auto-read
+	 * setting allows it (off by default on iOS/web).
+	 */
+	const runForegroundSync = useCallback(async () => {
+		if (!user || !encryptionReady || !deviceId || syncingRef.current) return;
+		syncingRef.current = true;
+		try {
+			const mk = await getMasterKey();
+			if (!mk) return;
+
+			const clips = await apiService.getClipboards();
+			const decrypted = clips.map(c => decryptClip(mk, c));
+			applyEntries(decrypted);
+
+			const latest = decrypted[0] && !decrypted[0].legacy
+				? { id: clipId(decrypted[0]), text: decrypted[0].content }
+				: null;
+
+			const autoRead = await getAutoReadSetting();
+			let deviceText: string | null = null;
+			if (autoRead) {
+				try {
+					deviceText = await getClipboard();
+				} catch {
+					// Web without clipboard permission, etc.
+				}
 			}
+
+			const state = await getSyncState();
+			const decision = decide(deviceText, latest, state);
+
+			if (decision.action === 'push') {
+				const saved = await socketService.createClipboard(
+					deviceId,
+					deviceName ?? 'Unknown device',
+					encryptEntry(mk, decision.text)
+				);
+				const savedDecrypted: DecryptedClip = { ...saved, content: decision.text };
+				applyEntries([savedDecrypted, ...decrypted]);
+				await setSyncState({ lastSyncedHash: hashText(decision.text), lastSeenServerId: clipId(saved) });
+				showAlert('Clipboard synced to your devices');
+			} else if (decision.action === 'pull') {
+				if (autoRead) {
+					try {
+						await Clipboard.setStringAsync(decision.entry.text);
+						showAlert('Latest entry copied to your clipboard');
+					} catch {
+						// Clipboard write blocked — list is still up to date.
+					}
+				}
+				await setSyncState({ lastSyncedHash: hashText(decision.entry.text), lastSeenServerId: decision.entry.id });
+			} else if (latest) {
+				// Nothing to move; just remember what we've seen.
+				await setSyncState({ ...state, lastSeenServerId: latest.id });
+			}
+		} catch {
+			showAlert('Sync failed — check your connection');
+		} finally {
+			syncingRef.current = false;
+		}
+	}, [user, encryptionReady, deviceId, deviceName]);
+
+	const handleSave = async (text: string) => {
+		if (!user || !deviceId) return;
+		text = text.trim();
+		if (!text) {
+			showAlert('Please enter some text to save!');
+			return;
+		}
+		try {
+			const mk = await getMasterKey();
+			if (!mk) {
+				showAlert('Unlock your data first');
+				return;
+			}
+			const saved = await socketService.createClipboard(deviceId, deviceName ?? 'Unknown device', encryptEntry(mk, text));
+			applyEntries([{ ...saved, content: text }, ...clipboardEntries]);
+			await setSyncState({ lastSyncedHash: hashText(text), lastSeenServerId: clipId(saved) });
+			setSaveTextData('');
+			showAlert('Text saved to your clipboard history');
+		} catch {
+			showAlert('Could not save — check your connection and try again');
 		}
 	};
 
 	const handleBulkDelete = async () => {
-		if (user) {
-			try {
-				socketService.clearAllClipboards();
-				showAlert('Deleted all clipboard entries');
-			} catch (error) {
-				showAlert('Failed to perform bulk delete');
-			}
+		if (!user) return;
+		try {
+			await socketService.clearAllClipboards();
+			applyEntries([]);
+			showAlert('Deleted all clipboard entries');
+		} catch {
+			showAlert('Failed to delete entries — try again');
 		}
 	};
 
-	const refresh = (clipboards: CustomClipboard[]) => {
-		setClipboardEntries(clipboards);
-		console.log(clipboards.length);
-		if (clipboards.length !== 0) {
-			const recent = clipboards[0]?.content;
-			setData({ content: recent, timestamp: new Date().toISOString() });
-			setClipboard(recent, showAlert, "Copied to clipboard"); // Pass the showAlert function
+	const handleDeleteLegacy = async () => {
+		setLegacyPromptVisible(false);
+		const legacyEntries = clipboardEntries.filter(e => e.legacy);
+		try {
+			await Promise.all(legacyEntries.map(e => apiService.deleteClipboard(clipId(e))));
+			applyEntries(clipboardEntries.filter(e => !e.legacy));
+			showAlert('Old unencrypted entries deleted');
+		} catch {
+			showAlert('Failed to delete some old entries');
 		}
-	}
-
-	const prevDataRef = useRef(data.content);
+	};
 
 	useEffect(() => {
-		prevDataRef.current = data.content;
-	}, [data.content]);
-
-	useEffect(() => {
-		let clipboardIntervalId: ReturnType<typeof setInterval> | undefined;
+		if (!(user && encryptionReady && deviceId)) return;
+		let active = true;
 
 		const init = async () => {
-			if (user && deviceId) {
+			try {
 				await socketService.connect();
-				
-				// Fetch initial entries via REST
-				const initialEntries = await apiService.getClipboards();
-				refresh(initialEntries);
-
-				// Listen for real-time updates via Socket.io
-				socketService.onClipboardNew((clip) => {
-					setClipboardEntries(prev => [clip, ...prev]);
-					setData({ content: clip.content, timestamp: clip.createdAt || new Date().toISOString() });
-					setClipboard(clip.content, showAlert, "Synced from other device");
-				});
-
-				socketService.onClipboardDeleted(({ id }) => {
-					setClipboardEntries(prev => prev.filter(c => (c._id || c.id) !== id));
-				});
-
-				socketService.onClipboardCleared(() => {
-					setClipboardEntries([]);
-					setData({ content: null, timestamp: null });
-				});
-			} else if (user) {
-				clipboardIntervalId = setInterval(() => {
-					getClipboard()
-						.then(async (text) => {
-							text = text.trim();
-							if (text !== prevDataRef.current && text !== '') {
-								setData({ content: text, timestamp: new Date().toISOString() });
-								setclipboardData({ content: text, timestamp: new Date().toISOString() });
-								socketService.createClipboard(deviceId, deviceName, text);
-							}
-						})
-						.catch(() => { });
-				}, 1000);
+			} catch {
+				if (active) showAlert('Could not connect to the sync server');
+				return;
 			}
+
+			socketService.onClipboardNew(async (clip) => {
+				const mk = await getMasterKey();
+				if (!mk || !active) return;
+				const decrypted = decryptClip(mk, clip);
+				setClipboardEntries(prev => [decrypted, ...prev]);
+				setLatestText(decrypted.content);
+
+				// Copy to this device's clipboard only when allowed AND the user
+				// hasn't copied something newer locally in the meantime.
+				const state = await getSyncState();
+				const autoRead = await getAutoReadSetting();
+				if (autoRead) {
+					try {
+						const current = (await getClipboard())?.trim() ?? '';
+						if (!current || hashText(current) === state.lastSyncedHash) {
+							await Clipboard.setStringAsync(decrypted.content);
+							await setSyncState({ lastSyncedHash: hashText(decrypted.content), lastSeenServerId: clipId(clip) });
+							showAlert(`Synced from ${decrypted.deviceName}`);
+							return;
+						}
+					} catch {
+						// fall through to just marking as seen
+					}
+				}
+				await setSyncState({ ...state, lastSeenServerId: clipId(clip) });
+			});
+
+			socketService.onClipboardDeleted(({ id }) => {
+				setClipboardEntries(prev => prev.filter(c => clipId(c) !== id));
+			});
+
+			socketService.onClipboardCleared(() => {
+				setClipboardEntries([]);
+				setLatestText(null);
+			});
+
+			socketService.onReconnect(() => {
+				runForegroundSync();
+			});
+
+			await runForegroundSync();
 		};
 
 		init();
 
+		const subscription = AppState.addEventListener('change', (nextState) => {
+			if (nextState === 'active') runForegroundSync();
+		});
+
 		return () => {
+			active = false;
+			subscription.remove();
 			socketService.disconnect();
-			if (clipboardIntervalId) clearInterval(clipboardIntervalId);
 		};
-	}, [user, deviceId]);
-
-	const inputRef = useRef(null);
-
-	useEffect(() => {
-		if (inputRef.current) {
-			(inputRef.current as any).focus();
-		}
-	}, []);
+	}, [user, encryptionReady, deviceId, runForegroundSync]);
 
 	return (
 		<>
 			<Alert message={alertMessage} visible={alertVisible} />
 			<Confirmation
-				message="Are you sure you want to proceed?"
-				subtitle=''
+				message="Delete all clipboard entries?"
+				subtitle="This removes them from all your devices."
 				visible={confirmationVisible}
 				buttons={[
-					{ label: 'No', onPress: handleCancel, style: { backgroundColor: 'black' } },
-					{ label: 'Yes', onPress: handleRemove, style: { backgroundColor: 'black' } },
+					{ label: 'No', onPress: () => setConfirmationVisible(false), style: { backgroundColor: 'black' } },
+					{ label: 'Yes', onPress: () => { setConfirmationVisible(false); handleBulkDelete(); }, style: { backgroundColor: 'black' } },
+				]}
+			/>
+			<Confirmation
+				message="Old unencrypted entries found"
+				subtitle="Entries saved before encryption was enabled are stored unencrypted. Delete them?"
+				visible={legacyPromptVisible}
+				buttons={[
+					{ label: 'Keep', onPress: () => setLegacyPromptVisible(false), style: { backgroundColor: 'black' } },
+					{ label: 'Delete', onPress: handleDeleteLegacy, style: { backgroundColor: '#b00020' } },
 				]}
 			/>
 			<ScrollView
 				contentContainerStyle={{ flexGrow: 1 }}
-				showsVerticalScrollIndicator={false} // Optional: hides the vertical scrollbar
-				horizontal={false} // Ensures horizontal scrolling is disabled
+				showsVerticalScrollIndicator={false}
+				horizontal={false}
 			>
 				<SafeAreaView style={styles.safeArea}>
 					<Header navigation={navigation} />
@@ -192,10 +287,10 @@ export default function Homepage() {
 									<View style={styles.headerWithButton}>
 										<ThemedText type="defaultSemiBold" style={styles.text}>Your latest copied text</ThemedText>
 										<View style={styles.buttonContainer}>
-											<TouchableOpacity style={[styles.copyButton, { marginLeft: 10 }]} onPress={() => handleCopy(data.content || '')}>
-												<Ionicons name="clipboard-outline" size={24} color={isDarkMode ? 'black' : 'black'} />
+											<TouchableOpacity style={[styles.copyButton, { marginLeft: 10 }]} onPress={() => handleCopy(latestText || '')}>
+												<Ionicons name="clipboard-outline" size={24} color="black" />
 												{Platform.OS === 'web' && (
-													<Text style={[styles.copyButtonText, { color: isDarkMode ? 'black' : 'black' }]}> Copy Text</Text>
+													<Text style={[styles.copyButtonText, { color: 'black' }]}> Copy Text</Text>
 												)}
 											</TouchableOpacity>
 										</View>
@@ -206,7 +301,7 @@ export default function Homepage() {
 												scrollEnabled={true}
 												nestedScrollEnabled={true}
 											>
-												<Text style={styles.catBodyText}>{data.content}</Text>
+												<Text style={styles.catBodyText}>{latestText}</Text>
 											</ScrollView>
 										</View>
 									</View>
@@ -216,9 +311,9 @@ export default function Homepage() {
 										<ThemedText type="defaultSemiBold" style={styles.text}>Save to clipboard</ThemedText>
 										<View style={styles.buttonContainer}>
 											<TouchableOpacity style={styles.copyButton} onPress={() => handleSave(saveTextData)}>
-												<Ionicons name="save-outline" size={24} color={isDarkMode ? 'black' : 'black'} />
+												<Ionicons name="save-outline" size={24} color="black" />
 												{Platform.OS === 'web' && (
-													<Text style={[styles.copyButtonText, { color: isDarkMode ? 'black' : 'black' }]}> Save Text</Text>
+													<Text style={[styles.copyButtonText, { color: 'black' }]}> Save Text</Text>
 												)}
 											</TouchableOpacity>
 										</View>
@@ -230,15 +325,15 @@ export default function Homepage() {
 												nestedScrollEnabled={true}
 											>
 												<TextInput
-													ref={inputRef}
 													style={[
 														{ height: 198, padding: 10, textAlignVertical: 'top' }
 													]}
 													placeholder='Enter your text here...'
+													placeholderTextColor="#999"
 													value={saveTextData}
 													onChangeText={setSaveTextData}
-													multiline={true} // Allows text to wrap and expand vertically
-													editable={true} // Makes the text input editable
+													multiline={true}
+													editable={true}
 													selectionColor={'black'}
 												/>
 											</ScrollView>
@@ -248,10 +343,10 @@ export default function Homepage() {
 								<ThemedView style={styles.container}>
 									<View style={styles.headerWithButton}>
 										<ThemedText type="defaultSemiBold" style={styles.text}>Your Clipboard Entries ({clipboardEntries.length})</ThemedText>
-										<TouchableOpacity style={styles.copyButton} onPress={() => showConfirmation()}>
-											<Ionicons name="trash-outline" size={24} color={isDarkMode ? 'black' : 'black'} />
+										<TouchableOpacity style={styles.copyButton} onPress={() => setConfirmationVisible(true)}>
+											<Ionicons name="trash-outline" size={24} color="black" />
 											{Platform.OS === 'web' && (
-												<Text style={[styles.copyButtonText, { color: isDarkMode ? 'black' : 'black' }]}> Delete all Entries</Text>
+												<Text style={[styles.copyButtonText, { color: 'black' }]}> Delete all Entries</Text>
 											)}
 										</TouchableOpacity>
 									</View>
@@ -295,7 +390,6 @@ const styles = StyleSheet.create({
 	},
 	catContainer: {
 		backgroundColor: '#fff',
-		// padding: Platform.OS === 'web' ? 16 : 5,
 		paddingTop: 2,
 		borderRadius: 16,
 	},
@@ -304,84 +398,6 @@ const styles = StyleSheet.create({
 		padding: 10,
 		borderRadius: 16,
 		overflow: 'hidden'
-	},
-	listContent: {
-		paddingBottom: 16,
-	},
-	itemContainerLight: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
-		padding: 16,
-		marginBottom: 16,
-		borderRadius: 8,
-		backgroundColor: '#fff',
-		shadowColor: '#000',
-		shadowOpacity: 0.1,
-		shadowOffset: { width: 0, height: 2 },
-		shadowRadius: 8,
-		elevation: 3,
-	},
-	itemContainerDark: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
-		padding: 16,
-		marginBottom: 16,
-		borderRadius: 8,
-		backgroundColor: '#1e1e1e',
-		shadowColor: '#000',
-		shadowOpacity: 0.1,
-		shadowOffset: { width: 0, height: 2 },
-		shadowRadius: 8,
-		elevation: 3,
-	},
-	itemTitleLight: {
-		fontSize: 18,
-		color: '#000',
-	},
-	itemTitleDark: {
-		fontSize: 18,
-		color: '#fff',
-	},
-	itemExpiryLight: {
-		fontSize: 14,
-		color: '#666',
-	},
-	itemExpiryDark: {
-		fontSize: 14,
-		color: '#aaa',
-	},
-	itemContent: {
-		flex: 1,
-	},
-	mainClipContainer: {
-		flex: 1,
-		justifyContent: 'center',
-		alignItems: 'center',
-		padding: 10,
-	},
-	mainClipContent: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		padding: 10,
-		borderRadius: 5,
-	},
-	mainClipContentLight: {
-		backgroundColor: '#fff',
-		shadowColor: '#000',
-		shadowOpacity: 0.1,
-		shadowOffset: { width: 0, height: 2 },
-		shadowRadius: 8,
-		elevation: 3,
-	},
-	mainClipContentDark: {
-		backgroundColor: '#1e1e1e',
-		shadowColor: '#000',
-		shadowOpacity: 0.1,
-		shadowOffset: { width: 0, height: 2 },
-		shadowRadius: 8,
-		elevation: 3,
 	},
 	buttonContainer: {
 		flexDirection: 'row',
@@ -401,12 +417,6 @@ const styles = StyleSheet.create({
 	},
 	copyButtonText: {
 		marginLeft: 5,
-		fontWeight: 'medium',
-	},
-	scrollView: {
-		flex: 1,
-	},
-	iconButton: {
-		marginLeft: 10,
+		fontWeight: '500',
 	},
 });

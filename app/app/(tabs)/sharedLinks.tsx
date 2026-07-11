@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, FlatList, View, Text, TouchableOpacity, SafeAreaView, TextInput, Platform, ScrollView, Dimensions } from 'react-native';
-import { AntDesign, Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, FlatList, View, Text, TouchableOpacity, SafeAreaView, TextInput, Platform, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import Header from '@/components/Header';
@@ -10,190 +9,170 @@ import { useAuth } from '@/auth/AuthContext';
 import { truncateContent } from '@/service/util';
 import { Shared } from '@/service/models';
 import { apiService } from '@/service/apiService';
-import { socketService } from '@/service/socketService';
-import { setClipboard } from '@/service/clipboardService';
-import useDeviceDetails from '@/hooks/useDeviceDetails';
+import { getMasterKey } from '@/service/keyService';
+import { isEnvelope, normalizeShareToken, formatShareToken } from '@/service/cryptoService';
+import { createShare, tokenFromShared, decryptSharedContent, getSharedLinkURL } from '@/service/shareService';
 import NoItemsComponent from '@/components/NoItems';
 import Alert from '@/components/Alert';
 import Confirmation from '@/components/Confirmation';
-import { generateNanoID, getSharedLinkURL, handleShare } from '@/service/shareService';
 import * as Clipboard from 'expo-clipboard';
 
+// A shared link decorated with its decrypted preview and recovered token.
+interface DecoratedShared {
+	shared: Shared;
+	preview: string;
+	token: string | null;
+}
+
+const sharedId = (item: Shared): string => item._id || item.id || '';
+
 export default function SharedLinks() {
-	const colorScheme = useColorScheme();
-	const isDarkMode = colorScheme === 'dark';
 	const navigation = useNavigation();
-	const [textToShare, setTextToShare] = useState("");
-	const [retrieveText, setRetrieveText] = useState("");
-	const [sharedLinks, setSharedLinks] = useState<Shared[]>([]); // Define the type for the state
-	const { deviceId, deviceName } = useDeviceDetails();
+	const [textToShare, setTextToShare] = useState('');
+	const [retrieveText, setRetrieveText] = useState('');
+	const [sharedLinks, setSharedLinks] = useState<DecoratedShared[]>([]);
 	const [confirmationVisible, setConfirmationVisible] = useState(false);
-	const [itemToRemoveId, setItemToRemoveId] = useState("");
+	const [itemToRemoveId, setItemToRemoveId] = useState('');
 	const [alertVisible, setAlertVisible] = useState(false);
 	const [alertMessage, setAlertMessage] = useState('');
-	const [shareConfirmationVisible, setShareConfirmationVisible] = useState(false);
-	const [shareWithoutNewConfirmationVisible, setShareWithoutNewConfirmationVisible] = useState(false);
-	const [itemToShare, setItemToShare] = useState("");
+	const [shareDialogVisible, setShareDialogVisible] = useState(false);
 	const [sharedLink, setSharedLink] = useState<string | null>(null);
 	const [sharedCode, setSharedCode] = useState<string | null>(null);
 	const [deleteAllConfirmationVisible, setDeleteAllConfirmationVisible] = useState(false);
 
+	const { user, encryptionReady } = useAuth();
+
 	const showAlert = (message: string) => {
 		setAlertMessage(message);
 		setAlertVisible(true);
-		setTimeout(() => setAlertVisible(false), 3000); // Dismiss alert after 3 seconds
+		setTimeout(() => setAlertVisible(false), 3000);
 	};
 
-	const { user } = useAuth(); // Use AuthContext to get the user
+	const decorate = async (items: Shared[]): Promise<DecoratedShared[]> => {
+		const mk = await getMasterKey();
+		return items.map((shared) => {
+			const token = mk ? tokenFromShared(shared, mk) : null;
+			let preview = '[Encrypted]';
+			if (token) {
+				try {
+					preview = decryptSharedContent(token, shared.content);
+				} catch {
+					preview = '[Unable to decrypt]';
+				}
+			} else if (!isEnvelope(shared.content)) {
+				preview = shared.content; // pre-encryption legacy link
+			}
+			return { shared, preview, token };
+		});
+	};
 
-	const handleRemove = async () => {
+	const fetchSharedLinks = useCallback(async () => {
+		if (!user || !encryptionReady) return;
 		try {
-			await apiService.deleteSharedLink(itemToRemoveId);
-			setSharedLinks(prev => prev.filter(item => (item._id || item.id) !== itemToRemoveId));
-			setConfirmationVisible(false);
-			showAlert("Shared link deleted successfully.");
-		} catch (error) {
-			showAlert("Failed to delete shared link.");
+			const links = await apiService.getSharedLinks();
+			setSharedLinks(await decorate(links));
+		} catch {
+			showAlert('Could not load shared links');
 		}
-	};
-
-	const handleShareLink = (code: string) => {
-		setSharedCode(code);
-		const sharedLinkURL = getSharedLinkURL(code);
-		setSharedLink(sharedLinkURL);
-		setShareWithoutNewConfirmationVisible(true);
-	};
-
-	const calculateTimeLeft = (expiryAt: string | null): string => {
-		if (!expiryAt) {
-			return '';
-		}
-		const now = Date.now();
-		const expiryTime = new Date(expiryAt).getTime();
-		const timeLeft = expiryTime - now;
-		if (timeLeft <= 0) {
-			return 'Expired';
-		}
-		const minutes = Math.floor((timeLeft / (1000 * 60)) % 60);
-		const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
-		return `${hours}h ${minutes}m`;
-	};
+	}, [user, encryptionReady]);
 
 	useEffect(() => {
-		const fetchSharedLinks = async () => {
-			if (user && deviceId) {
-				try {
-					const links = await apiService.getSharedLinks();
-					setSharedLinks(links);
-				} catch (error) {
-					console.error('Error fetching shared links:', error);
-				}
-			}
-		};
 		fetchSharedLinks();
-	}, [user, deviceId]);
+	}, [fetchSharedLinks]);
 
-
-	const handleCancel = () => {
-		setConfirmationVisible(false);
+	const calculateTimeLeft = (expiryAt: string | null): string => {
+		if (!expiryAt) return '';
+		const timeLeft = new Date(expiryAt).getTime() - Date.now();
+		if (timeLeft <= 0) return 'Expired';
+		const minutes = Math.floor((timeLeft / (1000 * 60)) % 60);
+		const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
+		const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+		return days > 0 ? `${days}d ${hours}h` : `${hours}h ${minutes}m`;
 	};
 
-	const handleShareCancel = () => {
-		setShareConfirmationVisible(false);
-	}
-
-	const showConfirmation = (item: any) => {
-		setConfirmationVisible(true);
-		setItemToRemoveId(item._id || item.id);
-	}
-
-	const showShareConfirmation = (content: string) => {
-		const code: string = generateNanoID();
-		const generatedLink = getSharedLinkURL(code);
-		setSharedCode(code);
-		setSharedLink(generatedLink);
-		setShareConfirmationVisible(true);
-		setItemToShare(content);
-	};
-
-	const handleCopy = async () => {
-		if (user) {
-			try {
-				// We still emit the clipboard creation to the socket for real-time sync with other devices
-				socketService.createClipboard(deviceId, deviceName, itemToShare);
-				
-				// Then create the shared link via REST
-				const shared = await apiService.createSharedLink(itemToShare);
-				setSharedLinks(prev => [shared, ...prev]);
-				return shared._id || shared.id;
-			} catch (error) {
-				console.error('Error during handleCopy:', error);
-				throw error;
-			}
-		} else {
-			// Unauthenticated sharing if supported by backend
-			const shared = await apiService.createSharedLink(itemToShare);
-			return shared._id || shared.id;
+	// Creates the shared link ONCE, then the dialog buttons only copy.
+	const handleShare = async () => {
+		const content = textToShare.trim();
+		if (!content) {
+			showAlert('Please enter text to share.');
+			return;
 		}
-	}
+		const mk = await getMasterKey();
+		if (!mk) {
+			showAlert('Log in and unlock your data to share text.');
+			return;
+		}
+		try {
+			const result = await createShare(content, mk);
+			setSharedLink(result.url);
+			setSharedCode(result.displayCode);
+			setShareDialogVisible(true);
+			setTextToShare('');
+			setSharedLinks(prev => [{ shared: result.shared, preview: content, token: result.token }, ...prev]);
+		} catch {
+			showAlert('Failed to create shared link.');
+		}
+	};
+
+	// Re-share an existing link: rebuild link/code from the stored token.
+	const handleShareExisting = (item: DecoratedShared) => {
+		if (!item.token) {
+			showAlert('This link was created before encryption and can no longer be re-shared.');
+			return;
+		}
+		setSharedLink(getSharedLinkURL(item.token));
+		setSharedCode(formatShareToken(item.token));
+		setShareDialogVisible(true);
+	};
+
+	const handleRetrieve = () => {
+		const token = normalizeShareToken(retrieveText);
+		if (!token) {
+			showAlert('Please enter a code to retrieve your text.');
+			return;
+		}
+		router.push(`/shared/${token}`);
+		setRetrieveText('');
+	};
 
 	const handleCopyLink = async () => {
-		if (itemToShare && sharedLink) {
-			await handleCopy();
-			const sharedLinkURL = getSharedLinkURL(sharedCode || '');
-			await setClipboard(sharedLinkURL, showAlert, "Shared link created and copied to clipboard.");
-			setShareConfirmationVisible(false);
-			setTextToShare('');
-		} else {
-			showAlert("An unexpected error occured!");
+		if (sharedLink) {
+			await Clipboard.setStringAsync(sharedLink);
+			setShareDialogVisible(false);
+			showAlert('Link copied to clipboard.');
 		}
 	};
 
 	const handleCopyCode = async () => {
-		if (itemToShare && sharedLink) {
-			await handleCopy();
-			setClipboard(sharedCode, showAlert, "Shared link created and the code to share is copied to clipboard.");
-			setShareConfirmationVisible(false);
-			setTextToShare('');
-		} else {
-			showAlert("An unexpected error occured!");
+		if (sharedCode) {
+			await Clipboard.setStringAsync(sharedCode);
+			setShareDialogVisible(false);
+			showAlert('Code copied to clipboard.');
 		}
 	};
 
-	const handleCopyLinkWithoutNewLink = async () => {
-		Clipboard.setStringAsync(sharedLink || '');
-		setShareWithoutNewConfirmationVisible(false);
-		showAlert('Link copied to clipoard.');
-	}
-
-	const handleCopyCodeWithoutNewLink = async () => {
-		Clipboard.setStringAsync(sharedCode || '');
-		setShareWithoutNewConfirmationVisible(false);
-		showAlert('Code copied to clipoard.');
-	}
-
-	const handleShareCancelWithoutNewLink = () => {
-		setShareWithoutNewConfirmationVisible(false);
-	}
-
-	const showDeleteAllConfirmation = () => {
-		setDeleteAllConfirmationVisible(true);
+	const handleRemove = async () => {
+		try {
+			await apiService.deleteSharedLink(itemToRemoveId);
+			setSharedLinks(prev => prev.filter(item => sharedId(item.shared) !== itemToRemoveId));
+			setConfirmationVisible(false);
+			showAlert('Shared link deleted successfully.');
+		} catch {
+			showAlert('Failed to delete shared link.');
+		}
 	};
 
 	const handleDeleteAll = async () => {
 		try {
-			// This would need a bulk delete endpoint in the backend
-			// For now, let's assume one exists or we just clear state
-			// await apiService.deleteAllSharedLinks(); 
+			await apiService.deleteAllSharedLinks();
 			setSharedLinks([]);
 			setDeleteAllConfirmationVisible(false);
-			showAlert("All shared links have been deleted.");
-		} catch (error) {
-			console.error("Error deleting all shared links:", error);
-			showAlert("An error occurred while deleting shared links.");
+			showAlert('All shared links have been deleted.');
+		} catch {
+			setDeleteAllConfirmationVisible(false);
+			showAlert('An error occurred while deleting shared links.');
 		}
 	};
-
 
 	return (
 		<>
@@ -203,28 +182,18 @@ export default function SharedLinks() {
 				subtitle=''
 				visible={confirmationVisible}
 				buttons={[
-					{ label: 'No', onPress: handleCancel, style: { backgroundColor: 'black' } },
+					{ label: 'No', onPress: () => setConfirmationVisible(false), style: { backgroundColor: 'black' } },
 					{ label: 'Yes', onPress: handleRemove, style: { backgroundColor: 'black' } },
 				]}
 			/>
 			<Confirmation
-				message={`Use this link or code for quick share!\n`}
+				message={`Share this link or code — it expires in 7 days.\n`}
 				subtitle={`Link: ${sharedLink || ''}\nCode: ${sharedCode || ''}`}
-				visible={shareConfirmationVisible}
+				visible={shareDialogVisible}
 				buttons={[
 					{ label: 'Copy Link', onPress: handleCopyLink, style: { backgroundColor: 'black' } },
 					{ label: 'Copy Code', onPress: handleCopyCode, style: { backgroundColor: 'black' } },
-					{ label: 'Cancel', onPress: handleShareCancel, style: { backgroundColor: 'red' } },
-				]}
-			/>
-			<Confirmation
-				message={`Use this link or code for quick share!\n`}
-				subtitle={`Link: ${sharedLink || ''}\nCode: ${sharedCode || ''}`}
-				visible={shareWithoutNewConfirmationVisible}
-				buttons={[
-					{ label: 'Copy Link', onPress: handleCopyLinkWithoutNewLink, style: { backgroundColor: 'black' } },
-					{ label: 'Copy Code', onPress: handleCopyCodeWithoutNewLink, style: { backgroundColor: 'black' } },
-					{ label: 'Cancel', onPress: handleShareCancelWithoutNewLink, style: { backgroundColor: 'red' } },
+					{ label: 'Close', onPress: () => setShareDialogVisible(false), style: { backgroundColor: 'red' } },
 				]}
 			/>
 			<Confirmation
@@ -233,7 +202,7 @@ export default function SharedLinks() {
 				visible={deleteAllConfirmationVisible}
 				buttons={[
 					{ label: 'Cancel', onPress: () => setDeleteAllConfirmationVisible(false), style: { backgroundColor: 'black' } },
-					{ label: 'Delete All', onPress: handleDeleteAll, style: { backgroundColor: 'black' } },
+					{ label: 'Delete All', onPress: handleDeleteAll, style: { backgroundColor: '#b00020' } },
 				]}
 			/>
 			<ScrollView
@@ -251,22 +220,13 @@ export default function SharedLinks() {
 							<TextInput
 								style={styles.inputLight}
 								placeholder="Enter text to share"
-								placeholderTextColor={isDarkMode ? '#000' : '#000'}
+								placeholderTextColor="#666"
 								value={textToShare}
-								onChangeText={(text) => setTextToShare(text)}
+								onChangeText={setTextToShare}
 							/>
-							<TouchableOpacity
-								style={styles.tertiaryButton}
-								onPress={() => {
-									if (textToShare.trim()) {
-										showShareConfirmation(textToShare);
-									} else {
-										showAlert("Please enter text to share.");
-									}
-								}}
-							>
+							<TouchableOpacity style={styles.tertiaryButton} onPress={handleShare}>
 								<Ionicons name="share-social-outline" size={24} color={'black'} />
-								<ThemedText type="default" style={styles.tertiaryButtonText} >
+								<ThemedText type="default" style={styles.tertiaryButtonText}>
 									Share
 								</ThemedText>
 							</TouchableOpacity>
@@ -278,21 +238,11 @@ export default function SharedLinks() {
 							<TextInput
 								style={styles.inputLight2}
 								placeholder="Enter the code here to retrieve your text"
-								placeholderTextColor={isDarkMode ? '#000' : '#000'}
+								placeholderTextColor="#666"
 								value={retrieveText}
-								onChangeText={(text) => setRetrieveText(text)}
+								onChangeText={setRetrieveText}
 							/>
-							<TouchableOpacity
-								style={styles.tertiaryButton}
-								onPress={() => {
-									if (!retrieveText.trim()) {
-										showAlert("Please enter a code to retrieve your text.");
-									} else {
-										router.push(`/shared/${retrieveText}`);
-										setRetrieveText('');
-									}
-								}}
-							>
+							<TouchableOpacity style={styles.tertiaryButton} onPress={handleRetrieve}>
 								<Ionicons name="share-outline" size={24} color="black" />
 								<ThemedText type="default" style={styles.tertiaryButtonText}>Retrieve</ThemedText>
 							</TouchableOpacity>
@@ -304,10 +254,10 @@ export default function SharedLinks() {
 								<ThemedText type="defaultSemiBold" darkColor='black' lightColor='black'>
 									Recent Shared Links:
 								</ThemedText>
-								<TouchableOpacity onPress={() => showDeleteAllConfirmation()} style={{ flexDirection: 'row', alignItems: 'center' }}>
-									<Ionicons name="trash-outline" size={24} color={isDarkMode ? 'black' : 'black'} />
+								<TouchableOpacity onPress={() => setDeleteAllConfirmationVisible(true)} style={{ flexDirection: 'row', alignItems: 'center' }}>
+									<Ionicons name="trash-outline" size={24} color="black" />
 									{Platform.OS === 'web' && (
-										<Text style={[{ color: isDarkMode ? 'black' : 'black', marginLeft: 5 }]}>
+										<Text style={{ color: 'black', marginLeft: 5 }}>
 											Delete all Entries
 										</Text>
 									)}
@@ -320,23 +270,23 @@ export default function SharedLinks() {
 									{sharedLinks.length > 0 ? (
 										<FlatList
 											data={sharedLinks}
-											keyExtractor={(item) => (item._id || item.id || '')}
+											keyExtractor={(item) => sharedId(item.shared)}
 											renderItem={({ item }) => (
-												<TouchableOpacity onPress={() => router.push(`/shared/${item.code || ''}`)}>
+												<TouchableOpacity onPress={() => item.token && router.push(`/shared/${item.token}`)}>
 													<View style={styles.itemContainerLight}>
 														<View style={styles.textContainer}>
-															<Text style={isDarkMode ? styles.itemTitleDark : styles.itemTitleLight}>
-																{truncateContent(item.content || "")}
+															<Text style={styles.itemTitle}>
+																{truncateContent(item.preview)}
 															</Text>
-															<Text style={isDarkMode ? styles.itemExpiryDark : styles.itemExpiryLight}>
-																Expires in: {calculateTimeLeft(item.expiryAt || null)}
+															<Text style={styles.itemExpiry}>
+																Expires in: {calculateTimeLeft(item.shared.expiryAt || null)}
 															</Text>
 														</View>
 														<View style={styles.buttonContainer}>
-															<TouchableOpacity style={styles.button} onPress={() => showConfirmation(item)}>
+															<TouchableOpacity style={styles.button} onPress={() => { setItemToRemoveId(sharedId(item.shared)); setConfirmationVisible(true); }}>
 																<Ionicons name="trash-outline" size={24} color={'black'} />
 															</TouchableOpacity>
-															<TouchableOpacity style={styles.button} onPress={() => handleShareLink(item.code)}>
+															<TouchableOpacity style={styles.button} onPress={() => handleShareExisting(item)}>
 																<Ionicons name="share-social-outline" size={24} color={'black'} />
 															</TouchableOpacity>
 														</View>
@@ -368,11 +318,6 @@ const styles = StyleSheet.create({
 		height: 300,
 		paddingRight: 5,
 		marginBottom: 10,
-	},
-	scrollContainer: {
-		padding: 10,
-		flexGrow: 1, // Allow content to grow
-		justifyContent: 'space-between', // Distribute space
 	},
 	containerLight: {
 		backgroundColor: '#fff',
@@ -411,21 +356,13 @@ const styles = StyleSheet.create({
 	button: {
 		marginLeft: 10
 	},
-	itemTitleLight: {
+	itemTitle: {
 		fontSize: 16,
 		color: '#000',
 	},
-	itemTitleDark: {
-		fontSize: 16,
-		color: '#000',
-	},
-	itemExpiryLight: {
+	itemExpiry: {
 		fontSize: 14,
-		color: '#aaa',
-	},
-	itemExpiryDark: {
-		fontSize: 14,
-		color: '#aaa',
+		color: '#666',
 	},
 	heading: {
 		marginBottom: 10,
@@ -442,22 +379,6 @@ const styles = StyleSheet.create({
 		marginBottom: 16,
 		width: '100%',
 		alignSelf: 'center'
-	},
-	shareButton: {
-		flexDirection: 'row',
-		justifyContent: 'center',
-		alignItems: 'center',
-		paddingVertical: 5,
-		width: 150,
-		alignSelf: 'center',
-		borderRadius: 8,
-		backgroundColor: 'black',
-		marginBottom: 15
-	},
-	shareButtonText: {
-		color: '#fff',
-		fontSize: 16,
-		marginLeft: 8,
 	},
 	tertiaryButtonText: {
 		color: '#000',
@@ -499,11 +420,10 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
-		width: 'auto', // Adjust width for mobile
+		width: 'auto',
 		paddingVertical: 10,
 		paddingHorizontal: 16,
 		borderRadius: 8,
 		backgroundColor: '#fff',
 	},
-
 });

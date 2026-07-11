@@ -1,23 +1,33 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, TextInput, StyleSheet, useColorScheme, Alert, TouchableOpacity, Text, useWindowDimensions, Modal, TouchableWithoutFeedback } from 'react-native';
+import React, { useState } from 'react';
+import { View, TextInput, StyleSheet, Alert, TouchableOpacity, Text, Modal, TouchableWithoutFeedback, ActivityIndicator, Platform } from 'react-native';
 import { auth } from '../firebaseConfig';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, UserCredential } from 'firebase/auth';
-import { MaterialCommunityIcons, Octicons } from '@expo/vector-icons';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { Octicons } from '@expo/vector-icons';
 import { useAuth } from '@/auth/AuthContext';
 import { apiService } from '@/service/apiService';
+import { unlockWithPassword, WrongPasswordError } from '@/service/keyService';
+import RecoveryCodeModal from './RecoveryCodeModal';
 
-const LoginPopup = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onClose: () => void; onSuccess: () => void; }) => {
+// Web `alert` fallback since RN Alert.alert is a no-op on react-native-web.
+const showMessage = (title: string, message: string) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
+
+const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onClose: () => void; onSuccess: () => void; }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [isSignUpMode, setIsSignUpMode] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // New state for showing password
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // New state for showing confirm password
-  const [isForgotPasswordMode, setIsForgotPasswordMode] = useState(false); // New state for forgot password mode
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
-  const { width: screenWidth } = useWindowDimensions();
+  const [isForgotPasswordMode, setIsForgotPasswordMode] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
+
+  const { setUser, refreshEncryptionReady } = useAuth();
 
   const resetFields = () => {
     setUsername('');
@@ -25,115 +35,150 @@ const LoginPopup = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
     setConfirmPassword('');
     setName('');
     setIsSignUpMode(false);
-    setShowPassword(false);
-    setShowConfirmPassword(false);
-    setIsForgotPasswordMode(false); // Reset forgot password mode
+    setIsForgotPasswordMode(false);
   };
 
-  const { setUser } = useAuth();
+  const finishAuth = async (pw: string): Promise<string | null> => {
+    // Set up or unlock E2E encryption with the password we just verified.
+    try {
+      const { recoveryCode: fresh } = await unlockWithPassword(pw);
+      await refreshEncryptionReady();
+      return fresh ?? null;
+    } catch (error) {
+      if (error instanceof WrongPasswordError) {
+        // Password was reset elsewhere — the unlock screen will take over.
+        await refreshEncryptionReady();
+        return null;
+      }
+      throw error;
+    }
+  };
 
   const handleLogin = async () => {
     if (!username || !password) {
-      Alert.alert("Input Error", "Please enter both email and password.");
+      showMessage('Input Error', 'Please enter both email and password.');
       return;
     }
-
+    setBusy(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, username, password);
       setUser(userCredential.user);
-      
-      // Sync user profile on login too
+
       try {
-        await apiService.syncUser(userCredential.user.email || username, userCredential.user.displayName || 'User');
-      } catch (err) {
-        console.error('Failed to sync user on login:', err);
+        await apiService.syncUser();
+      } catch {
+        // Non-fatal; profile syncs again on the account tab.
       }
+      await finishAuth(password);
 
       onSuccess();
       onClose();
-      resetFields(); // Clear fields on successful login
+      resetFields();
     } catch (error: any) {
-      let message = "An error occurred";
+      let message = 'An error occurred';
       if (error.code === 'auth/user-not-found') {
-        message = "No user found with this email.";
+        message = 'No user found with this email.';
       } else if (error.code === 'auth/invalid-credential') {
-        message = "Incorrect password.";
+        message = 'Incorrect email or password.';
+      } else if (error.code === 'auth/too-many-requests') {
+        message = 'Too many attempts. Try again later.';
       }
-      Alert.alert("Login Error", message);
+      showMessage('Login Error', message);
+    } finally {
+      setBusy(false);
     }
   };
 
-
   const handleSignUp = async () => {
     if (!username || !password || !confirmPassword || !name) {
-      Alert.alert("Input Error", "Please fill in all fields.");
+      showMessage('Input Error', 'Please fill in all fields.');
       return;
     }
-
     if (password !== confirmPassword) {
-      Alert.alert("Password Error", "Passwords do not match.");
+      showMessage('Password Error', 'Passwords do not match.');
       return;
     }
-
+    setBusy(true);
     try {
-      const userCredential: UserCredential = await createUserWithEmailAndPassword(auth, username, password);
-      const user = userCredential.user;
-      
-      // Sync user to our backend
-      await apiService.syncUser(username, name);
-      
-      onSuccess();
-      onClose();
-      resetFields(); // Clear fields on successful sign-up
-    } catch (error: any) {
-      let message = "An error occurred";
-      if (error.code === 'auth/email-already-in-use') {
-        message = "Email is already in use.";
-      } else if (error.code === 'auth/weak-password') {
-        message = "Password is too weak.";
+      const userCredential = await createUserWithEmailAndPassword(auth, username, password);
+      setUser(userCredential.user);
+      await apiService.syncUser(name);
+
+      const fresh = await finishAuth(password);
+      if (fresh) {
+        // Keep the modal open until the user confirms they saved the code.
+        setRecoveryCode(fresh);
+      } else {
+        onSuccess();
+        onClose();
+        resetFields();
       }
-      Alert.alert("Sign Up Error", message);
+    } catch (error: any) {
+      let message = 'An error occurred';
+      if (error.code === 'auth/email-already-in-use') {
+        message = 'Email is already in use.';
+      } else if (error.code === 'auth/weak-password') {
+        message = 'Password is too weak.';
+      }
+      showMessage('Sign Up Error', message);
+    } finally {
+      setBusy(false);
     }
+  };
+
+  const handleRecoveryDone = () => {
+    setRecoveryCode(null);
+    onSuccess();
+    onClose();
+    resetFields();
   };
 
   const handleForgotPassword = async () => {
     if (!username) {
-      Alert.alert("Input Error", "Please enter your email address.");
+      showMessage('Input Error', 'Please enter your email address.');
       return;
     }
-
     try {
       await sendPasswordResetEmail(auth, username);
-      Alert.alert("Success", "Password reset email sent.");
-      setIsForgotPasswordMode(false); // Switch back to login mode
+      showMessage(
+        'Reset email sent',
+        'Heads up: after resetting your password you will need your recovery code to keep your encrypted clipboard data.'
+      );
+      setIsForgotPasswordMode(false);
     } catch (error: any) {
-      let message = "An error occurred";
+      let message = 'An error occurred';
       if (error.code === 'auth/user-not-found') {
-        message = "No user found with this email.";
+        message = 'No user found with this email.';
       }
-      Alert.alert("Forgot Password Error", message);
+      showMessage('Forgot Password Error', message);
     }
   };
+
   const handleModalContentPress = (e: any) => {
-    // Prevent event from bubbling up to the backdrop
     e.stopPropagation();
   };
+
+  if (recoveryCode) {
+    return <RecoveryCodeModal visible={true} code={recoveryCode} onDone={handleRecoveryDone} />;
+  }
 
   return (
     <Modal visible={isVisible} transparent={true} animationType="fade" onRequestClose={() => { onClose(); resetFields(); }}>
       <TouchableWithoutFeedback onPress={() => {
+        if (busy) return;
         onClose();
         resetFields();
       }}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback onPress={handleModalContentPress}>
-            <View style={[styles.modalBox, isDarkMode ? styles.darkBox : styles.lightBox]}>
+            <View style={styles.modalBox}>
               {isForgotPasswordMode ? (
                 <>
                   <Text style={styles.titleText}>Reset Password</Text>
                   <TextInput
                     style={styles.input}
                     placeholder="Email"
+                    placeholderTextColor="#999"
                     value={username}
                     onChangeText={setUsername}
                     keyboardType="email-address"
@@ -168,12 +213,14 @@ const LoginPopup = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                       <TextInput
                         style={styles.input}
                         placeholder="Name"
+                        placeholderTextColor="#999"
                         value={name}
                         onChangeText={setName}
                       />
                       <TextInput
                         style={styles.input}
                         placeholder="Email"
+                        placeholderTextColor="#999"
                         value={username}
                         onChangeText={setUsername}
                         keyboardType="email-address"
@@ -182,19 +229,21 @@ const LoginPopup = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                       <TextInput
                         style={styles.input}
                         placeholder="Password"
-                        secureTextEntry={!showPassword}
+                        placeholderTextColor="#999"
+                        secureTextEntry
                         value={password}
                         onChangeText={setPassword}
                       />
                       <TextInput
                         style={styles.input}
                         placeholder="Confirm Password"
-                        secureTextEntry={!showConfirmPassword}
+                        placeholderTextColor="#999"
+                        secureTextEntry
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
                       />
-                      <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-                        <Text style={styles.buttonText}>Sign Up</Text>
+                      <TouchableOpacity style={styles.button} onPress={handleSignUp} disabled={busy}>
+                        {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign Up</Text>}
                       </TouchableOpacity>
                     </>
                   ) : (
@@ -202,6 +251,7 @@ const LoginPopup = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                       <TextInput
                         style={styles.input}
                         placeholder="Email"
+                        placeholderTextColor="#999"
                         value={username}
                         onChangeText={setUsername}
                         keyboardType="email-address"
@@ -210,25 +260,21 @@ const LoginPopup = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                       <TextInput
                         style={styles.input}
                         placeholder="Password"
-                        secureTextEntry={!showPassword}
+                        placeholderTextColor="#999"
+                        secureTextEntry
                         value={password}
                         onChangeText={setPassword}
                       />
 
-                      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-                        <Text style={styles.buttonText}>Login</Text>
+                      <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={busy}>
+                        {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Login</Text>}
                       </TouchableOpacity>
                     </>
                   )}
 
-                  <View style={styles.buttonRow}>
-                    <TouchableOpacity style={styles.forgotPasswordButton}
-                    // onPress={() => Alert.alert('Signin with Google')}
-                    >
-                      {/* <MaterialCommunityIcons name="google" size={24} color="black" />
-                      <Text style={styles.forgotPasswordText}>Signin with Google</Text> */}
-                    </TouchableOpacity>
+                  {busy && <Text style={styles.busyText}>Securing your data…</Text>}
 
+                  <View style={styles.buttonRow}>
                     <TouchableOpacity style={styles.forgotPasswordButton} onPress={() => setIsForgotPasswordMode(true)}>
                       <Octicons name="question" size={24} color="black" style={styles.forgotPasswordIcon} />
                       <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
@@ -254,17 +300,9 @@ const styles = StyleSheet.create({
   modalBox: {
     width: '80%',
     maxWidth: 400,
-    height: 400,
     backgroundColor: '#fff',
     borderRadius: 10,
     padding: 16,
-    position: 'relative',
-  },
-  darkBox: {
-    backgroundColor: '#1e1e1e',
-  },
-  lightBox: {
-    backgroundColor: '#fff',
   },
   input: {
     height: 40,
@@ -272,6 +310,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 12,
     paddingHorizontal: 8,
+    color: '#000',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -298,7 +337,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    // fontWeight: 'bold',
     textAlign: 'center'
   },
   button: {
@@ -306,6 +344,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     borderRadius: 5,
     padding: 10,
+  },
+  busyText: {
+    textAlign: 'center',
+    color: '#666',
+    marginBottom: 8,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -328,15 +371,6 @@ const styles = StyleSheet.create({
   forgotPasswordText: {
     color: '#000',
   },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  showPasswordButton: {
-    position: 'absolute',
-    right: 8,
-    top: 8,
-  },
   titleText: {
     fontSize: 18,
     color: '#000',
@@ -344,5 +378,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginPopup;
-
+export default LoginModal;

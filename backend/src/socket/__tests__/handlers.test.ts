@@ -8,6 +8,7 @@ import Clipboard from '../../models/Clipboard';
 
 jest.mock('firebase-admin', () => {
   return {
+    apps: [{}], // non-empty so lazy init skips initializeApp
     auth: jest.fn().mockReturnValue({
       verifyIdToken: jest.fn((token) => {
         if (token === 'valid_token') {
@@ -24,6 +25,7 @@ jest.mock('firebase-admin', () => {
 
 describe('Socket.io Handlers Integration', () => {
   let io: Server;
+  let httpServer: ReturnType<typeof createServer>;
   let serverSocket: any;
   let clientSocketA: ClientSocket;
   let clientSocketB: ClientSocket; // Same user as A
@@ -35,7 +37,7 @@ describe('Socket.io Handlers Integration', () => {
     const uri = mongoServer.getUri();
     await mongoose.connect(uri);
 
-    const httpServer = createServer();
+    httpServer = createServer();
     io = new Server(httpServer);
 
     io.use(authenticateSocket);
@@ -78,6 +80,12 @@ describe('Socket.io Handlers Integration', () => {
   });
 
   afterEach(async () => {
+    // Listeners registered inside a test must not fire in later tests.
+    for (const client of [clientSocketA, clientSocketB, clientSocketC]) {
+      client.off('clipboard:new');
+      client.off('clipboard:deleted');
+      client.off('clipboard:created');
+    }
     await Clipboard.deleteMany({});
   });
 
@@ -89,7 +97,7 @@ describe('Socket.io Handlers Integration', () => {
   });
 
   it('should reject invalid tokens', (done) => {
-    const port = (io.httpServer.address() as any).port;
+    const port = (httpServer.address() as any).port;
     const badClient = Client(`http://localhost:${port}`, { auth: { token: 'invalid_token' } });
     
     badClient.on('connect_error', (err) => {
@@ -119,7 +127,7 @@ describe('Socket.io Handlers Integration', () => {
 
     clientSocketC.on('clipboard:new', () => {
       // User C should NOT receive this event
-      done.fail('Broadcast leaked to wrong user');
+      done(new Error('Broadcast leaked to wrong user'));
     });
 
     clientSocketA.emit('clipboard:create', testClip);
@@ -133,7 +141,7 @@ describe('Socket.io Handlers Integration', () => {
     };
 
     const ackPromise = new Promise(resolve => {
-      clientSocketA.on('clipboard:created', resolve);
+      clientSocketA.once('clipboard:created', resolve);
     });
 
     clientSocketA.emit('clipboard:create', testClip);
@@ -158,10 +166,10 @@ describe('Socket.io Handlers Integration', () => {
       clientSocketB.on('clipboard:deleted', resolve);
     });
 
-    clientSocketA.emit('clipboard:delete', { id: clip._id.toString() });
+    clientSocketA.emit('clipboard:delete', { id: String(clip._id) });
 
     const data: any = await deletePromise;
-    expect(data.id).toBe(clip._id.toString());
+    expect(data.id).toBe(String(clip._id));
 
     const found = await Clipboard.findById(clip._id);
     expect(found).toBeNull();

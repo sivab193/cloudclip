@@ -1,4 +1,4 @@
-name: Deploy to GCE
+name: Backend CI & Deploy
 
 on:
   push:
@@ -6,9 +6,30 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/deploy.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
 
 jobs:
+  ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
   deploy:
+    needs: ci
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH
@@ -18,13 +39,16 @@ jobs:
           username: ${{ secrets.GCE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/cloudclip/backend
+            set -e
+            cd ~/cloudclip
             git pull origin main
-            
-            # Create .env file from GitHub Secrets if needed (optional based on your setup)
-            # echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" > .env
-            
-            docker-compose down
-            docker-compose up -d --build
+            cd backend
+            # Build first, then swap containers — avoids the old down/up gap
+            docker compose up -d --build
             docker image prune -f
-            echo "✅ Backend deploy complete at $(date)"
+            echo "Backend deploy complete at $(date)"
+
+      - name: Post-deploy health check
+        run: |
+          sleep 20
+          curl -fsS https://cc-api.siv19.dev/health

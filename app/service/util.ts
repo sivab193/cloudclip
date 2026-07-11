@@ -1,12 +1,11 @@
 import { Platform } from 'react-native';
 
-
-export const getDomain = () => {
-    if (Platform.OS === 'web') {
-        return window.location.origin; // Returns the domain in a web environment
-    } else {
-        return "https://cloud-clip.vercel.app/" // Returns the domain in a React Native environment
+/** Public web-app origin, used to build share links. */
+export const getWebUrl = (): string => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        return window.location.origin;
     }
+    return process.env.EXPO_PUBLIC_WEB_URL || 'https://cc.siv19.dev';
 };
 
 export const truncateContent = (content: string, startLength = 15, endLength = 15) => {

@@ -1,52 +1,65 @@
-// useDeviceDetails.ts
 import { useAuth } from '@/auth/AuthContext';
-import { getDeviceId } from '@/service/deviceService';
-import { fetchDevices } from '@/service/firebaseService';
-import { useState, useEffect, useContext } from 'react';
+import { getDeviceId, getDeviceOS } from '@/service/deviceService';
+import { apiService } from '@/service/apiService';
+import * as Device from 'expo-device';
+import { useState, useEffect } from 'react';
+import { Platform } from 'react-native';
 
 interface DeviceDetails {
-  deviceId: any;
-  deviceName: any;
+  deviceId: string | null;
+  deviceName: string | null;
 }
 
-const useDeviceDetails = () => {
+const defaultDeviceName = (): string => {
+  if (Platform.OS === 'web') return 'Web browser';
+  return Device.deviceName ?? Device.modelName ?? 'My device';
+};
+
+/**
+ * Resolves this device's stable ID and display name, registering it with the
+ * backend on first use for the signed-in user.
+ */
+const useDeviceDetails = (): DeviceDetails => {
   const [deviceDetails, setDeviceDetails] = useState<DeviceDetails>({
     deviceId: null,
     deviceName: null
   });
 
-
   const { user } = useAuth();
 
   useEffect(() => {
-    const fetchDeviceDetails = async () => {
-      try {
-        const deviceId = await getDeviceId();
-        if (deviceId) {
-          // Fetch devices and check deviceId here
-          const devices = await fetchDevices(user?.uid || null); // Adjust according to your logic
+    let cancelled = false;
 
-          const foundDevice = devices.find((device) => device.deviceId?.includes(deviceId));
-          if (foundDevice) {
-            setDeviceDetails({
-              deviceId: foundDevice.deviceId,
-              deviceName: foundDevice.deviceName
-            });
-          } else {
-            // Handle the case where device is not found
-            setDeviceDetails({
-              deviceId: deviceId,
-              deviceName: null
-            });
-          }
+    const fetchDeviceDetails = async () => {
+      if (!user) {
+        setDeviceDetails({ deviceId: null, deviceName: null });
+        return;
+      }
+      const deviceId = await getDeviceId();
+      if (!deviceId) return;
+
+      let deviceName = defaultDeviceName();
+      try {
+        const devices = await apiService.getDevices();
+        const found = devices.find((device) => device.deviceId === deviceId);
+        if (found) {
+          deviceName = found.deviceName;
+        } else {
+          await apiService.registerDevice(deviceId, deviceName, getDeviceOS());
         }
-      } catch (error) {
-        console.error('Error fetching device details:', error);
+      } catch {
+        // Offline or backend down — still expose the local ID/name.
+      }
+      if (!cancelled) {
+        setDeviceDetails({ deviceId, deviceName });
       }
     };
 
     fetchDeviceDetails();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   return deviceDetails;
 };

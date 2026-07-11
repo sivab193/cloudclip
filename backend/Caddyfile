@@ -1,0 +1,6 @@
+# Automatic Let's Encrypt TLS + WebSocket-aware reverse proxy.
+# DNS: point an A record for cc-api.siv19.dev at this VM's static IP,
+# and open ports 80/443 in the GCP firewall (close 3000/6379).
+cc-api.siv19.dev {
+	reverse_proxy backend:3000
+}

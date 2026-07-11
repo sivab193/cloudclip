@@ -1,5 +1,5 @@
-import LoginPopup from '@/app/Login';
-import React, { useState, useContext } from 'react';
+import LoginPopup from '@/components/LoginModal';
+import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import { useAuth } from '@/auth/AuthContext'; // Import AuthContext
 import { useRouter } from 'expo-router';
@@ -32,7 +32,7 @@ const Header = ({ navigation }: { navigation: any }) => {
     <View style={styles.header}>
       <TouchableOpacity style={styles.logoContainer} onPress={navigateToHome} activeOpacity={0.7}>
         <Image source={require('@/assets/images/logo.png')} style={styles.logo} />
-        <Text style={styles.headerTitle}>Cloud-Clip</Text>
+        <Text style={styles.headerTitle}>CloudClip</Text>
       </TouchableOpacity>
       {!user ? (
         <TouchableOpacity style={styles.loginButton} onPress={openModal}>

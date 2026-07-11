@@ -24,3 +24,6 @@ functions
 .env
 .env.backup
 config.txt
+
+# Store credentials — never commit
+play-service-account.json

@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, Platform, Text, Pressable } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { Ionicons } from '@expo/vector-icons';
 import { CustomClipboard } from '@/service/models';
-import { apiService } from '@/service/apiService';
 import { socketService } from '@/service/socketService';
 import { truncateContent } from '@/service/util';
-import { useAuth } from '@/auth/AuthContext';
+import { getMasterKey } from '@/service/keyService';
+import { createShare } from '@/service/shareService';
 import NoItemsComponent from './NoItems';
 import Confirmation from './Confirmation';
-import { generateNanoID, getSharedLinkURL } from '@/service/shareService';
 import * as Clipboard from 'expo-clipboard';
 
 
@@ -23,21 +22,28 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
 
     const [confirmationVisible, setConfirmationVisible] = useState(false);
     const [shareConfirmationVisible, setShareConfirmationVisible] = useState(false);
-    const [itemToRemove, setItemToRemove] = useState("");
-    const [itemToShare, setItemToShare] = useState("");
+    const [itemToRemove, setItemToRemove] = useState('');
     const [sharedLink, setSharedLink] = useState<string | null>(null);
     const [sharedCode, setSharedCode] = useState<string | null>(null);
 
-
-    const handleDelete = (id: string) => {
-        socketService.deleteClipboard(id);
-        showAlert('Deleted clipboard entry');
+    const handleDelete = async (id: string) => {
+        try {
+            await socketService.deleteClipboard(id);
+            showAlert('Deleted clipboard entry');
+        } catch {
+            showAlert('Failed to delete entry');
+        }
     };
 
-    const handleClickEntry = async (id: string) => {
-        // Timestamp update handled via backend if needed, or just copy to clipboard
-    }
-    const { user } = useAuth(); // Use AuthContext to get the user
+    // Tap an entry to copy it to this device's clipboard.
+    const handleClickEntry = async (content: string) => {
+        try {
+            await Clipboard.setStringAsync(content);
+            showAlert('Copied to clipboard');
+        } catch {
+            showAlert('Could not copy to clipboard');
+        }
+    };
 
     const showConfirmation = (itemId: string) => {
         setConfirmationVisible(true);
@@ -57,42 +63,36 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
         handleDelete(itemToRemove);
     };
 
+    // Creates the shared link ONCE, then the dialog buttons only copy.
     const handleShareConfirmation = async (content: string) => {
-        const code: string = generateNanoID();
-        const generatedLink = getSharedLinkURL(code);
-        setSharedCode(code);
-        setSharedLink(generatedLink);
-        setShareConfirmationVisible(true);
-        setItemToShare(content);
+        const mk = await getMasterKey();
+        if (!mk) {
+            showAlert('Unlock your data first');
+            return;
+        }
+        try {
+            const result = await createShare(content, mk);
+            setSharedLink(result.url);
+            setSharedCode(result.displayCode);
+            setShareConfirmationVisible(true);
+        } catch {
+            showAlert('Failed to create shared link.');
+        }
     };
 
     const handleCopyLink = async () => {
-        if (itemToShare && sharedLink) {
-            try {
-                await apiService.createSharedLink(itemToShare);
-                Clipboard.setStringAsync(sharedLink);
-                setShareConfirmationVisible(false);
-                showAlert("Link copied to clipboard!");
-            } catch (error) {
-                showAlert("Failed to create shared link.");
-            }
-        } else {
-            showAlert("An unexpected error occured!");
+        if (sharedLink) {
+            await Clipboard.setStringAsync(sharedLink);
+            setShareConfirmationVisible(false);
+            showAlert('Link copied to clipboard!');
         }
     };
 
     const handleCopyCode = async () => {
-        if (itemToShare && sharedCode) {
-            try {
-                await apiService.createSharedLink(itemToShare);
-                Clipboard.setStringAsync(sharedCode);
-                setShareConfirmationVisible(false);
-                showAlert("Code copied to clipboard!");
-            } catch (error) {
-                showAlert("Failed to create shared link.");
-            }
-        } else {
-            showAlert("An unexpected error occured!");
+        if (sharedCode) {
+            await Clipboard.setStringAsync(sharedCode);
+            setShareConfirmationVisible(false);
+            showAlert('Code copied to clipboard!');
         }
     };
 
@@ -108,7 +108,7 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
                 ]}
                 subtitle={''} />
             <Confirmation
-                message={`Use this link or code for quick share!\n`}
+                message={`Share link created — anyone with it can read this text for 7 days.\n`}
                 subtitle={`Link: ${sharedLink || ''}\nCode: ${sharedCode || ''}`}
                 visible={shareConfirmationVisible}
                 buttons={[
@@ -123,9 +123,9 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
                     <ScrollView contentContainerStyle={styles.scrollContainer}
                         scrollEnabled={true}
                         nestedScrollEnabled={true}>
-                        {clipboardEntries.map((entry, index) => (
+                        {clipboardEntries.map((entry) => (
                             <TouchableOpacity
-                                onPress={() => handleClickEntry(entry._id || entry.id || '')}
+                                onPress={() => handleClickEntry(entry.content)}
                                 key={entry._id || entry.id}
                             >
                                 <View style={styles.entryContainer}>
@@ -171,10 +171,7 @@ const styles = StyleSheet.create({
     container: {
         backgroundColor: '#fff',
         marginTop: 16,
-        // borderColor: 'black',
-        // borderWidth: 1,
         height: 300,
-        // padding: 10,
     },
     scrollContainer: {
         padding: 0,
@@ -197,7 +194,7 @@ const styles = StyleSheet.create({
         lineHeight: 16,
         flex: 1,
         color: '#000',
-        fontWeight: 500
+        fontWeight: '500'
     },
     clipboardDevice: {
         fontSize: 12,
@@ -205,11 +202,8 @@ const styles = StyleSheet.create({
         flex: 1,
         color: 'darkslategrey'
     },
-    copyButton: {
-        marginLeft: 10,
-    },
     textContainer: {
-        flex: 1, // Ensure text takes up remaining space
+        flex: 1,
     },
     iconContainer: {
         flexDirection: 'row',

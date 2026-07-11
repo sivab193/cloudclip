@@ -1,7 +1,9 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth } from 'firebase/auth';
 import { Platform } from 'react-native';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+// @ts-ignore — exported by the react-native bundle of firebase/auth, which
+// Metro resolves at build time; the web type declarations don't include it.
+import { getReactNativePersistence } from 'firebase/auth';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
