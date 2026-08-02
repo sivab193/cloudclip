@@ -19,6 +19,8 @@ import useDeviceDetails from '@/hooks/useDeviceDetails';
 import Alert from '@/components/Alert';
 import Confirmation from '@/components/Confirmation';
 import * as Clipboard from 'expo-clipboard';
+import { ThemeTokens } from '@/constants/Colors';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 // A clipboard entry with content already decrypted for display.
 interface DecryptedClip extends CustomClipboard {
@@ -40,6 +42,8 @@ const decryptClip = (mk: Uint8Array, clip: CustomClipboard): DecryptedClip => {
 };
 
 export default function Homepage() {
+	const t = useTheme();
+	const styles = useThemedStyles(makeStyles);
 	const [saveTextData, setSaveTextData] = useState('');
 	const [clipboardEntries, setClipboardEntries] = useState<DecryptedClip[]>([]);
 	const [latestText, setLatestText] = useState<string | null>(null);
@@ -258,8 +262,8 @@ export default function Homepage() {
 				subtitle="This removes them from all your devices."
 				visible={confirmationVisible}
 				buttons={[
-					{ label: 'No', onPress: () => setConfirmationVisible(false), style: { backgroundColor: 'black' } },
-					{ label: 'Yes', onPress: () => { setConfirmationVisible(false); handleBulkDelete(); }, style: { backgroundColor: 'black' } },
+					{ label: 'No', onPress: () => setConfirmationVisible(false) },
+					{ label: 'Yes', onPress: () => { setConfirmationVisible(false); handleBulkDelete(); } },
 				]}
 			/>
 			<Confirmation
@@ -267,8 +271,8 @@ export default function Homepage() {
 				subtitle="Entries saved before encryption was enabled are stored unencrypted. Delete them?"
 				visible={legacyPromptVisible}
 				buttons={[
-					{ label: 'Keep', onPress: () => setLegacyPromptVisible(false), style: { backgroundColor: 'black' } },
-					{ label: 'Delete', onPress: handleDeleteLegacy, style: { backgroundColor: '#b00020' } },
+					{ label: 'Keep', onPress: () => setLegacyPromptVisible(false) },
+					{ label: 'Delete', onPress: handleDeleteLegacy, variant: 'danger' },
 				]}
 			/>
 			<ScrollView
@@ -288,9 +292,9 @@ export default function Homepage() {
 										<ThemedText type="defaultSemiBold" style={styles.text}>Your latest copied text</ThemedText>
 										<View style={styles.buttonContainer}>
 											<TouchableOpacity style={[styles.copyButton, { marginLeft: 10 }]} onPress={() => handleCopy(latestText || '')}>
-												<Ionicons name="clipboard-outline" size={24} color="black" />
+												<Ionicons name="clipboard-outline" size={24} color={t.icon} />
 												{Platform.OS === 'web' && (
-													<Text style={[styles.copyButtonText, { color: 'black' }]}> Copy Text</Text>
+													<Text style={[styles.copyButtonText, { color: t.text }]}> Copy Text</Text>
 												)}
 											</TouchableOpacity>
 										</View>
@@ -311,9 +315,9 @@ export default function Homepage() {
 										<ThemedText type="defaultSemiBold" style={styles.text}>Save to clipboard</ThemedText>
 										<View style={styles.buttonContainer}>
 											<TouchableOpacity style={styles.copyButton} onPress={() => handleSave(saveTextData)}>
-												<Ionicons name="save-outline" size={24} color="black" />
+												<Ionicons name="save-outline" size={24} color={t.icon} />
 												{Platform.OS === 'web' && (
-													<Text style={[styles.copyButtonText, { color: 'black' }]}> Save Text</Text>
+													<Text style={[styles.copyButtonText, { color: t.text }]}> Save Text</Text>
 												)}
 											</TouchableOpacity>
 										</View>
@@ -329,12 +333,12 @@ export default function Homepage() {
 														{ height: 198, padding: 10, textAlignVertical: 'top' }
 													]}
 													placeholder='Enter your text here...'
-													placeholderTextColor="#999"
+													placeholderTextColor={t.placeholder}
 													value={saveTextData}
 													onChangeText={setSaveTextData}
 													multiline={true}
 													editable={true}
-													selectionColor={'black'}
+													selectionColor={t.text}
 												/>
 											</ScrollView>
 										</View>
@@ -344,9 +348,9 @@ export default function Homepage() {
 									<View style={styles.headerWithButton}>
 										<ThemedText type="defaultSemiBold" style={styles.text}>Your Clipboard Entries ({clipboardEntries.length})</ThemedText>
 										<TouchableOpacity style={styles.copyButton} onPress={() => setConfirmationVisible(true)}>
-											<Ionicons name="trash-outline" size={24} color="black" />
+											<Ionicons name="trash-outline" size={24} color={t.icon} />
 											{Platform.OS === 'web' && (
-												<Text style={[styles.copyButtonText, { color: 'black' }]}> Delete all Entries</Text>
+												<Text style={[styles.copyButtonText, { color: t.text }]}> Delete all Entries</Text>
 											)}
 										</TouchableOpacity>
 									</View>
@@ -361,40 +365,40 @@ export default function Homepage() {
 	);
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 	catBody: {
 		height: 200,
 		borderWidth: 1,
-		borderColor: '#ccc',
+		borderColor: t.border,
 		borderRadius: 4,
 		overflow: 'hidden'
 	},
 	catBodyText: {
 		padding: 10,
 		fontSize: 16,
-		color: 'black',
+		color: t.text,
 	},
 	safeArea: {
 		flex: 1,
-		backgroundColor: '#fff',
+		backgroundColor: t.background,
 		paddingTop: Platform.OS === 'web' ? 0 : 30,
 	},
 	text: {
-		color: '#000'
+		color: t.text
 	},
 	centerContainer: {
-		backgroundColor: '#fff',
+		backgroundColor: t.background,
 		padding: Platform.OS === 'web' ? 16 : 5,
 		paddingTop: 2,
 		borderRadius: 16,
 	},
 	catContainer: {
-		backgroundColor: '#fff',
+		backgroundColor: t.background,
 		paddingTop: 2,
 		borderRadius: 16,
 	},
 	container: {
-		backgroundColor: '#fff',
+		backgroundColor: t.background,
 		padding: 10,
 		borderRadius: 16,
 		overflow: 'hidden'

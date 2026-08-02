@@ -2,11 +2,14 @@ import React from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, Platform } from 'react-native';
 import Header from '@/components/Header';
 import { useNavigation } from 'expo-router';
+import { ThemeTokens } from '@/constants/Colors';
+import { useThemedStyles } from '@/hooks/useTheme';
 
 const UPDATED = 'July 11, 2026';
 
 export default function PrivacyPolicy() {
   const navigation = useNavigation();
+  const styles = useThemedStyles(makeStyles);
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header navigation={navigation} />
@@ -70,10 +73,10 @@ export default function PrivacyPolicy() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: t.background,
     paddingTop: Platform.OS === 'web' ? 0 : 30,
   },
   content: {
@@ -84,24 +87,24 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000',
+    color: t.text,
     marginBottom: 4,
   },
   meta: {
     fontSize: 13,
-    color: '#666',
+    color: t.textMuted,
     marginBottom: 20,
   },
   heading: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#000',
+    color: t.text,
     marginTop: 18,
     marginBottom: 6,
   },
   body: {
     fontSize: 15,
-    color: '#333',
+    color: t.textMuted,
     lineHeight: 22,
   },
 });

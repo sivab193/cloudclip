@@ -7,6 +7,8 @@ import { apiService } from '@/service/apiService';
 import { lockLocal } from '@/service/keyService';
 import { clearSyncState } from '@/service/syncEngine';
 import Confirmation from '@/components/Confirmation';
+import { ThemeTokens } from '@/constants/Colors';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 /**
  * Web-reachable account-deletion page (required by Google Play's data
@@ -14,6 +16,8 @@ import Confirmation from '@/components/Confirmation';
  */
 export default function DeleteAccount() {
   const navigation = useNavigation();
+  const t = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { user, logout } = useAuth();
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -43,8 +47,8 @@ export default function DeleteAccount() {
         subtitle="This permanently deletes your account, all clipboard entries, shared links and devices. This cannot be undone."
         visible={confirmVisible}
         buttons={[
-          { label: 'Cancel', onPress: () => setConfirmVisible(false), style: { backgroundColor: 'black' } },
-          { label: 'Delete forever', onPress: handleDelete, style: { backgroundColor: '#b00020' } },
+          { label: 'Cancel', onPress: () => setConfirmVisible(false) },
+          { label: 'Delete forever', onPress: handleDelete, variant: 'danger' },
         ]}
       />
       <ScrollView contentContainerStyle={styles.content}>
@@ -61,7 +65,7 @@ export default function DeleteAccount() {
           <Text style={styles.success}>Your account and all data have been deleted.</Text>
         ) : user ? (
           <TouchableOpacity style={styles.deleteButton} onPress={() => setConfirmVisible(true)} disabled={busy}>
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.deleteButtonText}>Delete my account</Text>}
+            {busy ? <ActivityIndicator color={t.onDanger} /> : <Text style={styles.deleteButtonText}>Delete my account</Text>}
           </TouchableOpacity>
         ) : (
           <Text style={styles.body}>
@@ -75,10 +79,10 @@ export default function DeleteAccount() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: t.background,
     paddingTop: Platform.OS === 'web' ? 0 : 30,
   },
   content: {
@@ -89,29 +93,29 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000',
+    color: t.text,
     marginBottom: 16,
   },
   body: {
     fontSize: 15,
-    color: '#333',
+    color: t.textMuted,
     lineHeight: 22,
     marginBottom: 20,
   },
   deleteButton: {
-    backgroundColor: '#b00020',
+    backgroundColor: t.danger,
     borderRadius: 8,
     padding: 14,
     alignItems: 'center',
   },
   deleteButtonText: {
-    color: '#fff',
+    color: t.onDanger,
     fontWeight: 'bold',
     fontSize: 16,
   },
   success: {
     fontSize: 16,
-    color: 'green',
+    color: t.accent,
     fontWeight: 'bold',
   },
 });

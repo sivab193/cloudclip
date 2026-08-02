@@ -3,9 +3,12 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import { useAuth } from '@/auth/AuthContext'; // Import AuthContext
 import { useRouter } from 'expo-router';
+import { ThemeTokens } from '@/constants/Colors';
+import { useThemedStyles } from '@/hooks/useTheme';
 
 const Header = ({ navigation }: { navigation: any }) => {
   const [isModalVisible, setModalVisible] = useState(false);
+  const styles = useThemedStyles(makeStyles);
   const { user, logout } = useAuth()
 
   const openModal = () => setModalVisible(true);
@@ -50,13 +53,13 @@ const Header = ({ navigation }: { navigation: any }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: t.background,
   },
   logoContainer: {
     flexDirection: 'row',
@@ -70,14 +73,15 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: t.text,
   },
   loginButton: {
     padding: 10,
-    backgroundColor: '#000',
+    backgroundColor: t.primary,
     borderRadius: 5,
   },
   loginButtonText: {
-    color: '#fff',
+    color: t.onPrimary,
     fontWeight: 'bold',
   },
 });

@@ -7,6 +7,8 @@ import { useAuth } from '@/auth/AuthContext';
 import { apiService } from '@/service/apiService';
 import { unlockWithPassword, WrongPasswordError } from '@/service/keyService';
 import RecoveryCodeModal from './RecoveryCodeModal';
+import { ThemeTokens } from '@/constants/Colors';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 // Web `alert` fallback since RN Alert.alert is a no-op on react-native-web.
 const showMessage = (title: string, message: string) => {
@@ -26,6 +28,8 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
   const [isForgotPasswordMode, setIsForgotPasswordMode] = useState(false);
   const [busy, setBusy] = useState(false);
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
+  const t = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const { setUser, refreshEncryptionReady } = useAuth();
 
@@ -178,7 +182,7 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                   <TextInput
                     style={styles.input}
                     placeholder="Email"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={t.placeholder}
                     value={username}
                     onChangeText={setUsername}
                     keyboardType="email-address"
@@ -213,14 +217,14 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                       <TextInput
                         style={styles.input}
                         placeholder="Name"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={t.placeholder}
                         value={name}
                         onChangeText={setName}
                       />
                       <TextInput
                         style={styles.input}
                         placeholder="Email"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={t.placeholder}
                         value={username}
                         onChangeText={setUsername}
                         keyboardType="email-address"
@@ -229,7 +233,7 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                       <TextInput
                         style={styles.input}
                         placeholder="Password"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={t.placeholder}
                         secureTextEntry
                         value={password}
                         onChangeText={setPassword}
@@ -237,13 +241,13 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                       <TextInput
                         style={styles.input}
                         placeholder="Confirm Password"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={t.placeholder}
                         secureTextEntry
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
                       />
                       <TouchableOpacity style={styles.button} onPress={handleSignUp} disabled={busy}>
-                        {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign Up</Text>}
+                        {busy ? <ActivityIndicator color={t.onPrimary} /> : <Text style={styles.buttonText}>Sign Up</Text>}
                       </TouchableOpacity>
                     </>
                   ) : (
@@ -251,7 +255,7 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                       <TextInput
                         style={styles.input}
                         placeholder="Email"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={t.placeholder}
                         value={username}
                         onChangeText={setUsername}
                         keyboardType="email-address"
@@ -260,14 +264,14 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                       <TextInput
                         style={styles.input}
                         placeholder="Password"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={t.placeholder}
                         secureTextEntry
                         value={password}
                         onChangeText={setPassword}
                       />
 
                       <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={busy}>
-                        {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Login</Text>}
+                        {busy ? <ActivityIndicator color={t.onPrimary} /> : <Text style={styles.buttonText}>Login</Text>}
                       </TouchableOpacity>
                     </>
                   )}
@@ -276,7 +280,7 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
 
                   <View style={styles.buttonRow}>
                     <TouchableOpacity style={styles.forgotPasswordButton} onPress={() => setIsForgotPasswordMode(true)}>
-                      <Octicons name="question" size={24} color="black" style={styles.forgotPasswordIcon} />
+                      <Octicons name="question" size={24} color={t.icon} style={styles.forgotPasswordIcon} />
                       <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                     </TouchableOpacity>
                   </View>
@@ -290,27 +294,28 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: t.overlay,
   },
   modalBox: {
     width: '80%',
     maxWidth: 400,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 10,
     padding: 16,
   },
   input: {
     height: 40,
-    borderColor: '#ccc',
+    borderColor: t.border,
     borderWidth: 1,
     marginBottom: 12,
     paddingHorizontal: 8,
-    color: '#000',
+    color: t.text,
+    backgroundColor: t.surface,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -327,27 +332,27 @@ const styles = StyleSheet.create({
   activeButton: {
     borderRadius: 0,
     backgroundColor: 'transparent',
-    borderBottomColor: '#000',
+    borderBottomColor: t.text,
     borderBottomWidth: 3,
   },
   secondarybuttonText: {
-    color: '#000',
+    color: t.text,
     fontWeight: 'bold',
     textAlign: 'center'
   },
   buttonText: {
-    color: '#fff',
+    color: t.onPrimary,
     textAlign: 'center'
   },
   button: {
     marginBottom: 12,
-    backgroundColor: '#000',
+    backgroundColor: t.primary,
     borderRadius: 5,
     padding: 10,
   },
   busyText: {
     textAlign: 'center',
-    color: '#666',
+    color: t.textMuted,
     marginBottom: 8,
   },
   buttonRow: {
@@ -369,11 +374,11 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   forgotPasswordText: {
-    color: '#000',
+    color: t.text,
   },
   titleText: {
     fontSize: 18,
-    color: '#000',
+    color: t.text,
     marginBottom: 10
   },
 });

@@ -29,9 +29,12 @@ export interface KdfParams {
     p: number;
 }
 
-// ~32 MB scrypt memory; runs only at login/key-setup. Params are stored
-// server-side per user, so they can be raised later without a migration.
-export const DEFAULT_KDF: KdfParams = { name: 'scrypt', N: 32768, r: 8, p: 1 };
+// ~64 MB scrypt memory; runs only at login/key-setup. Params are stored
+// server-side per user and read back on unlock, so raising this is backwards
+// compatible: existing records keep their own N until the next re-wrap.
+// Bounded by what a low-end phone can allocate in JS — scrypt here is pure JS,
+// so N beyond 2^16 makes login painfully slow on older devices.
+export const DEFAULT_KDF: KdfParams = { name: 'scrypt', N: 65536, r: 8, p: 1 };
 
 /** Thrown when a GCM auth tag fails — wrong password/key or corrupt data. */
 export class DecryptionError extends Error {

@@ -140,8 +140,13 @@ export const regenerateRecoveryCode = async (): Promise<string> => {
 /**
  * Recover access with the recovery code (after a password reset). Unwraps the
  * MK and re-wraps it under the user's current (new) account password.
+ *
+ * The used code is single-use: it is replaced in the same write that re-wraps
+ * the password KEK, so a code that leaked (email, screenshot, password
+ * manager export) stops working the moment it is redeemed. Returns the new
+ * code, which must be shown to the user ONCE.
  */
-export const recoverWithCode = async (codeInput: string, currentPassword: string): Promise<void> => {
+export const recoverWithCode = async (codeInput: string, currentPassword: string): Promise<string> => {
     const keys = await apiService.getKeys();
     if (!keys?.recoveryWrappedKey || !keys.recoverySalt || !keys.recoveryNonce) {
         throw new Error('No recovery code was set up for this account');
@@ -161,14 +166,25 @@ export const recoverWithCode = async (codeInput: string, currentPassword: string
     const salt = generateSaltB64();
     const kek = await deriveKek(currentPassword, salt, DEFAULT_KDF);
     const wrapped = wrapBytes(kek, mk);
+
+    // Burn the redeemed code and issue a fresh one.
+    const nextCode = generateRecoveryCode();
+    const nextRecoverySalt = generateSaltB64();
+    const nextRecoveryKek = await deriveKek(nextCode, nextRecoverySalt, DEFAULT_KDF);
+    const nextRecoveryWrapped = wrapBytes(nextRecoveryKek, mk);
+
     await apiService.putKeys({
         ...keys,
         wrappedKey: wrapped.wrapped,
         wrapNonce: wrapped.nonce,
         salt,
         kdf: DEFAULT_KDF,
+        recoveryWrappedKey: nextRecoveryWrapped.wrapped,
+        recoveryNonce: nextRecoveryWrapped.nonce,
+        recoverySalt: nextRecoverySalt,
         keyVersion: keys.keyVersion + 1,
     });
+    return formatRecoveryCode(nextCode);
 };
 
 /**

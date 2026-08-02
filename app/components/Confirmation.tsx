@@ -1,10 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { ThemeTokens } from '@/constants/Colors';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 interface ButtonConfig {
     label: string;
     onPress: () => void;
-    style?: object;
+    /** 'danger' tints the button for destructive actions. Defaults to 'default'. */
+    variant?: 'default' | 'danger';
 }
 
 interface ConfirmationProps {
@@ -15,6 +18,9 @@ interface ConfirmationProps {
 }
 
 const Confirmation: React.FC<ConfirmationProps> = ({ message, subtitle, visible, buttons }) => {
+    const t = useTheme();
+    const styles = useThemedStyles(makeStyles);
+
     return (
         <Modal
             transparent={true}
@@ -32,15 +38,20 @@ const Confirmation: React.FC<ConfirmationProps> = ({ message, subtitle, visible,
                     <Text style={styles.message}>{message}</Text>
                     <Text style={styles.subtitle}>{subtitle}</Text>
                     <View style={styles.buttonsContainer}>
-                        {buttons.map((button, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={[styles.button, button.style]}
-                                onPress={button.onPress}
-                            >
-                                <Text style={styles.buttonText}>{button.label}</Text>
-                            </TouchableOpacity>
-                        ))}
+                        {buttons.map((button, index) => {
+                            const danger = button.variant === 'danger';
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[styles.button, danger && styles.buttonDanger]}
+                                    onPress={button.onPress}
+                                >
+                                    <Text style={[styles.buttonText, { color: danger ? t.onDanger : t.onPrimary }]}>
+                                        {button.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                 </View>
             </View>
@@ -48,15 +59,15 @@ const Confirmation: React.FC<ConfirmationProps> = ({ message, subtitle, visible,
     );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     overlay: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: t.overlay,
     },
     container: {
-        backgroundColor: '#fff',
+        backgroundColor: t.surface,
         borderRadius: 10,
         padding: 20,
         width: '80%',
@@ -66,11 +77,13 @@ const styles = StyleSheet.create({
         fontSize: 18,
         marginBottom: 20,
         textAlign: 'center',
+        color: t.text,
     },
     subtitle: {
         fontSize: 14,
         marginBottom: 20,
         textAlign: 'center',
+        color: t.textMuted,
     },
     buttonsContainer: {
         flexDirection: 'row',
@@ -82,9 +95,12 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         marginHorizontal: 5,
         alignItems: 'center',
+        backgroundColor: t.primary,
+    },
+    buttonDanger: {
+        backgroundColor: t.danger,
     },
     buttonText: {
-        color: 'white',
         fontSize: 16,
     },
 });

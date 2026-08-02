@@ -16,6 +16,8 @@ import NoItemsComponent from '@/components/NoItems';
 import Alert from '@/components/Alert';
 import Confirmation from '@/components/Confirmation';
 import * as Clipboard from 'expo-clipboard';
+import { ThemeTokens } from '@/constants/Colors';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 // A shared link decorated with its decrypted preview and recovered token.
 interface DecoratedShared {
@@ -28,6 +30,8 @@ const sharedId = (item: Shared): string => item._id || item.id || '';
 
 export default function SharedLinks() {
 	const navigation = useNavigation();
+	const t = useTheme();
+	const styles = useThemedStyles(makeStyles);
 	const [textToShare, setTextToShare] = useState('');
 	const [retrieveText, setRetrieveText] = useState('');
 	const [sharedLinks, setSharedLinks] = useState<DecoratedShared[]>([]);
@@ -182,8 +186,8 @@ export default function SharedLinks() {
 				subtitle=''
 				visible={confirmationVisible}
 				buttons={[
-					{ label: 'No', onPress: () => setConfirmationVisible(false), style: { backgroundColor: 'black' } },
-					{ label: 'Yes', onPress: handleRemove, style: { backgroundColor: 'black' } },
+					{ label: 'No', onPress: () => setConfirmationVisible(false) },
+					{ label: 'Yes', onPress: handleRemove },
 				]}
 			/>
 			<Confirmation
@@ -191,9 +195,9 @@ export default function SharedLinks() {
 				subtitle={`Link: ${sharedLink || ''}\nCode: ${sharedCode || ''}`}
 				visible={shareDialogVisible}
 				buttons={[
-					{ label: 'Copy Link', onPress: handleCopyLink, style: { backgroundColor: 'black' } },
-					{ label: 'Copy Code', onPress: handleCopyCode, style: { backgroundColor: 'black' } },
-					{ label: 'Close', onPress: () => setShareDialogVisible(false), style: { backgroundColor: 'red' } },
+					{ label: 'Copy Link', onPress: handleCopyLink },
+					{ label: 'Copy Code', onPress: handleCopyCode },
+					{ label: 'Close', onPress: () => setShareDialogVisible(false), variant: 'danger' },
 				]}
 			/>
 			<Confirmation
@@ -201,8 +205,8 @@ export default function SharedLinks() {
 				subtitle=''
 				visible={deleteAllConfirmationVisible}
 				buttons={[
-					{ label: 'Cancel', onPress: () => setDeleteAllConfirmationVisible(false), style: { backgroundColor: 'black' } },
-					{ label: 'Delete All', onPress: handleDeleteAll, style: { backgroundColor: '#b00020' } },
+					{ label: 'Cancel', onPress: () => setDeleteAllConfirmationVisible(false) },
+					{ label: 'Delete All', onPress: handleDeleteAll, variant: 'danger' },
 				]}
 			/>
 			<ScrollView
@@ -220,12 +224,12 @@ export default function SharedLinks() {
 							<TextInput
 								style={styles.inputLight}
 								placeholder="Enter text to share"
-								placeholderTextColor="#666"
+								placeholderTextColor={t.placeholder}
 								value={textToShare}
 								onChangeText={setTextToShare}
 							/>
 							<TouchableOpacity style={styles.tertiaryButton} onPress={handleShare}>
-								<Ionicons name="share-social-outline" size={24} color={'black'} />
+								<Ionicons name="share-social-outline" size={24} color={t.icon} />
 								<ThemedText type="default" style={styles.tertiaryButtonText}>
 									Share
 								</ThemedText>
@@ -233,17 +237,17 @@ export default function SharedLinks() {
 						</ThemedView>
 					</ThemedView>
 					<ThemedView style={[styles.containerLight]}>
-						<ThemedText type="defaultSemiBold" lightColor='black' darkColor='black' style={styles.heading}>Retrieve Text:</ThemedText>
+						<ThemedText type="defaultSemiBold" style={styles.heading}>Retrieve Text:</ThemedText>
 						<ThemedView style={styles.inputContainer}>
 							<TextInput
 								style={styles.inputLight2}
 								placeholder="Enter the code here to retrieve your text"
-								placeholderTextColor="#666"
+								placeholderTextColor={t.placeholder}
 								value={retrieveText}
 								onChangeText={setRetrieveText}
 							/>
 							<TouchableOpacity style={styles.tertiaryButton} onPress={handleRetrieve}>
-								<Ionicons name="share-outline" size={24} color="black" />
+								<Ionicons name="share-outline" size={24} color={t.icon} />
 								<ThemedText type="default" style={styles.tertiaryButtonText}>Retrieve</ThemedText>
 							</TouchableOpacity>
 						</ThemedView>
@@ -251,13 +255,13 @@ export default function SharedLinks() {
 					{user && (
 						<ThemedView style={styles.containerLight}>
 							<ThemedView style={styles.headingContainer}>
-								<ThemedText type="defaultSemiBold" darkColor='black' lightColor='black'>
+								<ThemedText type="defaultSemiBold">
 									Recent Shared Links:
 								</ThemedText>
 								<TouchableOpacity onPress={() => setDeleteAllConfirmationVisible(true)} style={{ flexDirection: 'row', alignItems: 'center' }}>
-									<Ionicons name="trash-outline" size={24} color="black" />
+									<Ionicons name="trash-outline" size={24} color={t.icon} />
 									{Platform.OS === 'web' && (
-										<Text style={{ color: 'black', marginLeft: 5 }}>
+										<Text style={{ color: t.text, marginLeft: 5 }}>
 											Delete all Entries
 										</Text>
 									)}
@@ -284,10 +288,10 @@ export default function SharedLinks() {
 														</View>
 														<View style={styles.buttonContainer}>
 															<TouchableOpacity style={styles.button} onPress={() => { setItemToRemoveId(sharedId(item.shared)); setConfirmationVisible(true); }}>
-																<Ionicons name="trash-outline" size={24} color={'black'} />
+																<Ionicons name="trash-outline" size={24} color={t.icon} />
 															</TouchableOpacity>
 															<TouchableOpacity style={styles.button} onPress={() => handleShareExisting(item)}>
-																<Ionicons name="share-social-outline" size={24} color={'black'} />
+																<Ionicons name="share-social-outline" size={24} color={t.icon} />
 															</TouchableOpacity>
 														</View>
 													</View>
@@ -308,10 +312,10 @@ export default function SharedLinks() {
 	);
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 	safeArea: {
 		flex: 1,
-		backgroundColor: '#fff',
+		backgroundColor: t.background,
 		paddingTop: Platform.OS === 'web' ? 0 : 30,
 	},
 	flatListContainer: {
@@ -320,7 +324,7 @@ const styles = StyleSheet.create({
 		marginBottom: 10,
 	},
 	containerLight: {
-		backgroundColor: '#fff',
+		backgroundColor: t.background,
 		padding: 16,
 		marginLeft: Platform.OS === 'web' ? 10 : 0,
 		marginRight: Platform.OS === 'web' ? 10 : 0,
@@ -336,8 +340,8 @@ const styles = StyleSheet.create({
 		padding: 16,
 		marginBottom: 16,
 		borderRadius: 8,
-		backgroundColor: '#f0f0f0',
-		shadowColor: '#000',
+		backgroundColor: t.surfaceAlt,
+		shadowColor: t.shadow,
 		shadowOpacity: 0.1,
 		shadowOffset: { width: 0, height: 2 },
 		shadowRadius: 2,
@@ -358,34 +362,34 @@ const styles = StyleSheet.create({
 	},
 	itemTitle: {
 		fontSize: 16,
-		color: '#000',
+		color: t.text,
 	},
 	itemExpiry: {
 		fontSize: 14,
-		color: '#666',
+		color: t.textMuted,
 	},
 	heading: {
 		marginBottom: 10,
-		color: '#000',
+		color: t.text,
 	},
 	inputLight2: {
 		height: 40,
-		borderColor: '#000',
+		borderColor: t.border,
 		borderWidth: 1,
 		borderRadius: 8,
 		paddingHorizontal: 8,
-		backgroundColor: '#fff',
-		color: '#000',
+		backgroundColor: t.background,
+		color: t.text,
 		marginBottom: 16,
 		width: '100%',
 		alignSelf: 'center'
 	},
 	tertiaryButtonText: {
-		color: '#000',
+		color: t.text,
 		fontSize: 16,
 		marginLeft: 8,
 		fontWeight: 'bold',
-		textDecorationColor: 'black',
+		textDecorationColor: t.text,
 		textDecorationStyle: 'solid',
 		textDecorationLine: 'underline'
 	},
@@ -394,24 +398,24 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
-		backgroundColor: '#fff',
+		backgroundColor: t.background,
 	},
 	inputContainer: {
 		flexDirection: Platform.OS === 'web' ? 'row' : 'column',
 		alignItems: 'center',
 		justifyContent: 'space-between',
 		marginBottom: Platform.OS === 'web' ? 20 : 0,
-		backgroundColor: '#fff'
+		backgroundColor: t.background
 	},
 	inputLight: {
 		flex: 1,
 		height: 40,
-		borderColor: '#000',
+		borderColor: t.border,
 		borderWidth: 1,
 		borderRadius: 8,
 		paddingHorizontal: 8,
-		backgroundColor: '#fff',
-		color: '#000',
+		backgroundColor: t.background,
+		color: t.text,
 		marginBottom: 16,
 		marginRight: 10,
 		width: '100%'
@@ -424,6 +428,6 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 		paddingHorizontal: 16,
 		borderRadius: 8,
-		backgroundColor: '#fff',
+		backgroundColor: t.background,
 	},
 });
