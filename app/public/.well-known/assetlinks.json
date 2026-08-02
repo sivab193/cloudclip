@@ -3,9 +3,9 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.saroya.cloudclipui",
+      "package_name": "com.cloudclip",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_SHA256_FROM_EAS_CREDENTIALS"
+        "C4:93:74:48:AD:E0:F1:EC:D5:27:0D:13:A6:C6:21:49:C3:5E:E6:9E:A8:B9:E5:A6:7C:39:4C:B2:CA:E2:86:72"
       ]
     }
   }

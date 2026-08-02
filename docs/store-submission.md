@@ -34,7 +34,7 @@ Everything needed to publish to Google Play now and the App Store later.
 > Privacy policy: https://cc.siv19.dev/privacy
 
 **Category:** Productivity / Tools
-**Contact email:** weebsgpt@gmail.com
+**Contact email:** sivaganesh1903@gmail.com
 **Privacy policy URL:** `https://cc.siv19.dev/privacy`
 
 ### Graphics needed (create before submitting)
@@ -77,7 +77,7 @@ Everything needed to publish to Google Play now and the App Store later.
 ## 5. iOS — code-ready checklist (submit later)
 
 Already done in code:
-- `ios.bundleIdentifier: com.saroya.cloudclip`, associated domains for `cc.siv19.dev`, in-app account deletion (Guideline 5.1.1(v)), privacy policy page.
+- `ios.bundleIdentifier: com.cloudclip`, associated domains for `cc.siv19.dev`, in-app account deletion (Guideline 5.1.1(v)), privacy policy page.
 - Expo SDK 56 auto-generates the iOS privacy manifest for required-reason APIs.
 
 To do at submission time:

@@ -179,11 +179,19 @@ describe('REST routes', () => {
     });
 
     it('rejects oversized content', async () => {
+      // Over the 200k content limit but under the JSON body cap → zod 400
       await request(bundle.app)
         .post('/api/clipboards')
         .set(asA)
         .send({ deviceId: 'd', deviceName: 'D', content: 'x'.repeat(250_000) })
-        .expect(413); // over the 256kb JSON body cap
+        .expect(400);
+
+      // Over the 256kb JSON body cap → 413 before validation
+      await request(bundle.app)
+        .post('/api/clipboards')
+        .set(asA)
+        .send({ deviceId: 'd', deviceName: 'D', content: 'x'.repeat(300_000) })
+        .expect(413);
     });
   });
 

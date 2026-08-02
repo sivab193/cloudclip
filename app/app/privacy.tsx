@@ -63,7 +63,7 @@ export default function PrivacyPolicy() {
 
         <Text style={styles.heading}>Contact</Text>
         <Text style={styles.body}>
-          Questions or requests: weebsgpt@gmail.com
+          Questions or requests: sivaganesh1903@gmail.com
         </Text>
       </ScrollView>
     </SafeAreaView>

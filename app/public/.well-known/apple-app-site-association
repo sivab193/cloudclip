@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "REPLACE_WITH_TEAM_ID.com.saroya.cloudclip",
+        "appID": "REPLACE_WITH_TEAM_ID.com.cloudclip",
         "paths": ["/shared/*"]
       }
     ]
