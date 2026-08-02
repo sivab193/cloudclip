@@ -1,5 +1,5 @@
 {
-    "buildCommand": "npx expo export",
+    "buildCommand": "npm run build:web",
     "outputDirectory": "dist",
     "devCommand": "npx expo start",
     "cleanUrls": true,
@@ -16,7 +16,7 @@
             "headers": [
                 {
                     "key": "Content-Security-Policy",
-                    "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://cc-api.siv19.dev wss://cc-api.siv19.dev https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.firebaseapp.com https://www.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+                    "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://cc-api.siv19.dev wss://cc-api.siv19.dev https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.firebaseapp.com https://www.googleapis.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
                 },
                 { "key": "Referrer-Policy", "value": "no-referrer" },
                 { "key": "X-Content-Type-Options", "value": "nosniff" },

@@ -3,6 +3,7 @@
     "name": "CloudClip",
     "slug": "cloud-clip-ui",
     "version": "1.1.0",
+    "description": "Your clipboard, on every device. End-to-end encrypted clipboard sync with real-time updates and expiring share links.",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "cloudclip",
@@ -11,7 +12,8 @@
       "android",
       "web"
     ],
-    "userInterfaceStyle": "light",
+    "primaryColor": "#0A7EA4",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cloudclip",
@@ -22,7 +24,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0A7EA4"
       },
       "package": "com.cloudclip",
       "intentFilters": [
@@ -57,7 +59,13 @@
           "image": "./assets/images/icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "image": "./assets/images/icon.png",
+            "imageWidth": 200,
+            "resizeMode": "contain",
+            "backgroundColor": "#151718"
+          }
         }
       ]
     ],

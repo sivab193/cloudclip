@@ -34,7 +34,12 @@ const Header = ({ navigation }: { navigation: any }) => {
   return (
     <View style={styles.header}>
       <TouchableOpacity style={styles.logoContainer} onPress={navigateToHome} activeOpacity={0.7}>
-        <Image source={require('@/assets/images/logo.png')} style={styles.logo} />
+        <Image
+          source={require('@/assets/images/logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+          accessibilityLabel="CloudClip"
+        />
         <Text style={styles.headerTitle}>CloudClip</Text>
       </TouchableOpacity>
       {!user ? (
@@ -66,9 +71,12 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 65,
+    // Square now that the logo is the app mark rather than a wide cloud —
+    // the old 65x40 box would squash it.
+    width: 40,
     height: 40,
-    marginRight: 8,
+    borderRadius: 9,
+    marginRight: 10,
   },
   headerTitle: {
     fontSize: 24,
