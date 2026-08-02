@@ -13,6 +13,8 @@ export default function Root({ children }: PropsWithChildren) {
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        {/* Lets the browser theme scrollbars, form controls and the URL bar. */}
+        <meta name="color-scheme" content="light dark" />
 
         {/*
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native.
@@ -29,9 +31,10 @@ export default function Root({ children }: PropsWithChildren) {
   );
 }
 
+// Must stay in sync with Colors.light.background / Colors.dark.background.
 const responsiveBackground = `
 body {
-  background-color: #fff;
+  background-color: #ffffff;
 }
 @media (prefers-color-scheme: dark) {
   body {

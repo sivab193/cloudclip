@@ -31,7 +31,27 @@ export interface ShareResult {
     shared: Shared;
 }
 
-export const getSharedLinkURL = (token: string): string => `${getWebUrl()}/shared/${token}`;
+/**
+ * The token is the decryption key, so it goes in the URL *fragment*: browsers
+ * never send fragments to the server, keeping it out of hosting/CDN access
+ * logs and out of Referer headers. Only the 8-char lookup prefix is ever sent,
+ * and that alone yields nothing but ciphertext.
+ */
+export const getSharedLinkURL = (token: string): string => `${getWebUrl()}/shared#${token}`;
+
+/**
+ * Pull the share token out of a URL fragment. Accepts both the bare form
+ * (`/shared#TOKEN`) and a key=value form (`/shared#token=TOKEN`).
+ */
+export const tokenFromFragment = (url: string | null | undefined): string => {
+    if (!url) return '';
+    const hashIndex = url.indexOf('#');
+    if (hashIndex === -1) return '';
+    const fragment = url.slice(hashIndex + 1);
+    if (!fragment) return '';
+    const keyed = new URLSearchParams(fragment).get('token');
+    return (keyed ?? fragment).trim();
+};
 
 export const createShare = async (
     plaintext: string,

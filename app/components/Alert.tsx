@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
+import { Text, StyleSheet, Animated, Platform } from 'react-native';
+import { ThemeTokens } from '@/constants/Colors';
+import { useThemedStyles } from '@/hooks/useTheme';
 
 interface AlertProps {
   message: string;
@@ -7,6 +9,7 @@ interface AlertProps {
 }
 
 const Alert: React.FC<AlertProps> = ({ message, visible }) => {
+  const styles = useThemedStyles(makeStyles);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [showing, setShowing] = useState(false);
 
@@ -36,19 +39,19 @@ const Alert: React.FC<AlertProps> = ({ message, visible }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   container: {
     position: 'absolute',
     top: Platform.OS === 'web' ? 30 : 70,
     alignSelf: 'center',
-    backgroundColor: 'black',
+    backgroundColor: t.primary,
     padding: 16,
     borderRadius: 5,
     zIndex: 9999,
     alignItems: 'center',
   },
   message: {
-    color: '#fff',
+    color: t.onPrimary,
   },
 });
 

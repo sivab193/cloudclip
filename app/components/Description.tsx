@@ -1,11 +1,12 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView, useColorScheme, Dimensions, Image } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, Image } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
+import { ThemeTokens } from '@/constants/Colors';
+import { useThemedStyles } from '@/hooks/useTheme';
 
 const Description = () => {
-    const colorScheme = useColorScheme();
-    const isDarkMode = colorScheme === 'dark';
+    const styles = useThemedStyles(makeStyles);
 
     return (
         <ScrollView style={ styles.containerLight}>
@@ -42,32 +43,32 @@ const Description = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     containerLight: {
-        backgroundColor: '#fff',
+        backgroundColor: t.background,
         padding: 16,
     },
     descriptionContainer: {
         alignSelf: 'center',
         width: '90%', 
-        backgroundColor: '#fff'
+        backgroundColor: t.background
     },
     subtitle: {
         fontSize: 24,
         fontWeight: 'bold',
         marginTop: 16,
         marginBottom: 8,
-        color: '#000', 
+        color: t.text, 
     },
     body: {
         textAlign: 'justify',
         fontSize: 16,
         lineHeight: 24,
-        color: '#000', 
+        color: t.text, 
     },
     featureTitle: {
         fontWeight: 'bold',
-        color: '#000', // Consider changing for dark mode
+        color: t.text,
     },
     imgContainer: {
         alignItems: 'center',

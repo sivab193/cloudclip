@@ -8,6 +8,8 @@ import {
   WrongPasswordError,
 } from '@/service/keyService';
 import RecoveryCodeModal from './RecoveryCodeModal';
+import { ThemeTokens } from '@/constants/Colors';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 type Mode = 'password' | 'recovery' | 'reset';
 
@@ -24,6 +26,9 @@ const UnlockModal: React.FC = () => {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [newRecoveryCode, setNewRecoveryCode] = useState<string | null>(null);
+  // Must stay above the early return — hooks cannot be conditional.
+  const t = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const visible = !!user && !encryptionReady;
   if (!visible && !newRecoveryCode) return null;
@@ -66,9 +71,11 @@ const UnlockModal: React.FC = () => {
     setBusy(true);
     setError('');
     try {
-      await recoverWithCode(recoveryCode, password);
+      // Redeeming a code burns it; surface the replacement immediately.
+      const fresh = await recoverWithCode(recoveryCode, password);
       await refreshEncryptionReady();
       reset();
+      setNewRecoveryCode(fresh);
     } catch (e) {
       if (e instanceof WrongPasswordError) {
         setError('Invalid recovery code.');
@@ -124,14 +131,14 @@ const UnlockModal: React.FC = () => {
               <TextInput
                 style={styles.input}
                 placeholder="Account password"
-                placeholderTextColor="#999"
+                placeholderTextColor={t.placeholder}
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
               />
               {!!error && <Text style={styles.error}>{error}</Text>}
               <TouchableOpacity style={styles.button} onPress={handleUnlock} disabled={busy}>
-                {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Unlock</Text>}
+                {busy ? <ActivityIndicator color={t.onPrimary} /> : <Text style={styles.buttonText}>Unlock</Text>}
               </TouchableOpacity>
               <TouchableOpacity onPress={() => { setError(''); setMode('recovery'); }}>
                 <Text style={styles.link}>Use recovery code instead</Text>
@@ -144,11 +151,12 @@ const UnlockModal: React.FC = () => {
               <Text style={styles.body}>
                 Enter the recovery code you saved at signup, plus your current
                 account password. Your data will be re-linked to that password.
+                This code is single-use — we’ll give you a new one to save.
               </Text>
               <TextInput
                 style={styles.input}
                 placeholder="Recovery code (XXXX-XXXX-...)"
-                placeholderTextColor="#999"
+                placeholderTextColor={t.placeholder}
                 autoCapitalize="characters"
                 value={recoveryCode}
                 onChangeText={setRecoveryCode}
@@ -156,14 +164,14 @@ const UnlockModal: React.FC = () => {
               <TextInput
                 style={styles.input}
                 placeholder="Current account password"
-                placeholderTextColor="#999"
+                placeholderTextColor={t.placeholder}
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
               />
               {!!error && <Text style={styles.error}>{error}</Text>}
               <TouchableOpacity style={styles.button} onPress={handleRecover} disabled={busy}>
-                {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Recover</Text>}
+                {busy ? <ActivityIndicator color={t.onPrimary} /> : <Text style={styles.buttonText}>Recover</Text>}
               </TouchableOpacity>
               <TouchableOpacity onPress={() => { setError(''); setMode('password'); }}>
                 <Text style={styles.link}>Back to password unlock</Text>
@@ -185,14 +193,14 @@ const UnlockModal: React.FC = () => {
               <TextInput
                 style={styles.input}
                 placeholder="Current account password"
-                placeholderTextColor="#999"
+                placeholderTextColor={t.placeholder}
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
               />
               {!!error && <Text style={styles.error}>{error}</Text>}
               <TouchableOpacity style={[styles.button, styles.dangerButton]} onPress={handleReset} disabled={busy}>
-                {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Delete data & start fresh</Text>}
+                {busy ? <ActivityIndicator color={t.onPrimary} /> : <Text style={styles.buttonText}>Delete data & start fresh</Text>}
               </TouchableOpacity>
               <TouchableOpacity onPress={() => { setError(''); setMode('recovery'); }}>
                 <Text style={styles.link}>Back</Text>
@@ -209,17 +217,17 @@ const UnlockModal: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: t.overlay,
   },
   box: {
     width: '85%',
     maxWidth: 420,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 10,
     padding: 20,
   },
@@ -227,47 +235,48 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#000',
+    color: t.text,
   },
   body: {
     fontSize: 14,
-    color: '#333',
+    color: t.textMuted,
     marginBottom: 14,
   },
   input: {
     height: 40,
-    borderColor: '#ccc',
+    borderColor: t.border,
     borderWidth: 1,
     borderRadius: 5,
     marginBottom: 12,
     paddingHorizontal: 8,
-    color: '#000',
+    color: t.text,
+    backgroundColor: t.surface,
   },
   button: {
-    backgroundColor: '#000',
+    backgroundColor: t.primary,
     borderRadius: 5,
     padding: 12,
     alignItems: 'center',
     marginBottom: 10,
   },
   dangerButton: {
-    backgroundColor: '#b00020',
+    backgroundColor: t.danger,
   },
   buttonText: {
-    color: '#fff',
+    color: t.onPrimary,
     fontWeight: 'bold',
   },
   link: {
-    color: '#000',
+    color: t.text,
     textDecorationLine: 'underline',
     textAlign: 'center',
     paddingVertical: 6,
   },
   danger: {
-    color: '#b00020',
+    color: t.danger,
   },
   error: {
-    color: '#b00020',
+    color: t.danger,
     marginBottom: 10,
   },
 });

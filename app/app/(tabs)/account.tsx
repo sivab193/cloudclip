@@ -17,8 +17,12 @@ import Confirmation from '@/components/Confirmation';
 import RecoveryCodeModal from '@/components/RecoveryCodeModal';
 import useDeviceDetails from '@/hooks/useDeviceDetails';
 import NoItemsComponent from '@/components/NoItems';
+import { ThemeTokens } from '@/constants/Colors';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 export default function Account() {
+    const t = useTheme();
+    const styles = useThemedStyles(makeStyles);
     const [name, setName] = useState('');
     const [devices, setDevices] = useState<Device[]>([]);
     const [renameModalVisible, setRenameModalVisible] = useState(false);
@@ -207,11 +211,11 @@ export default function Account() {
                 <View style={styles.iconsContainer}>
                     {isCurrentDevice(item) && (
                         <TouchableOpacity onPress={() => { setFormDeviceName(item.deviceName); setRenameModalVisible(true); }} style={styles.iconButton}>
-                            <Ionicons name="pencil-outline" size={24} color="black" />
+                            <Ionicons name="pencil-outline" size={24} color={t.icon} />
                         </TouchableOpacity>
                     )}
                     <TouchableOpacity onPress={() => { setDeviceToRemove(item); setConfirmationVisible(true); }} style={styles.iconButton}>
-                        <Ionicons name="trash-outline" size={24} color={'black'} />
+                        <Ionicons name="trash-outline" size={24} color={t.icon} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -225,8 +229,8 @@ export default function Account() {
                 message="Remove this device?"
                 visible={confirmationVisible}
                 buttons={[
-                    { label: 'No', onPress: () => setConfirmationVisible(false), style: { backgroundColor: 'black' } },
-                    { label: 'Yes', onPress: handleRemoveDevice, style: { backgroundColor: 'black' } },
+                    { label: 'No', onPress: () => setConfirmationVisible(false) },
+                    { label: 'Yes', onPress: handleRemoveDevice },
                 ]}
                 subtitle={''} />
             <Confirmation
@@ -234,8 +238,8 @@ export default function Account() {
                 subtitle="Your old recovery code will stop working."
                 visible={recoveryConfirmVisible}
                 buttons={[
-                    { label: 'Cancel', onPress: () => setRecoveryConfirmVisible(false), style: { backgroundColor: 'black' } },
-                    { label: 'Generate', onPress: handleRegenerateRecovery, style: { backgroundColor: 'black' } },
+                    { label: 'Cancel', onPress: () => setRecoveryConfirmVisible(false) },
+                    { label: 'Generate', onPress: handleRegenerateRecovery },
                 ]}
             />
             <Confirmation
@@ -243,8 +247,8 @@ export default function Account() {
                 subtitle="This permanently deletes your account, all clipboard entries, shared links and devices. This cannot be undone."
                 visible={deleteConfirmVisible}
                 buttons={[
-                    { label: 'Cancel', onPress: () => setDeleteConfirmVisible(false), style: { backgroundColor: 'black' } },
-                    { label: 'Continue', onPress: () => { setDeleteConfirmVisible(false); setDeleteFinalVisible(true); }, style: { backgroundColor: '#b00020' } },
+                    { label: 'Cancel', onPress: () => setDeleteConfirmVisible(false) },
+                    { label: 'Continue', onPress: () => { setDeleteConfirmVisible(false); setDeleteFinalVisible(true); }, variant: 'danger' },
                 ]}
             />
             <Confirmation
@@ -252,8 +256,8 @@ export default function Account() {
                 subtitle="All your data will be permanently erased."
                 visible={deleteFinalVisible}
                 buttons={[
-                    { label: 'Keep my account', onPress: () => setDeleteFinalVisible(false), style: { backgroundColor: 'black' } },
-                    { label: 'Delete forever', onPress: handleDeleteAccount, style: { backgroundColor: '#b00020' } },
+                    { label: 'Keep my account', onPress: () => setDeleteFinalVisible(false) },
+                    { label: 'Delete forever', onPress: handleDeleteAccount, variant: 'danger' },
                 ]}
             />
             {recoveryCode && (
@@ -307,7 +311,7 @@ export default function Account() {
                                         <TextInput
                                             style={styles.input}
                                             placeholder="Current password"
-                                            placeholderTextColor="#999"
+                                            placeholderTextColor={t.placeholder}
                                             secureTextEntry
                                             value={currentPassword}
                                             onChangeText={setCurrentPassword}
@@ -315,7 +319,7 @@ export default function Account() {
                                         <TextInput
                                             style={styles.input}
                                             placeholder="New password"
-                                            placeholderTextColor="#999"
+                                            placeholderTextColor={t.placeholder}
                                             secureTextEntry
                                             value={newPassword}
                                             onChangeText={setNewPassword}
@@ -323,14 +327,14 @@ export default function Account() {
                                         <TextInput
                                             style={styles.input}
                                             placeholder="Confirm new password"
-                                            placeholderTextColor="#999"
+                                            placeholderTextColor={t.placeholder}
                                             secureTextEntry
                                             value={confirmNewPassword}
                                             onChangeText={setConfirmNewPassword}
                                         />
                                         {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
                                         <TouchableOpacity style={styles.buttonPrimary} onPress={handleChangePassword} disabled={passwordBusy}>
-                                            {passwordBusy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonPrimaryText}>Change Password</Text>}
+                                            {passwordBusy ? <ActivityIndicator color={t.onPrimary} /> : <Text style={styles.buttonPrimaryText}>Change Password</Text>}
                                         </TouchableOpacity>
                                     </View>
                                 </TouchableWithoutFeedback>
@@ -342,7 +346,7 @@ export default function Account() {
                     <ThemedView style={styles.containerLight}>
                         {user ? (
                             <View style={isWideScreen ? styles.wideContent : styles.narrowContent}>
-                                <ThemedText type="subtitle" style={{ color: 'black' }}>Your Account</ThemedText>
+                                <ThemedText type="subtitle">Your Account</ThemedText>
                                 <Text>{'\n'}</Text>
                                 <View style={styles.fieldContainer}>
                                     <ThemedText type="subtitle" style={styles.text}>Email</ThemedText>
@@ -359,7 +363,7 @@ export default function Account() {
                                         onChangeText={setName}
                                         value={name}
                                         placeholder="Enter your name"
-                                        placeholderTextColor={'slategrey'}
+                                        placeholderTextColor={t.placeholder}
                                     />
                                 </View>
                                 <TouchableOpacity style={styles.buttonPrimary} onPress={handleSaveName}>
@@ -394,18 +398,18 @@ export default function Account() {
                                         <Switch value={autoRead} onValueChange={handleToggleAutoRead} />
                                     </View>
                                     <TouchableOpacity style={styles.settingButton} onPress={() => setPasswordModalVisible(true)}>
-                                        <Ionicons name="key-outline" size={20} color="black" />
+                                        <Ionicons name="key-outline" size={20} color={t.icon} />
                                         <Text style={styles.settingButtonText}>Change password</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         style={styles.settingButton}
                                         onPress={() => encryptionReady ? setRecoveryConfirmVisible(true) : showAlert('Unlock your data first')}
                                     >
-                                        <Ionicons name="shield-checkmark-outline" size={20} color="black" />
+                                        <Ionicons name="shield-checkmark-outline" size={20} color={t.icon} />
                                         <Text style={styles.settingButtonText}>Generate new recovery code</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity style={styles.settingButton} onPress={() => setDeleteConfirmVisible(true)} disabled={deleteBusy}>
-                                        <Ionicons name="trash-outline" size={20} color="#b00020" />
+                                        <Ionicons name="trash-outline" size={20} color={t.danger} />
                                         <Text style={[styles.settingButtonText, styles.dangerText]}>
                                             {deleteBusy ? 'Deleting…' : 'Delete account & all data'}
                                         </Text>
@@ -418,7 +422,7 @@ export default function Account() {
                             </View>
                         ) : (
                             <ThemedView style={styles.containerCenter}>
-                                <MaterialCommunityIcons name="hand-wave" size={24} color="black" />
+                                <MaterialCommunityIcons name="hand-wave" size={24} color={t.icon} />
                                 <ThemedText type="subtitle" style={styles.text}>Hi there! {'\n'}</ThemedText>
                                 <ThemedText type="subtitle" style={styles.text}>Welcome! Please log in to access your account and enjoy personalized features.
                                 </ThemedText>
@@ -431,10 +435,10 @@ export default function Account() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: t.background,
         paddingTop: Platform.OS === 'web' ? 0 : 30,
     },
     iconsContainer: {
@@ -445,13 +449,13 @@ const styles = StyleSheet.create({
     },
     text: {
         fontSize: 16,
-        color: '#000',
+        color: t.text,
     },
     textContainer: {
         flex: 1,
     },
     containerLight: {
-        backgroundColor: '#fff',
+        backgroundColor: t.background,
         borderRadius: 16,
         paddingHorizontal: 16,
     },
@@ -460,23 +464,23 @@ const styles = StyleSheet.create({
     },
     inputLight: {
         height: 40,
-        borderColor: '#000',
+        borderColor: t.border,
         borderWidth: 1,
         marginTop: 2,
         paddingHorizontal: 8,
-        backgroundColor: '#fff',
-        color: '#000',
+        backgroundColor: t.surface,
+        color: t.text,
     },
     buttonPrimary: {
         marginTop: 12,
         paddingVertical: 12,
         borderRadius: 8,
-        backgroundColor: '#000',
+        backgroundColor: t.primary,
         alignItems: 'center',
         minWidth: 100
     },
     buttonPrimaryText: {
-        color: '#fff',
+        color: t.onPrimary,
         fontSize: 16,
     },
     listContent: {
@@ -490,8 +494,8 @@ const styles = StyleSheet.create({
         padding: 16,
         marginBottom: 16,
         borderRadius: 8,
-        backgroundColor: '#f0f0f0',
-        shadowColor: '#000',
+        backgroundColor: t.surfaceAlt,
+        shadowColor: t.shadow,
         shadowOpacity: 0.1,
         shadowOffset: { width: 0, height: 2 },
         shadowRadius: 2,
@@ -499,15 +503,15 @@ const styles = StyleSheet.create({
     },
     itemTitle: {
         fontSize: 18,
-        color: '#000',
+        color: t.text,
     },
     itemSubtitle: {
         fontSize: 14,
-        color: '#666',
+        color: t.textMuted,
     },
     containerCenter: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: t.background,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -531,11 +535,12 @@ const styles = StyleSheet.create({
     },
     logoutButtonText: {
         fontWeight: 'bold',
-        textDecorationLine: 'underline'
+        textDecorationLine: 'underline',
+        color: t.text,
     },
     itemHighlighted: {
         borderWidth: 2,
-        borderColor: 'green',
+        borderColor: t.accent,
     },
     settingRow: {
         flexDirection: 'row',
@@ -549,39 +554,39 @@ const styles = StyleSheet.create({
     },
     settingTitle: {
         fontSize: 16,
-        color: '#000',
+        color: t.text,
     },
     settingSubtitle: {
         fontSize: 13,
-        color: '#666',
+        color: t.textMuted,
     },
     settingButton: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 14,
         borderTopWidth: 1,
-        borderTopColor: '#eee',
+        borderTopColor: t.borderSubtle,
     },
     settingButtonText: {
         fontSize: 16,
-        color: '#000',
+        color: t.text,
         marginLeft: 10,
     },
     dangerText: {
-        color: '#b00020',
+        color: t.danger,
     },
     modalContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: t.overlay,
     },
     modalView: {
         width: 300,
-        backgroundColor: 'white',
+        backgroundColor: t.surface,
         borderRadius: 10,
         padding: 20,
-        shadowColor: '#000',
+        shadowColor: t.shadow,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 4,
@@ -590,27 +595,29 @@ const styles = StyleSheet.create({
     modalText: {
         fontSize: 18,
         marginBottom: 15,
+        color: t.text,
     },
     input: {
         height: 40,
         width: '100%',
-        borderColor: '#ccc',
+        borderColor: t.border,
         borderWidth: 1,
         marginBottom: 12,
         paddingHorizontal: 10,
-        color: '#000',
+        color: t.text,
+        backgroundColor: t.surface,
     },
     errorText: {
-        color: 'red',
+        color: t.danger,
         marginBottom: 10,
     },
     emailInput: {
         height: 40,
-        borderColor: '#000',
+        borderColor: t.border,
         borderWidth: 1,
         marginTop: 2,
         paddingHorizontal: 8,
-        color: 'darkslategrey',
-        backgroundColor: 'lightgray'
+        color: t.textDisabled,
+        backgroundColor: t.surfaceDisabled,
     }
 });

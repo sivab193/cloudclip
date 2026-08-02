@@ -76,7 +76,9 @@ const keysSchema = z.object({
   salt: z.string().min(1).max(128),
   kdf: z.object({
     name: z.literal('scrypt'),
-    N: z.number().int().min(1024).max(2 ** 22),
+    // Floor is the weakest N any shipped client ever wrote (2^15), so a
+    // modified or downgraded client cannot persist a cheap-to-crack record.
+    N: z.number().int().min(32768).max(2 ** 22),
     r: z.number().int().min(1).max(32),
     p: z.number().int().min(1).max(16),
   }),

@@ -11,6 +11,8 @@ import { createShare } from '@/service/shareService';
 import NoItemsComponent from './NoItems';
 import Confirmation from './Confirmation';
 import * as Clipboard from 'expo-clipboard';
+import { ThemeTokens } from '@/constants/Colors';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 
 interface ClipboardScreenProps {
@@ -19,6 +21,8 @@ interface ClipboardScreenProps {
 }
 
 const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, showAlert }) => {
+    const t = useTheme();
+    const styles = useThemedStyles(makeStyles);
 
     const [confirmationVisible, setConfirmationVisible] = useState(false);
     const [shareConfirmationVisible, setShareConfirmationVisible] = useState(false);
@@ -103,8 +107,8 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
                 message="Are you sure you want to proceed?"
                 visible={confirmationVisible}
                 buttons={[
-                    { label: 'No', onPress: handleCancel, style: { backgroundColor: 'black' } },
-                    { label: 'Yes', onPress: handleRemove, style: { backgroundColor: 'black' } },
+                    { label: 'No', onPress: handleCancel },
+                    { label: 'Yes', onPress: handleRemove },
                 ]}
                 subtitle={''} />
             <Confirmation
@@ -112,9 +116,9 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
                 subtitle={`Link: ${sharedLink || ''}\nCode: ${sharedCode || ''}`}
                 visible={shareConfirmationVisible}
                 buttons={[
-                    { label: 'Copy Link', onPress: handleCopyLink, style: { backgroundColor: 'black' } },
-                    { label: 'Copy Code', onPress: handleCopyCode, style: { backgroundColor: 'black' } },
-                    { label: 'Cancel', onPress: handleShareCancel, style: { backgroundColor: 'red' } },
+                    { label: 'Copy Link', onPress: handleCopyLink },
+                    { label: 'Copy Code', onPress: handleCopyCode },
+                    { label: 'Cancel', onPress: handleShareCancel, variant: 'danger' },
                 ]}
             />
 
@@ -145,13 +149,13 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
                                             style={styles.iconButton}
                                             onPress={() => showConfirmation(entry._id || entry.id || '')}
                                         >
-                                            <Ionicons name="trash-outline" size={20} color={'black'} />
+                                            <Ionicons name="trash-outline" size={20} color={t.icon} />
                                         </TouchableOpacity>
                                         <TouchableOpacity
                                             style={styles.iconButton}
                                             onPress={() => handleShareConfirmation(entry.content)}
                                         >
-                                            <Ionicons name="share-social-outline" size={20} color={'black'} />
+                                            <Ionicons name="share-social-outline" size={20} color={t.icon} />
                                         </TouchableOpacity>
                                     </View>
                                 </View>
@@ -167,9 +171,9 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
     );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     container: {
-        backgroundColor: '#fff',
+        backgroundColor: t.background,
         marginTop: 16,
         height: 300,
     },
@@ -182,9 +186,9 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         padding: 10,
         borderRadius: 5,
-        backgroundColor: '#f0f0f0',
+        backgroundColor: t.surfaceAlt,
         shadowOffset: { height: 2, width: 2 },
-        shadowColor: '#000',
+        shadowColor: t.shadow,
         shadowOpacity: 0.1,
         gap: 10,
         cursor: Platform.OS === 'web' ? 'pointer' : 'auto'
@@ -193,14 +197,14 @@ const styles = StyleSheet.create({
         fontSize: 14,
         lineHeight: 16,
         flex: 1,
-        color: '#000',
+        color: t.text,
         fontWeight: '500'
     },
     clipboardDevice: {
         fontSize: 12,
         lineHeight: 16,
         flex: 1,
-        color: 'darkslategrey'
+        color: t.textMuted
     },
     textContainer: {
         flex: 1,

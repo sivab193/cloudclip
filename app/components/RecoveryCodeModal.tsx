@@ -1,6 +1,8 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import { ThemeTokens } from '@/constants/Colors';
+import { useThemedStyles } from '@/hooks/useTheme';
 
 interface RecoveryCodeModalProps {
   visible: boolean;
@@ -13,6 +15,7 @@ interface RecoveryCodeModalProps {
  * means the encrypted clipboard history is unrecoverable.
  */
 const RecoveryCodeModal: React.FC<RecoveryCodeModalProps> = ({ visible, code, onDone }) => {
+  const styles = useThemedStyles(makeStyles);
   const [copied, setCopied] = React.useState(false);
 
   const handleCopy = async () => {
@@ -45,17 +48,17 @@ const RecoveryCodeModal: React.FC<RecoveryCodeModalProps> = ({ visible, code, on
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: t.overlay,
   },
   box: {
     width: '85%',
     maxWidth: 420,
-    backgroundColor: '#fff',
+    backgroundColor: t.surface,
     borderRadius: 10,
     padding: 20,
   },
@@ -63,35 +66,35 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#000',
+    color: t.text,
   },
   body: {
     fontSize: 14,
-    color: '#333',
+    color: t.textMuted,
     marginBottom: 16,
   },
   codeBox: {
     borderWidth: 1,
-    borderColor: '#000',
+    borderColor: t.border,
     borderRadius: 6,
     padding: 12,
     marginBottom: 12,
-    backgroundColor: '#f7f7f7',
+    backgroundColor: t.surfaceAlt,
   },
   code: {
     fontSize: 16,
     fontFamily: 'SpaceMono',
     textAlign: 'center',
-    color: '#000',
+    color: t.text,
   },
   button: {
-    backgroundColor: '#000',
+    backgroundColor: t.primary,
     borderRadius: 5,
     padding: 12,
     alignItems: 'center',
   },
   buttonText: {
-    color: '#fff',
+    color: t.onPrimary,
     fontWeight: 'bold',
   },
   secondaryButton: {
@@ -100,7 +103,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   secondaryButtonText: {
-    color: '#000',
+    color: t.text,
     textDecorationLine: 'underline',
   },
 });
