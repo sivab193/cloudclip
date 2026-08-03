@@ -1,6 +1,19 @@
 # CloudClip 📋
 
-Modern, cross-platform clipboard manager built with Expo (React Native) and a high-performance Node.js real-time backend. 
+A modern, cross-platform clipboard manager with real-time synchronization across all your devices. Built with **Expo (React Native)** for the mobile app and a **high-performance Node.js + Socket.io backend** for <50ms sync latency.
+
+Instantly sync text, images, and files across iOS, Android, and web—all secured with Firebase Authentication and end-to-end encryption.
+
+## ✨ Features
+
+- ⚡ **Real-time Sync**: <50ms latency between devices using WebSocket (Socket.io)
+- 🔐 **Secure Auth**: Firebase Authentication with email/password sign-up
+- 📱 **Cross-Platform**: Native support for iOS, Android, and web (Expo)
+- 🗂️ **Rich Content**: Copy text, images, files, and links
+- 🌙 **Dark Mode**: Full dark mode support
+- 📲 **Progressive Web App**: Install as a PWA for quick access
+- 🔄 **Multi-Device**: Sync between unlimited devices
+- 🏠 **Self-Hosted**: Full control over your data with your own server
 
 ## 🏗 Architecture Overview
 
@@ -108,3 +121,46 @@ eas build --platform android --profile production
 eas build --platform ios --profile production
 ```
 
+## 📖 Documentation
+
+- [Architecture Deep Dive](./docs/ARCHITECTURE.md) — System design and technology choices
+- [API Reference](./docs/API.md) — REST and WebSocket API documentation
+- [Development Guide](./docs/DEVELOPMENT.md) — Setting up your development environment
+
+## 🤝 Contributing
+
+We welcome contributions! Whether it's bug reports, feature requests, or pull requests—help us make CloudClip better.
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit your changes: `git commit -m "Add your feature"`
+4. Push to the branch: `git push origin feature/your-feature`
+5. Open a Pull Request
+
+### Development Workflow
+
+```bash
+# Backend development
+cd backend
+npm install
+npm run dev
+
+# App development (in a new terminal)
+cd app
+npm install
+npx expo start
+```
+
+## 📝 License
+
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
+
+## 💬 Support & Feedback
+
+- **Found a bug?** [Open an issue](https://github.com/siv19/cloudclip/issues)
+- **Have a feature request?** [Discuss it](https://github.com/siv19/cloudclip/discussions)
+- **Questions?** Feel free to start a discussion or reach out
+
+---
+
+Built with ❤️ by [Sivaganesh](https://github.com/siv19)
