@@ -1,6 +1,6 @@
 # Development
 
-Use Node 22.13+ and install each package with `npm ci`. There is no root npm workspace: keeping app and API lockfiles separate keeps deployment dependencies independent.
+Use Node 22.13+ and install each package with `npm ci`. CI uses Node 22 with npm 10; regenerate lockfiles with that npm major and verify a clean install, not only an existing node_modules tree. There is no root npm workspace: keeping app and API lockfiles separate keeps deployment dependencies independent.
 
 Copy each `.env.example` to an ignored `.env` and supply your own Firebase/MongoDB configuration. The API origin must be reachable from the physical phone. Release origins must use HTTPS.
 

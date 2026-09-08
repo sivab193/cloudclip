@@ -27,7 +27,7 @@ Browser sharing used a synthetic encrypted response, not production accounts. It
 - Key storage is account-scoped and ordered; recovery preserves independent KDF parameters. Recovery only unlocks after a successful key write.
 - Key updates use compare-and-set. Destructive reset/deletion reauthenticate the user, serialize mutations, and check token revocation.
 - Device ownership, malformed IDs, name preservation, socket expiry/rate limiting, cache boundaries and foreground clipboard consent are handled explicitly.
-- Web share fragments and static icon-font hydration are corrected. Sign-in has an explicit close action, and confirmation dialogs have safe back/dismiss handlers.
+- Web share fragments, static icon-font loading and dark-theme hydration are corrected. Sign-in has an explicit close action, and confirmation dialogs have safe back/dismiss handlers.
 - Removed unused helpers, duplicate screen/sync/deletion logic, unused `nanoid` dependencies and the unconfigured development-client build profile. Consolidating icons eliminates about 1.5 MB of raw font assets from the three single-icon fonts alone.
 - Replaced obsolete Redis/file-transfer/provider assumptions with [accepted architecture decisions](ARCHITECTURE.md), an [API contract](API.md), and deployment/rollback instructions. Dependency folders and generated build output are not source-code size.
 - CI validates both packages on pushes. Backend deployment is a separate manual workflow on `main`, with a `production` environment available for approval rules.

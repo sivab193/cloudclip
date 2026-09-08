@@ -1,6 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import { useColorScheme } from 'react-native';
 import { Colors, ThemeTokens, ColorSchemeName } from '@/constants/Colors';
+
+const subscribe = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
 
 /**
  * The active theme's tokens. Use this instead of hardcoding colours.
@@ -13,7 +17,10 @@ import { Colors, ThemeTokens, ColorSchemeName } from '@/constants/Colors';
  */
 export function useTheme(): ThemeTokens {
   const scheme = useColorScheme();
-  const name: ColorSchemeName = scheme === 'dark' ? 'dark' : 'light';
+  // Match static HTML first. React does not repair all mismatched style
+  // attributes during hydration, so apply the browser's theme afterward.
+  const hydrated = useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot);
+  const name: ColorSchemeName = hydrated && scheme === 'dark' ? 'dark' : 'light';
   return Colors[name];
 }
 
