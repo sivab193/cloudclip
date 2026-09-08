@@ -15,9 +15,10 @@ interface ConfirmationProps {
     subtitle: string;
     visible: boolean;
     buttons: ButtonConfig[];
+    onDismiss: () => void;
 }
 
-const Confirmation: React.FC<ConfirmationProps> = ({ message, subtitle, visible, buttons }) => {
+const Confirmation: React.FC<ConfirmationProps> = ({ message, subtitle, visible, buttons, onDismiss }) => {
     const t = useTheme();
     const styles = useThemedStyles(makeStyles);
 
@@ -26,12 +27,7 @@ const Confirmation: React.FC<ConfirmationProps> = ({ message, subtitle, visible,
             transparent={true}
             visible={visible}
             animationType="fade"
-            onRequestClose={() => {
-                // Handle back button on Android, consider passing an onCancel function if needed
-                if (buttons.find(button => button.label === 'Cancel')) {
-                    buttons.find(button => button.label === 'Cancel')?.onPress();
-                }
-            }}
+            onRequestClose={onDismiss}
         >
             <View style={styles.overlay}>
                 <View style={styles.container}>

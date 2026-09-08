@@ -10,7 +10,6 @@ export const setClipboard = async (text: string | null, showAlert: (message: str
             showAlert(alertMessage);
         } catch (error) {
             showAlert('An unexpected error occurred');
-            throw error;
         }
     }
 };

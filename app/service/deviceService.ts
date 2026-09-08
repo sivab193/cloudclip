@@ -6,6 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 const DEVICE_ID_KEY = 'deviceId';
 
 const isNative = Platform.OS === 'android' || Platform.OS === 'ios';
+let pendingId: Promise<string> | null = null;
 
 const getAppDeviceId = async (): Promise<string> => {
     const existing = await SecureStore.getItemAsync(DEVICE_ID_KEY);
@@ -25,25 +26,12 @@ const getWebDeviceId = async (): Promise<string> => {
 
 export const getDeviceId = async (): Promise<string | null> => {
     try {
-        return isNative ? await getAppDeviceId() : await getWebDeviceId();
+        pendingId ??= isNative ? getAppDeviceId() : getWebDeviceId();
+        return await pendingId;
     } catch (error) {
+        pendingId = null;
         console.error('Error getting device ID:', error);
         return null;
-    }
-};
-
-export const removeDeviceId = async (deviceId: string): Promise<void> => {
-    try {
-        const existing = await getDeviceId();
-        if (existing === deviceId) {
-            if (isNative) {
-                await SecureStore.deleteItemAsync(DEVICE_ID_KEY);
-            } else {
-                await AsyncStorage.removeItem(DEVICE_ID_KEY);
-            }
-        }
-    } catch (error) {
-        console.error('Error removing device ID:', error);
     }
 };
 

@@ -17,10 +17,11 @@ interface RecoveryCodeModalProps {
 const RecoveryCodeModal: React.FC<RecoveryCodeModalProps> = ({ visible, code, onDone }) => {
   const styles = useThemedStyles(makeStyles);
   const [copied, setCopied] = React.useState(false);
+  const [copyError, setCopyError] = React.useState(false);
 
   const handleCopy = async () => {
-    await Clipboard.setStringAsync(code);
-    setCopied(true);
+    try { await Clipboard.setStringAsync(code); setCopied(true); setCopyError(false); }
+    catch { setCopyError(true); }
   };
 
   return (
@@ -39,6 +40,7 @@ const RecoveryCodeModal: React.FC<RecoveryCodeModalProps> = ({ visible, code, on
           <TouchableOpacity style={styles.secondaryButton} onPress={handleCopy}>
             <Text style={styles.secondaryButtonText}>{copied ? 'Copied!' : 'Copy code'}</Text>
           </TouchableOpacity>
+          {copyError && <Text style={styles.body}>Clipboard access was blocked. Select the code above and save it manually.</Text>}
           <TouchableOpacity style={styles.button} onPress={onDone}>
             <Text style={styles.buttonText}>I saved my recovery code</Text>
           </TouchableOpacity>

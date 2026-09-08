@@ -2,8 +2,18 @@ import { auth } from '../firebaseConfig';
 import { Device, CustomClipboard, Shared, PublicShared, User, EncryptionKeys } from './models';
 
 // Bare origin (no /api suffix) — shared with socketService.
-export const API_ORIGIN = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+export const API_ORIGIN = (process.env.EXPO_PUBLIC_API_URL || 'https://cc-api.siv19.dev').replace(/\/+$/, '');
 const BACKEND_URL = `${API_ORIGIN}/api`;
+
+const fetch = async (url: string, init?: RequestInit): Promise<Response> => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
+  try {
+    return await globalThis.fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+};
 
 export class ApiError extends Error {
   status: number;
@@ -30,6 +40,7 @@ class ApiService {
     if (!user) throw new Error('Not authenticated');
 
     const token = await user.getIdToken();
+    if (auth.currentUser !== user) throw new Error('Account changed; try again');
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
@@ -113,7 +124,7 @@ class ApiService {
     await ensureOk(res, 'Failed to delete device');
   }
 
-  // --- CLIPBOARDS (REST fallback) ---
+  // --- CLIPBOARDS (durable writes; sockets carry notifications) ---
 
   async getClipboards(limit: number = 50): Promise<CustomClipboard[]> {
     const res = await fetch(`${BACKEND_URL}/clipboards?limit=${limit}`, {
@@ -131,6 +142,20 @@ class ApiService {
     await ensureOk(res, 'Failed to delete clipboard entry');
   }
 
+  async createClipboard(deviceId: string, deviceName: string, content: string, requestId: string, keyId: string | null): Promise<CustomClipboard> {
+    const res = await fetch(`${BACKEND_URL}/clipboards`, {
+      method: 'POST', headers: await this.getHeaders(),
+      body: JSON.stringify({ deviceId, deviceName, content, requestId, keyId }),
+    });
+    await ensureOk(res, 'Failed to save clipboard entry');
+    return res.json();
+  }
+
+  async clearAllClipboards(): Promise<void> {
+    const res = await fetch(`${BACKEND_URL}/clipboards`, { method: 'DELETE', headers: await this.getHeaders() });
+    await ensureOk(res, 'Failed to clear clipboard entries');
+  }
+
   // --- SHARED LINKS ---
 
   async getSharedLinks(): Promise<Shared[]> {
@@ -142,6 +167,7 @@ class ApiService {
   }
 
   async createSharedLink(params: {
+    keyId: string | null;
     content: string;
     code: string;
     ownerWrappedKey?: string;

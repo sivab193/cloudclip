@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 import { hashText } from './cryptoService';
 
 /**
@@ -32,8 +31,8 @@ export const decide = (
     latestServer: LatestEntry | null,
     state: SyncState
 ): SyncDecision => {
-    const text = deviceText?.trim() ?? '';
-    if (text) {
+    const text = deviceText ?? '';
+    if (text.trim()) {
         const hash = hashText(text);
         if (hash !== state.lastSyncedHash && text !== latestServer?.text) {
             return { action: 'push', text };
@@ -49,31 +48,32 @@ const HASH_KEY = 'cc.lastSyncedHash';
 const SEEN_KEY = 'cc.lastSeenServerId';
 const AUTO_READ_KEY = 'cc.autoReadClipboard';
 
-export const getSyncState = async (): Promise<SyncState> => {
-    const [hash, seen] = await AsyncStorage.multiGet([HASH_KEY, SEEN_KEY]);
+export const getSyncState = async (uid = 'legacy'): Promise<SyncState> => {
+    const [hash, seen] = await AsyncStorage.multiGet([`${HASH_KEY}.${uid}`, `${SEEN_KEY}.${uid}`]);
     return { lastSyncedHash: hash[1], lastSeenServerId: seen[1] };
 };
 
-export const setSyncState = async (state: SyncState): Promise<void> => {
+export const setSyncState = async (state: SyncState, uid = 'legacy'): Promise<void> => {
     await AsyncStorage.multiSet([
-        [HASH_KEY, state.lastSyncedHash ?? ''],
-        [SEEN_KEY, state.lastSeenServerId ?? ''],
+        [`${HASH_KEY}.${uid}`, state.lastSyncedHash ?? ''],
+        [`${SEEN_KEY}.${uid}`, state.lastSeenServerId ?? ''],
     ]);
 };
 
 export const clearSyncState = async (): Promise<void> => {
-    await AsyncStorage.multiRemove([HASH_KEY, SEEN_KEY]);
+    const keys = await AsyncStorage.getAllKeys();
+    await AsyncStorage.multiRemove(keys.filter(key => key.startsWith(HASH_KEY) || key.startsWith(SEEN_KEY)));
 };
 
 /**
  * Whether the app may read/write the OS clipboard automatically on foreground.
- * Default: on for Android; off for iOS (every read shows a paste banner) and
- * web (browsers require a user gesture + permission).
+ * Opt-in on every platform: reading sends clipboard text to the user's sync
+ * account, so the user must enable this after seeing the disclosure.
  */
 export const getAutoReadSetting = async (): Promise<boolean> => {
     const stored = await AsyncStorage.getItem(AUTO_READ_KEY);
     if (stored !== null) return stored === 'true';
-    return Platform.OS === 'android';
+    return false;
 };
 
 export const setAutoReadSetting = async (enabled: boolean): Promise<void> => {

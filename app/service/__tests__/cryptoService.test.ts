@@ -95,9 +95,10 @@ describe('key wrapping (password + recovery)', () => {
 });
 
 describe('share tokens', () => {
-    it('generates valid 20-char base58 tokens', () => {
+    it('generates tokens with at least 128 secret bits after the public prefix', () => {
         const token = generateShareToken();
-        expect(token).toHaveLength(20);
+        expect(token).toHaveLength(32);
+        expect((token.length - 8) * Math.log2(58)).toBeGreaterThan(128);
         expect(isValidShareToken(token)).toBe(true);
         // base58: no 0, O, I, l
         expect(token).not.toMatch(/[0OIl]/);
@@ -122,7 +123,7 @@ describe('share tokens', () => {
     it('format/normalize are inverse', () => {
         const token = generateShareToken();
         const pretty = formatShareToken(token);
-        expect(pretty).toMatch(/^.{5}-.{5}-.{5}-.{5}$/);
+        expect(pretty).toContain('-');
         expect(normalizeShareToken(pretty)).toBe(token);
         expect(normalizeShareToken(`  ${pretty} `)).toBe(token);
     });
@@ -130,6 +131,10 @@ describe('share tokens', () => {
     it('rejects malformed tokens', () => {
         expect(isValidShareToken('short')).toBe(false);
         expect(isValidShareToken('0'.repeat(20))).toBe(false); // 0 not in base58
+    });
+
+    it('continues accepting existing 20-character encrypted links', () => {
+        expect(isValidShareToken('AbCdEfGhAbCdEfGh1234')).toBe(true);
     });
 });
 
@@ -153,4 +158,15 @@ describe('hashText', () => {
         expect(hashText('a')).not.toBe(hashText('b'));
         expect(hashText('a')).toMatch(/^[0-9a-f]{64}$/);
     });
+});
+
+it('rejects null envelopes, unknown versions and oversized UTF-8 content', () => {
+    const mk = generateMasterKey();
+    expect(() => decryptEntry(mk, 'null')).toThrow(DecryptionError);
+    expect(() => decryptEntry(mk, JSON.stringify({ ...JSON.parse(encryptEntry(mk, 'x')), v: 2 }))).toThrow(DecryptionError);
+    expect(() => encryptEntry(mk, '📋'.repeat(40_000))).toThrow('too large');
+});
+
+it('bounds server-supplied scrypt work before allocating memory', async () => {
+    await expect(deriveKek('password', generateSaltB64(), { ...DEFAULT_KDF, N: 2 ** 22 })).rejects.toThrow('Unsupported');
 });

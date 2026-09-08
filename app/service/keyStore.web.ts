@@ -5,13 +5,13 @@
 const MASTER_KEY = 'cc.masterKey';
 
 export const saveMasterKey = async (keyB64: string): Promise<void> => {
-    sessionStorage.setItem(MASTER_KEY, keyB64);
+    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(MASTER_KEY, keyB64);
 };
 
 export const getStoredMasterKey = async (): Promise<string | null> => {
-    return sessionStorage.getItem(MASTER_KEY);
+    return typeof sessionStorage === 'undefined' ? null : sessionStorage.getItem(MASTER_KEY);
 };
 
 export const clearMasterKey = async (): Promise<void> => {
-    sessionStorage.removeItem(MASTER_KEY);
+    if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(MASTER_KEY);
 };

@@ -1,104 +1,77 @@
-# CloudClip — Store Submission Kit
+# Google Play release checklist
 
-Everything needed to publish to Google Play now and the App Store later.
+Last reviewed: 2026-09-08. This is a release candidate checklist, not a claim that Google Play submission or review has completed. See [verification and blockers](RELEASE-READINESS.md).
 
----
+## Listing draft
 
-## 1. Google Play listing content
+App name: **CloudClip — Clipboard Sync**
 
-**App name (30 chars max):** `CloudClip — Clipboard Sync`
+Short description: **Sync copied text across your devices with end-to-end encryption.**
 
-**Short description (80 chars max):**
-> Sync copied text across your devices. End-to-end encrypted clipboard manager.
+Full description:
 
-**Full description:**
-> CloudClip keeps your clipboard in sync across all your devices — phone, laptop, and web — with true end-to-end encryption.
+> Save text on one device and access it on another with CloudClip.
 >
-> ✦ SYNC ACROSS DEVICES
-> Copy text on one device, open CloudClip on another, and it's there. Your clipboard history is always at hand.
+> ENCRYPTED TEXT SYNC
+> Clipboard entries are encrypted before upload. Sign in on your devices to access your recent text history.
 >
-> ✦ END-TO-END ENCRYPTED
-> Your clips are encrypted on your device before they ever leave it. Our servers store only ciphertext — nobody but you can read your data, not even us.
+> YOU CONTROL CLIPBOARD ACCESS
+> Paste and save text manually, or enable automatic clipboard sync while CloudClip is open. Automatic access is off by default.
 >
-> ✦ SHARE TEXT INSTANTLY
-> Share any text with a link or a short code. Links are encrypted too and expire automatically (7 days by default), so shared text doesn't live forever.
+> EXPIRING SHARE LINKS
+> Share text using an encrypted link or code. Anyone with the complete link or code can read it. Links expire after seven days by default and can be deleted earlier.
 >
-> ✦ CLIPBOARD HISTORY
-> Browse, copy, and manage your saved clips. Delete one, or wipe everything with one tap — on every device at once.
+> MANAGE YOUR DATA
+> Delete individual entries, clear your history, or delete your account and associated data.
 >
-> ✦ YOUR DATA, YOUR CONTROL
-> No ads, no tracking, no selling data. Delete your account and all data anytime, right from the app.
->
-> Also available in the browser at https://cc.siv19.dev
+> No ads. Also available in the browser at https://cc.siv19.dev.
 >
 > Privacy policy: https://cc.siv19.dev/privacy
 
-**Category:** Productivity / Tools
-**Contact email:** sivaganesh1903@gmail.com
-**Privacy policy URL:** `https://cc.siv19.dev/privacy`
+Category: Productivity. Support contact: sivaganesh1903@gmail.com.
 
-### Graphics needed (create before submitting)
-| Asset | Size | Notes |
-|---|---|---|
-| App icon | 512×512 PNG | downscale `app/assets/images/icon.png` |
-| Feature graphic | 1024×500 PNG | **must be created** — logo on plain background is fine |
-| Phone screenshots | ≥2, 16:9 or 9:16, min 320px | Home tab with entries; Share flow with link dialog; Account/security tab |
-| 7"/10" tablet screenshots | optional but recommended | web view screenshots at tablet size are acceptable |
+## Assets
 
-## 2. Play Data safety form answers
+- App icon: `app/public/icon-512.png` (512×512).
+- Feature graphic: `docs/store-assets/feature-graphic.png` (1024×500), with editable SVG alongside it.
+- At least two **actual Android app screenshots** are still required. Capture history with representative test entries and the sharing/account screens. Browser QA captures do not substitute for proof of the Android experience.
+- Review screenshots for personal data, passwords, recovery codes and real share tokens before upload.
 
-- **Does your app collect or share any of the required user data types?** Yes.
-- **Data types collected:**
-  - *Personal info → Email address*: Collected. Required. Purpose: Account management. Not shared. Encrypted in transit. Deletable.
-  - *Personal info → Name*: Collected. Optional. Purpose: Account management. Not shared. Encrypted in transit. Deletable.
-  - *App activity → Other user-generated content* (clipboard text): Collected. Required for functionality. Purpose: App functionality. Not shared. Encrypted in transit (note in free text: also end-to-end encrypted; the server cannot read it). Deletable.
-  - *Device or other IDs* (app-generated device ID): Collected. Required. Purpose: App functionality. Not shared. Deletable.
-- **Is all of the user data collected by your app encrypted in transit?** Yes.
-- **Do you provide a way for users to request that their data is deleted?** Yes — in-app (Account tab → Delete account) and at `https://cc.siv19.dev/delete-account`.
-- **Data sharing:** None. (Firebase Authentication acts as a service provider/processor, not "sharing" under Play's definition.)
+## Build and device gates
 
-## 3. Content rating questionnaire (IARC)
+- Run app and backend tests, type checks, audits and Expo Doctor.
+- Run `npm run check:release` in `app/`. It validates configuration shape, not the availability or correctness of external credentials.
+- Confirm the API, web privacy URL and web deletion URL are reachable.
+- Build `eas build --platform android --profile production`. Remote versionCode auto-increments; production generates an AAB.
+- Inspect the resulting bundle's target SDK and native alignment. New apps/updates must target API 36 or higher under the [current target-API policy](https://support.google.com/googleplay/android-developer/answer/11926878?hl=en).
+- Verify native libraries and an Android 16 KB environment using the [Android page-size guide](https://developer.android.com/guide/practices/page-sizes). The current guide lists February 1, 2027 as the update-blocking deadline; do not infer binary compatibility from a JavaScript export alone.
+- Test a fresh install, upgrade from 1.1.0/versionCode 2, sign-up and recovery-code display, login after restarting, explicit Paste/Save, opt-in foreground sync, simultaneous two-device saves, delete/clear, offline errors/reconnect, share-link opening and expiry.
+- Test account switching, wrong-password recovery/reset, password change, recovery after a password reset, key reset on another device, and account deletion from both app and browser.
+- Confirm the release requests no microphone, storage or overlay permissions. No background clipboard/accessibility service is used.
+- Test large font settings, dark mode, keyboard visibility, Android back navigation and edge-to-edge layout on a physical device.
+- Verify App Links against the **Play app-signing** SHA-256 fingerprint. The existing assetlinks fingerprint has not been verified against Play Console.
 
-- Category: **Utility/Productivity/Communication or other**
-- Violence/sexuality/profanity/drugs/gambling: **No** to all.
-- User interaction: users can share text via private links, but there is **no public user-to-user interaction, no discoverable content, no user profiles visible to others** → answer "No" to "users can interact"‐style questions; shared links are private URLs.
-- Expected rating: **Everyone / PEGI 3**.
+## Console requirements
 
-## 4. Play release path (personal dev account)
+Complete the real Console questionnaires after inspecting the final bundle and deployed providers; do not copy speculative answers.
 
-1. Pay the $25 registration fee, complete identity verification (can take 1–2 days).
-2. Create app → fill Store listing, Data safety, Content rating (all content above).
-3. `cd app && eas build --platform android --profile production`
-4. **Internal testing** track: upload the AAB (or `eas submit -p android`), add your own Gmail as tester → install on your devices immediately.
-5. **Closed testing** track: promote the build, recruit **12 testers who stay opted-in for 14 consecutive days** (friends/family; there are also tester-exchange communities). This is mandatory for personal accounts created after Nov 2023 before production access.
-6. After 14 days: apply for **production access** in Play Console (answers about your testing learnings), then promote to Production.
-7. First submission review typically takes 1–7 days.
+Data inventory for the Data safety review: email, display name, Firebase user ID, installation/device IDs and labels, encrypted user content, and provider technical logs. Document purposes, required/optional status, service-provider processing, retention and deletion accurately. Verify any E2E exclusions against [Google's Data safety guidance](https://support.google.com/googleplay/android-developer/answer/10787469).
 
-## 5. iOS — code-ready checklist (submit later)
+Account deletion is available inside the app and at `https://cc.siv19.dev/delete-account`, with password reauthentication. See [Google's account-deletion requirements](https://support.google.com/googleplay/android-developer/answer/13327111). Verify both deployed flows.
 
-Already done in code:
-- `ios.bundleIdentifier: com.cloudclip`, associated domains for `cc.siv19.dev`, in-app account deletion (Guideline 5.1.1(v)), privacy policy page.
-- Expo SDK 56 auto-generates the iOS privacy manifest for required-reason APIs.
+Declare private text sharing accurately in the content-rating/user-interaction questionnaire. Private links can transfer user-generated content; do not automatically answer “no interaction.” Supply a designated reviewer/test account through Play Console; never commit credentials.
 
-To do at submission time:
-1. Pay Apple Developer Program ($99/yr).
-2. Replace `REPLACE_WITH_TEAM_ID` in `app/public/.well-known/apple-app-site-association` with your Team ID and redeploy the web app.
-3. `eas build --platform ios --profile production` (EAS manages certs).
-4. App Privacy labels in App Store Connect: mirror the Play data-safety answers (Email, Name, User Content [clipboard], Device ID — all "linked to you", none used for tracking).
-5. Export compliance: app uses standard encryption (AES/HTTPS) → "uses exempt encryption"; answer the encryption questions accordingly (`ITSAppUsesNonExemptEncryption` handled in the questionnaire; standard-algorithm exemption applies, France declaration not needed for standard crypto).
-6. TestFlight → App Review. Include a demo account (email+password) in review notes.
-7. Screenshots: 6.7" and 6.1" iPhone sizes minimum.
+Review target audience, ads declaration, app access, developer verification and any testing requirements shown for this account. For newly created personal accounts, see the [closed-testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465); verify whether this account is subject to them.
 
-## 6. Infrastructure launch checklist (manual, one-time)
+## Submit
 
-1. **Rotate the Firebase service-account key** (it sat in `backend/.env` and old Docker layers):
-   GCP Console → IAM & Admin → Service Accounts → `firebase-adminsdk@cloud-clip-2a653` → Keys → delete old, add new → update `backend/.env` on the VM. Then on the VM: `docker image prune -a`.
-2. **DNS (where siv19.dev is managed):**
-   - `A` record: `cc-api` → GCP VM static IP (reserve a static IP in GCP → VPC network → IP addresses if not already).
-   - `CNAME`: `cc` → `cname.vercel-dns.com` (then add `cc.siv19.dev` as the domain in the Vercel project).
-3. **GCP firewall:** allow TCP 80 + 443; **remove/deny 3000 and 6379**.
-4. **VM `.env`** (`~/cloudclip/backend/.env`): `MONGODB_URI`, `ALLOWED_ORIGINS=https://cc.siv19.dev`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (new key). Remove `REDIS_URL`.
-5. **Vercel env vars:** `EXPO_PUBLIC_API_URL=https://cc-api.siv19.dev`, `EXPO_PUBLIC_WEB_URL=https://cc.siv19.dev`, plus the `EXPO_PUBLIC_FIREBASE_*` values from `app/.env`.
-6. **Android App Links:** after the first production build, run `eas credentials -p android`, copy the SHA-256 fingerprint into `app/public/.well-known/assetlinks.json`, redeploy web.
-7. **Play submit key:** Play Console → Setup → API access → create a service account, download JSON to `app/play-service-account.json` (gitignored).
-8. First deploy: push to `main` (CI runs tests, then deploys) or on the VM: `cd ~/cloudclip/backend && docker compose up -d --build`. Verify `https://cc-api.siv19.dev/health`.
+The submit profile targets an **internal draft**. Do not promote until the device and production-service gates are complete.
+
+```sh
+cd app
+eas submit --platform android --profile production --id <verified-build-id>
+```
+
+A Play API service-account key belongs in ignored `app/play-service-account.json`, or use the supported managed credential flow. The first upload may need to be performed manually in Play Console. Publishing is a separate owner decision.
+
+iOS is not certified by this Android review. Its associated-domain team ID, signing, privacy manifest, export-compliance answers and actual-device tests need a separate release pass.

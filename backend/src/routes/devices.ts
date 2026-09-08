@@ -1,4 +1,5 @@
 import express from 'express';
+import { mutation } from '../middleware/mutation';
 import { z } from 'zod';
 import { verifyFirebaseToken } from '../middleware/auth';
 import { validate } from '../middleware/validate';
@@ -25,7 +26,7 @@ const registerSchema = z.object({
 
 // Register or update a device. Upsert is scoped to the calling user — the
 // same deviceId under another account is a different record, never a takeover.
-router.post('/', verifyFirebaseToken, validate(registerSchema), async (req, res, next) => {
+router.post('/', verifyFirebaseToken, validate(registerSchema), mutation(async (req, res, next) => {
   try {
     const firebaseUid = req.user?.uid;
     const { deviceId, deviceName, os } = req.body;
@@ -36,17 +37,17 @@ router.post('/', verifyFirebaseToken, validate(registerSchema), async (req, res,
         $set: { deviceName, os },
         $setOnInsert: { sync: true },
       },
-      { new: true, upsert: true }
+      { returnDocument: 'after', upsert: true, runValidators: true }
     );
 
     res.status(201).json(device);
   } catch (error) {
     next(error);
   }
-});
+}));
 
 // Delete a device
-router.delete('/:deviceId', verifyFirebaseToken, async (req, res, next) => {
+router.delete('/:deviceId', verifyFirebaseToken, mutation(async (req, res, next) => {
   try {
     const firebaseUid = req.user?.uid;
     const { deviceId } = req.params;
@@ -64,6 +65,6 @@ router.delete('/:deviceId', verifyFirebaseToken, async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+}));
 
 export default router;

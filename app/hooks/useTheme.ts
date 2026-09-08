@@ -17,11 +17,6 @@ export function useTheme(): ThemeTokens {
   return Colors[name];
 }
 
-export function useColorSchemeName(): ColorSchemeName {
-  const scheme = useColorScheme();
-  return scheme === 'dark' ? 'dark' : 'light';
-}
-
 /**
  * Builds a StyleSheet from the active tokens, rebuilding only when the theme
  * flips. `factory` must be a stable module-level function.

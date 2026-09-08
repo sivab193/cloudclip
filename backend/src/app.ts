@@ -5,6 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import mongoose from 'mongoose';
 import { authenticateSocket, registerSocketHandlers } from './socket/handlers';
 
 // Routes
@@ -12,6 +13,7 @@ import userRoutes from './routes/users';
 import deviceRoutes from './routes/devices';
 import clipboardRoutes from './routes/clipboards';
 import sharedRoutes from './routes/shared';
+import { EncryptionChangedError } from './services/encryption';
 
 export interface AppBundle {
   app: express.Express;
@@ -45,6 +47,10 @@ export const createApp = (): AppBundle => {
   }
   app.use(cors({ origin: originCheck }));
   app.use(express.json({ limit: '256kb' }));
+  app.use('/api', (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
 
   app.use('/api', rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -61,7 +67,8 @@ export const createApp = (): AppBundle => {
 
   // Health check
   app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok', message: 'CloudClip Backend is running' });
+    const ready = mongoose.connection.readyState === 1;
+    res.status(ready ? 200 : 503).json({ status: ready ? 'ok' : 'unavailable' });
   });
 
   app.use((req, res) => {
@@ -71,6 +78,9 @@ export const createApp = (): AppBundle => {
   // Central error handler (bad JSON bodies, CORS rejections, route throws)
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (res.headersSent) return next(err);
+    if (err instanceof EncryptionChangedError) {
+      return res.status(412).json({ error: err.message });
+    }
     if (err?.message === 'Not allowed by CORS') {
       return res.status(403).json({ error: 'Origin not allowed' });
     }
@@ -85,12 +95,17 @@ export const createApp = (): AppBundle => {
   });
 
   const io = new Server(server, {
+    allowRequest: (req, callback) => {
+      const origin = req.headers.origin;
+      callback(null, !origin || allowedOrigins.includes(origin));
+    },
     cors: {
       origin: originCheck,
       methods: ['GET', 'POST']
     },
     maxHttpBufferSize: 512 * 1024,
   });
+  app.set('io', io);
 
   io.use(authenticateSocket);
   io.on('connection', (socket) => {

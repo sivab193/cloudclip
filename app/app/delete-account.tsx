@@ -1,55 +1,28 @@
 import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, Platform } from 'react-native';
 import Header from '@/components/Header';
-import { useNavigation } from 'expo-router';
 import { useAuth } from '@/auth/AuthContext';
-import { apiService } from '@/service/apiService';
-import { lockLocal } from '@/service/keyService';
-import { clearSyncState } from '@/service/syncEngine';
-import Confirmation from '@/components/Confirmation';
+import DeleteAccountModal from '@/components/DeleteAccountModal';
 import { ThemeTokens } from '@/constants/Colors';
-import { useTheme, useThemedStyles } from '@/hooks/useTheme';
+import { useThemedStyles } from '@/hooks/useTheme';
 
 /**
  * Web-reachable account-deletion page (required by Google Play's data
  * deletion policy). The same action is available in the app's Account tab.
  */
 export default function DeleteAccount() {
-  const navigation = useNavigation();
-  const t = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [confirmVisible, setConfirmVisible] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
-
-  const handleDelete = async () => {
-    setConfirmVisible(false);
-    setBusy(true);
-    try {
-      await apiService.deleteAccount();
-      await lockLocal();
-      await clearSyncState();
-      await logout();
-      setDone(true);
-    } catch {
-      setBusy(false);
-    } finally {
-      setBusy(false);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Header navigation={navigation} />
-      <Confirmation
-        message="Delete your account?"
-        subtitle="This permanently deletes your account, all clipboard entries, shared links and devices. This cannot be undone."
+      <Header />
+      <DeleteAccountModal
         visible={confirmVisible}
-        buttons={[
-          { label: 'Cancel', onPress: () => setConfirmVisible(false) },
-          { label: 'Delete forever', onPress: handleDelete, variant: 'danger' },
-        ]}
+        onClose={() => setConfirmVisible(false)}
+        onDeleted={() => setDone(true)}
       />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Delete your CloudClip account</Text>
@@ -64,8 +37,8 @@ export default function DeleteAccount() {
         {done ? (
           <Text style={styles.success}>Your account and all data have been deleted.</Text>
         ) : user ? (
-          <TouchableOpacity style={styles.deleteButton} onPress={() => setConfirmVisible(true)} disabled={busy}>
-            {busy ? <ActivityIndicator color={t.onDanger} /> : <Text style={styles.deleteButtonText}>Delete my account</Text>}
+          <TouchableOpacity style={styles.deleteButton} onPress={() => setConfirmVisible(true)}>
+            <Text style={styles.deleteButtonText}>Delete my account</Text>
           </TouchableOpacity>
         ) : (
           <Text style={styles.body}>

@@ -1,40 +1,26 @@
-# CloudClip App 📱
+# CloudClip app
 
-Cross-platform clipboard synchronization application built with Expo.
+Expo SDK 57, React Native 0.86, React 19, Expo Router and Firebase Authentication.
 
-## Tech Stack
-- **Framework**: Expo SDK 51
-- **Navigation**: Expo Router (v3)
-- **Backend Communication**: REST (Axios) + WebSockets (Socket.io-client)
-- **Authentication**: Firebase Authentication
-- **Storage**: SecureStore (Native) / AsyncStorage (Web)
+```sh
+npm ci
+cp .env.example .env
+npm start
+```
 
-## Setup
+Configure `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_WEB_URL` and the Firebase web-app values in `.env.example`. Public Expo variables are included in the client bundle; never put server credentials there.
 
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
+Use Expo Go for local development, the EAS `preview` profile for an installable test APK, and `production` for a signed Play AAB. A custom development-client profile is intentionally absent because this app does not install `expo-dev-client`.
 
-2. **Configure Environment**:
-   Create a `.env` file in this directory with the following keys:
-   ```env
-   EXPO_PUBLIC_BACKEND_URL=your_backend_url
-   EXPO_PUBLIC_FIREBASE_API_KEY=...
-   EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=...
-   EXPO_PUBLIC_FIREBASE_PROJECT_ID=...
-   EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=...
-   EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-   EXPO_PUBLIC_FIREBASE_APP_ID=...
-   ```
+`hooks/useClipboardSync.ts` coordinates foreground sync. `service/apiService.ts` owns REST requests and timeouts. `service/socketService.ts` owns notifications. `service/keyService.ts` owns account-scoped encryption keys. Native keys use SecureStore; web keys use sessionStorage.
 
-3. **Run Development Server**:
-   ```bash
-   npx expo start
-   ```
+```sh
+npm run typecheck
+npm test -- --runInBand
+npx expo-doctor
+npm run check:release
+npm run build:web
+eas build --platform android --profile production
+```
 
-## Key Files
-- `app/` - Application routes (Tabs, Login).
-- `service/apiService.ts` - REST API client.
-- `service/socketService.ts` - Real-time Socket.io service.
-- `auth/AuthContext.tsx` - Authentication provider.
+See [architecture](../docs/ARCHITECTURE.md) and [Play submission](../docs/store-submission.md).

@@ -1,4 +1,4 @@
-import { AntDesign } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ThemeTokens } from '@/constants/Colors';
@@ -10,7 +10,7 @@ const NoItemsComponent = () => {
 
     return (
         <View style={styles.container}>
-            <AntDesign name="aliwangwang" size={24} color={t.textMuted} />
+            <Ionicons name="file-tray-outline" size={24} color={t.textMuted} />
             <Text style={styles.text}>No items yet!</Text>
         </View>
     );

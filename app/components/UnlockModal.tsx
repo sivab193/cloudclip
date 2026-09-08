@@ -10,6 +10,7 @@ import {
 import RecoveryCodeModal from './RecoveryCodeModal';
 import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
+import { usePathname } from 'expo-router';
 
 type Mode = 'password' | 'recovery' | 'reset';
 
@@ -19,7 +20,8 @@ type Mode = 'password' | 'recovery' | 'reset';
  * password unlock → recovery code → destructive reset.
  */
 const UnlockModal: React.FC = () => {
-  const { user, encryptionReady, refreshEncryptionReady, logout } = useAuth();
+  const { user, encryptionReady, authenticating, refreshEncryptionReady, logout } = useAuth();
+  const pathname = usePathname();
   const [mode, setMode] = useState<Mode>('password');
   const [password, setPassword] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
@@ -30,7 +32,9 @@ const UnlockModal: React.FC = () => {
   const t = useTheme();
   const styles = useThemedStyles(makeStyles);
 
-  const visible = !!user && !encryptionReady;
+  // Public links, privacy and account deletion never require decryption keys.
+  const publicPage = pathname === '/privacy' || pathname === '/delete-account' || pathname.startsWith('/shared');
+  const visible = !!user && !encryptionReady && !authenticating && !publicPage;
   if (!visible && !newRecoveryCode) return null;
 
   const reset = () => {

@@ -1,40 +1,9 @@
-# CloudClip 📋
+# Repository guide
 
-Modern, cross-platform clipboard manager with real-time sync.
+CloudClip is an Expo SDK 57 app (`app/`) and Express 5 / Socket.io / MongoDB API (`backend/`). Firebase Authentication supplies user identity.
 
-## Architecture
-- **Monorepo**:
-  - `app/`: Expo (React Native) app. SDK 51.
-  - `backend/`: Node.js + Socket.io + MongoDB backend.
-- **Sync**: Socket.io for real-time clipboard updates.
-- **Database**: MongoDB Atlas.
-- **Auth**: Firebase Authentication (Email/Password).
+Use [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) as the architecture authority. The release supports text only, with opt-in foreground clipboard access. REST performs durable writes; Socket.io sends notifications and retains compatibility handlers for older apps.
 
-## Development Commands
+Run the commands in [README.md](README.md) before a release. Both package lockfiles are committed. Never commit environment files, signing keys or Play service-account credentials.
 
-### Backend
-- `cd backend`
-- `npm install`
-- `npm run dev` (dev mode with nodemon)
-- `npm run build` (compile TS)
-- `npm start` (run compiled JS)
-- `docker-compose up` (run via Docker)
-
-### App
-- `cd app`
-- `npm install`
-- `npx expo start` (Expo dev server)
-- `npx expo start --web` (Web dev)
-
-## Deployment
-- **Backend**: Automatic via GitHub Actions to GCP VM on push to `main`.
-- **App**: via EAS Build (`eas build --platform [ios|android]`).
-
-## Environment Variables
-- **Backend**: `PORT`, `MONGODB_URI`, `REDIS_URL`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`.
-- **App**: `EXPO_PUBLIC_BACKEND_URL`, `EXPO_PUBLIC_FIREBASE_*` (standard Firebase config).
-
-## Components & Services
-- `app/service/apiService.ts`: REST API client.
-- `app/service/socketService.ts`: Socket.io client for real-time sync.
-- `app/service/models.ts`: Shared TS interfaces.
+The deployment uses one Node process. User mutation serialization and socket rooms are process-local; adding another replica requires distributed coordination. Do not add Redis, a second database or background clipboard permissions without a product requirement.

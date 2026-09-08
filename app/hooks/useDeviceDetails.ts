@@ -4,6 +4,7 @@ import { apiService } from '@/service/apiService';
 import * as Device from 'expo-device';
 import { useState, useEffect } from 'react';
 import { Platform } from 'react-native';
+import { auth } from '@/firebaseConfig';
 
 interface DeviceDetails {
   deviceId: string | null;
@@ -31,28 +32,26 @@ const useDeviceDetails = (): DeviceDetails => {
     let cancelled = false;
 
     const fetchDeviceDetails = async () => {
-      if (!user) {
-        setDeviceDetails({ deviceId: null, deviceName: null });
-        return;
-      }
-      const deviceId = await getDeviceId();
-      if (!deviceId) return;
-
-      let deviceName = defaultDeviceName();
+      setDeviceDetails({ deviceId: null, deviceName: null });
+      if (!user) return;
       try {
-        const devices = await apiService.getDevices();
-        const found = devices.find((device) => device.deviceId === deviceId);
-        if (found) {
-          deviceName = found.deviceName;
-        } else {
-          await apiService.registerDevice(deviceId, deviceName, getDeviceOS());
+        const deviceId = await getDeviceId();
+        if (!deviceId || cancelled || auth.currentUser !== user) return;
+        let deviceName = defaultDeviceName();
+        try {
+          const devices = await apiService.getDevices();
+          if (cancelled || auth.currentUser !== user) return;
+          const found = devices.find((device) => device.deviceId === deviceId);
+          if (found) {
+            deviceName = found.deviceName;
+          } else {
+            await apiService.registerDevice(deviceId, deviceName, getDeviceOS());
+          }
+        } catch {
+          // Offline or backend down — still expose the local ID/name.
         }
-      } catch {
-        // Offline or backend down — still expose the local ID/name.
-      }
-      if (!cancelled) {
-        setDeviceDetails({ deviceId, deviceName });
-      }
+        if (!cancelled && auth.currentUser === user) setDeviceDetails({ deviceId, deviceName });
+      } catch { /* Local storage is unavailable; manual actions report the error. */ }
     };
 
     fetchDeviceDetails();

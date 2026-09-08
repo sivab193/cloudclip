@@ -6,10 +6,10 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { authenticateSocket, registerSocketHandlers } from '../handlers';
 import Clipboard from '../../models/Clipboard';
 
-jest.mock('firebase-admin', () => {
+jest.mock('firebase-admin/app', () => ({ getApps: () => [{}] }));
+jest.mock('firebase-admin/auth', () => {
   return {
-    apps: [{}], // non-empty so lazy init skips initializeApp
-    auth: jest.fn().mockReturnValue({
+    getAuth: jest.fn().mockReturnValue({
       verifyIdToken: jest.fn((token) => {
         if (token === 'valid_token') {
           return Promise.resolve({ uid: 'test_user_id' });
@@ -87,6 +87,21 @@ describe('Socket.io Handlers Integration', () => {
       client.off('clipboard:created');
     }
     await Clipboard.deleteMany({});
+  });
+
+  it('notifies the deleting device as well as its peers', async () => {
+    const clip = await Clipboard.create({ userId: 'test_user_id', deviceId: 'd', deviceName: 'D', content: 'test' });
+    const notification = new Promise<any>(resolve => clientSocketA.once('clipboard:deleted', resolve));
+    const result = await clientSocketA.timeout(2000).emitWithAck('clipboard:delete', { id: String(clip._id) });
+    expect(result.ok).toBe(true);
+    expect((await notification).id).toBe(String(clip._id));
+  });
+
+  it('handles a malformed acknowledgement without crashing the server', async () => {
+    clientSocketA.emit('clipboard:create', {}, 'not-a-function');
+    const result = await clientSocketA.timeout(2000).emitWithAck('clipboard:delete', { id: 'bad' });
+    expect(result.ok).toBe(false);
+    expect(clientSocketA.connected).toBe(true);
   });
 
   it('should authenticate a valid token and join the correct room', (done) => {

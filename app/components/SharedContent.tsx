@@ -1,14 +1,14 @@
-import { useNavigation } from 'expo-router';
 import * as Linking from 'expo-linking';
+import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView, Text, StyleSheet, Platform, TextInput, TouchableOpacity, View, ScrollView, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { apiService } from '@/service/apiService';
 import { setClipboard } from '@/service/clipboardService';
-import { normalizeShareToken, shareCodeFromToken, DecryptionError } from '@/service/cryptoService';
+import { normalizeShareToken, shareCodeFromToken, DecryptionError, isValidShareToken } from '@/service/cryptoService';
 import { decryptSharedContent, tokenFromFragment } from '@/service/shareService';
 import Alert from '@/components/Alert';
 import { ThemeTokens } from '@/constants/Colors';
@@ -22,10 +22,10 @@ import { useTheme, useThemedStyles } from '@/hooks/useTheme';
  * already in circulation keep working; the fragment wins when both are present.
  */
 const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
-  const navigation = useNavigation();
   const t = useTheme();
   const styles = useThemedStyles(makeStyles);
   const linkedUrl = Linking.useURL();
+  const params = useLocalSearchParams<{ '#': string }>();
   const [data, setData] = useState('');
   const [error, setError] = useState('');
   const [alertVisible, setAlertVisible] = useState(false);
@@ -39,7 +39,7 @@ const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
       ? tokenFromFragment(window.location.hash)
       : tokenFromFragment(linkedUrl);
 
-  const rawToken = fragmentToken || legacyToken || '';
+  const rawToken = tokenFromFragment(params['#'] ? `#${params['#']}` : '') || fragmentToken || legacyToken || '';
 
   const showAlert = (message: string) => {
     setAlertMessage(message);
@@ -52,9 +52,11 @@ const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
   };
 
   useEffect(() => {
+    let active = true;
+    setData('');
     const fetchData = async () => {
       const token = normalizeShareToken(rawToken);
-      if (!token) {
+      if (!isValidShareToken(token)) {
         setError('Invalid share link.');
         setLoading(false);
         return;
@@ -65,25 +67,27 @@ const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
         // The server only ever sees the 8-char lookup prefix; the decryption
         // key is derived from the full token client-side.
         const shared = await apiService.getSharedLinkByCode(shareCodeFromToken(token));
-        setData(decryptSharedContent(token, shared.content));
+        if (active) setData(decryptSharedContent(token, shared.content));
       } catch (e) {
+        if (!active) return;
         if (e instanceof DecryptionError) {
           setError('This link is incomplete or corrupted — make sure you copied the whole link or code.');
         } else {
-          setError('This link has expired or does not exist.');
+          setError(e instanceof Error ? e.message : 'Could not load this link. Check your connection and try again.');
         }
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
     fetchData();
+    return () => { active = false; };
   }, [rawToken]);
 
   return (
     <SafeAreaView style={styles.safeAreaLight}>
       <Alert message={alertMessage} visible={alertVisible} />
-      <Header navigation={navigation} />
+      <Header />
       <ThemedView style={styles.container}>
         <View style={styles.headerWithButton}>
           <ThemedText type="subtitle" style={styles.text}>Your Text</ThemedText>

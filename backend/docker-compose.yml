@@ -5,6 +5,7 @@ services:
       - "3000"   # internal only — Caddy is the sole public entrypoint
     environment:
       - PORT=3000
+      - NODE_ENV=production
       - MONGODB_URI=${MONGODB_URI}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}

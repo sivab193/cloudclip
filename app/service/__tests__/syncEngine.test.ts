@@ -3,7 +3,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { decide, getSyncState, setSyncState, clearSyncState, SyncState, LatestEntry } from '../syncEngine';
+import { decide, getSyncState, setSyncState, clearSyncState, getAutoReadSetting, SyncState, LatestEntry } from '../syncEngine';
 import { hashText } from '../cryptoService';
 
 const state = (overrides: Partial<SyncState> = {}): SyncState => ({
@@ -116,6 +116,15 @@ describe('sync state storage', () => {
         expect(await getSyncState()).toEqual({ lastSyncedHash: 'abc', lastSeenServerId: 'id1' });
     });
 
+    it('does not reuse sync state across accounts', async () => {
+        await setSyncState({ lastSyncedHash: 'private', lastSeenServerId: 'a1' }, 'a');
+        expect((await getSyncState('b')).lastSyncedHash).toBeNull();
+    });
+
+    it('requires opt-in before reading the clipboard', async () => {
+        expect(await getAutoReadSetting()).toBe(false);
+    });
+
     it('clearSyncState wipes both keys', async () => {
         await setSyncState({ lastSyncedHash: 'abc', lastSeenServerId: 'id1' });
         await clearSyncState();
@@ -123,4 +132,8 @@ describe('sync state storage', () => {
         expect(cleared.lastSyncedHash).toBeFalsy();
         expect(cleared.lastSeenServerId).toBeFalsy();
     });
+});
+
+it('preserves indentation and trailing newlines when syncing text', () => {
+    expect(decide('  code\n', null, state())).toEqual({ action: 'push', text: '  code\n' });
 });

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, TextInput, StyleSheet, Alert, TouchableOpacity, Text, Modal, TouchableWithoutFeedback, ActivityIndicator, Platform } from 'react-native';
 import { auth } from '../firebaseConfig';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { Octicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAuth } from '@/auth/AuthContext';
 import { apiService } from '@/service/apiService';
 import { unlockWithPassword, WrongPasswordError } from '@/service/keyService';
@@ -31,7 +31,7 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
   const t = useTheme();
   const styles = useThemedStyles(makeStyles);
 
-  const { setUser, refreshEncryptionReady } = useAuth();
+  const { setAuthenticating, refreshEncryptionReady } = useAuth();
 
   const resetFields = () => {
     setUsername('');
@@ -64,21 +64,26 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
       return;
     }
     setBusy(true);
+    setAuthenticating(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, username, password);
-      setUser(userCredential.user);
-
-      try {
-        await apiService.syncUser();
-      } catch {
-        // Non-fatal; profile syncs again on the account tab.
+      await signInWithEmailAndPassword(auth, username.trim(), password);
+      await apiService.syncUser();
+      const fresh = await finishAuth(password);
+      if (fresh) {
+        setRecoveryCode(fresh);
+        return;
       }
-      await finishAuth(password);
 
       onSuccess();
       onClose();
       resetFields();
     } catch (error: any) {
+      if (auth.currentUser) {
+        onClose();
+        resetFields();
+        showMessage('Signed in — data is still locked', 'Could not connect or unlock your data. Check your connection and use the unlock screen to retry.');
+        return;
+      }
       let message = 'An error occurred';
       if (error.code === 'auth/user-not-found') {
         message = 'No user found with this email.';
@@ -90,6 +95,7 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
       showMessage('Login Error', message);
     } finally {
       setBusy(false);
+      setAuthenticating(false);
     }
   };
 
@@ -103,9 +109,9 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
       return;
     }
     setBusy(true);
+    setAuthenticating(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, username, password);
-      setUser(userCredential.user);
+      await createUserWithEmailAndPassword(auth, username.trim(), password);
       await apiService.syncUser(name);
 
       const fresh = await finishAuth(password);
@@ -118,6 +124,12 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
         resetFields();
       }
     } catch (error: any) {
+      if (auth.currentUser) {
+        onClose();
+        resetFields();
+        showMessage('Account created — setup is incomplete', 'Your account exists, but encryption setup could not finish. Check your connection and use the unlock screen to retry.');
+        return;
+      }
       let message = 'An error occurred';
       if (error.code === 'auth/email-already-in-use') {
         message = 'Email is already in use.';
@@ -127,6 +139,7 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
       showMessage('Sign Up Error', message);
     } finally {
       setBusy(false);
+      setAuthenticating(false);
     }
   };
 
@@ -143,7 +156,7 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
       return;
     }
     try {
-      await sendPasswordResetEmail(auth, username);
+      await sendPasswordResetEmail(auth, username.trim());
       showMessage(
         'Reset email sent',
         'Heads up: after resetting your password you will need your recovery code to keep your encrypted clipboard data.'
@@ -167,7 +180,7 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
   }
 
   return (
-    <Modal visible={isVisible} transparent={true} animationType="fade" onRequestClose={() => { onClose(); resetFields(); }}>
+    <Modal visible={isVisible} transparent={true} animationType="fade" onRequestClose={() => { if (!busy) { onClose(); resetFields(); } }}>
       <TouchableWithoutFeedback onPress={() => {
         if (busy) return;
         onClose();
@@ -176,6 +189,11 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
         <View style={styles.overlay}>
           <TouchableWithoutFeedback onPress={handleModalContentPress}>
             <View style={styles.modalBox}>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close sign-in dialog"
+                disabled={busy} style={{ alignSelf: 'flex-end', padding: 8, marginBottom: 8 }}
+                onPress={() => { onClose(); resetFields(); }}>
+                <Text style={{ color: t.text }}>Close</Text>
+              </TouchableOpacity>
               {isForgotPasswordMode ? (
                 <>
                   <Text style={styles.titleText}>Reset Password</Text>
@@ -280,7 +298,7 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
 
                   <View style={styles.buttonRow}>
                     <TouchableOpacity style={styles.forgotPasswordButton} onPress={() => setIsForgotPasswordMode(true)}>
-                      <Octicons name="question" size={24} color={t.icon} style={styles.forgotPasswordIcon} />
+                      <Ionicons name="help-circle-outline" size={24} color={t.icon} style={styles.forgotPasswordIcon} />
                       <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                     </TouchableOpacity>
                   </View>

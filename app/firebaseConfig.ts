@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, initializeAuth } from 'firebase/auth';
+import { getAuth, initializeAuth, Auth } from 'firebase/auth';
 import { Platform } from 'react-native';
 // @ts-ignore — exported by the react-native bundle of firebase/auth, which
 // Metro resolves at build time; the web type declarations don't include it.
@@ -18,7 +18,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-let auth: any;
+let auth: Auth;
 if (Platform.OS === 'web') {
     auth = getAuth(app);
 } else {

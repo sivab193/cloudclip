@@ -13,7 +13,7 @@
  * Bump CACHE_VERSION to evict every previous cache on the next activation.
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const SHELL_CACHE = `cloudclip-shell-${CACHE_VERSION}`;
 const ASSET_CACHE = `cloudclip-assets-${CACHE_VERSION}`;
 
@@ -37,7 +37,7 @@ self.addEventListener('activate', (event) => {
             .then((keys) =>
                 Promise.all(
                     keys
-                        .filter((key) => key !== SHELL_CACHE && key !== ASSET_CACHE)
+                        .filter((key) => key.startsWith('cloudclip-') && key !== SHELL_CACHE && key !== ASSET_CACHE)
                         .map((key) => caches.delete(key))
                 )
             )
@@ -83,7 +83,7 @@ self.addEventListener('fetch', (event) => {
         event.respondWith(
             fetch(request)
                 .then((response) => {
-                    if (response.ok) {
+                    if (response.ok && url.pathname === '/') {
                         const copy = response.clone();
                         caches.open(SHELL_CACHE).then((cache) => cache.put('/', copy));
                     }

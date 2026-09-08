@@ -1,4 +1,7 @@
 import { apiService } from './apiService';
+import { auth } from '../firebaseConfig';
+import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { randomUUID } from 'expo-crypto';
 import { saveMasterKey, getStoredMasterKey, clearMasterKey } from './keyStore';
 import {
     DEFAULT_KDF,
@@ -26,29 +29,90 @@ export class WrongPasswordError extends Error {
     }
 }
 
-let cachedMk: Uint8Array | null = null;
-
-export const getMasterKey = async (): Promise<Uint8Array | null> => {
-    if (cachedMk) return cachedMk;
-    const stored = await getStoredMasterKey();
-    if (!stored) return null;
-    cachedMk = base64.decode(stored);
-    return cachedMk;
+let cached: { uid: string; keyId?: string; mk: Uint8Array } | null = null;
+let generation = 0;
+let storageQueue: Promise<unknown> = Promise.resolve();
+const inKeyStoreOrder = <T>(work: () => Promise<T>): Promise<T> => {
+    const result = storageQueue.then(work, work);
+    storageQueue = result.catch(() => undefined);
+    return result;
 };
 
-const storeMasterKey = async (mk: Uint8Array): Promise<void> => {
-    cachedMk = mk;
-    await saveMasterKey(base64.encode(mk));
+const accountSession = () => {
+    if (!auth.currentUser) throw new Error('Not authenticated');
+    return { uid: auth.currentUser.uid, user: auth.currentUser, generation };
 };
+type AccountSession = ReturnType<typeof accountSession>;
+const currentSession = (session: AccountSession) =>
+    auth.currentUser === session.user && generation === session.generation;
+const assertAccount = (session: AccountSession) => {
+    if (!currentSession(session)) throw new Error('Account or encryption changed; unlock again');
+};
+
+export const verifyAccountPassword = async (password: string): Promise<void> => {
+    const user = auth.currentUser;
+    if (!user?.email) throw new Error('Not authenticated');
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+    if (auth.currentUser !== user) throw new Error('Account changed; try again');
+};
+
+export const getMasterKey = async (verifyRemote = false): Promise<Uint8Array | null> => {
+    if (!auth.currentUser) return null;
+    const session = accountSession();
+    const { uid } = session;
+    if (cached?.uid !== uid) {
+        cached = null;
+        const stored = await inKeyStoreOrder(getStoredMasterKey);
+        if (!stored || !currentSession(session)) return null;
+        try {
+            const record = JSON.parse(stored);
+            if (record.uid !== uid) return null;
+            const mk = base64.decode(record.key);
+            if (mk.length !== 32) return null;
+            cached = { uid, keyId: record.keyId, mk };
+        } catch { return null; } // Unscoped keys from older installs require unlock.
+    }
+    if (verifyRemote) {
+        const keys = await apiService.getKeys();
+        if (!currentSession(session)) return null;
+        if (!keys || keys.keyId !== cached?.keyId) {
+            await lockLocal();
+            return null;
+        }
+    }
+    return currentSession(session) && cached?.uid === uid ? cached?.mk ?? null : null;
+};
+
+/** Binds ciphertext writes to the exact unlocked key, including legacy keys. */
+export const getMasterKeyId = (mk: Uint8Array): string | null => {
+    if (!cached || cached.uid !== auth.currentUser?.uid || cached.mk !== mk) {
+        throw new Error('Encryption changed; unlock your data and try again');
+    }
+    return cached.keyId ?? null;
+};
+
+const storeMasterKey = (session: AccountSession, mk: Uint8Array, keyId?: string): Promise<void> =>
+    inKeyStoreOrder(async () => {
+        assertAccount(session);
+        await saveMasterKey(JSON.stringify({ uid: session.uid, keyId, key: base64.encode(mk) }));
+        assertAccount(session);
+        cached = { uid: session.uid, keyId, mk };
+    });
 
 export const lockLocal = async (): Promise<void> => {
-    cachedMk = null;
-    await clearMasterKey();
+    generation++;
+    cached = null;
+    await inKeyStoreOrder(clearMasterKey);
 };
 
 /** First-time key setup. Returns the recovery code to show the user ONCE. */
 const createKeys = async (password: string): Promise<string> => {
+    const session = accountSession();
+    await verifyAccountPassword(password);
+    assertAccount(session);
+    await apiService.syncUser();
     const mk = generateMasterKey();
+    const keyId = randomUUID();
 
     const salt = generateSaltB64();
     const kek = await deriveKek(password, salt, DEFAULT_KDF);
@@ -59,17 +123,20 @@ const createKeys = async (password: string): Promise<string> => {
     const recoveryKek = await deriveKek(recoveryCode, recoverySalt, DEFAULT_KDF);
     const recoveryWrapped = wrapBytes(recoveryKek, mk);
 
+    assertAccount(session);
     await apiService.putKeys({
+        keyId,
         wrappedKey: wrapped.wrapped,
         wrapNonce: wrapped.nonce,
         salt,
         kdf: DEFAULT_KDF,
+        recoveryKdf: DEFAULT_KDF,
         recoveryWrappedKey: recoveryWrapped.wrapped,
         recoveryNonce: recoveryWrapped.nonce,
         recoverySalt,
         keyVersion: 1,
     });
-    await storeMasterKey(mk);
+    await storeMasterKey(session, mk, keyId);
     return formatRecoveryCode(recoveryCode);
 };
 
@@ -79,14 +146,16 @@ const createKeys = async (password: string): Promise<string> => {
  * password can't unwrap the stored key (e.g. password was reset by email).
  */
 export const unlockWithPassword = async (password: string): Promise<{ recoveryCode?: string }> => {
+    const session = accountSession();
     const keys = await apiService.getKeys();
+    assertAccount(session);
     if (!keys) {
         return { recoveryCode: await createKeys(password) };
     }
     const kek = await deriveKek(password, keys.salt, keys.kdf);
     try {
         const mk = unwrapBytes(kek, keys.wrappedKey, keys.wrapNonce);
-        await storeMasterKey(mk);
+        await storeMasterKey(session, mk, keys.keyId);
         return {};
     } catch (error) {
         if (error instanceof DecryptionError) throw new WrongPasswordError();
@@ -96,17 +165,21 @@ export const unlockWithPassword = async (password: string): Promise<{ recoveryCo
 
 /** After the account password changes, re-wrap the same MK under the new one. */
 export const rewrapWithNewPassword = async (newPassword: string): Promise<void> => {
-    const mk = await getMasterKey();
+    const session = accountSession();
+    const mk = await getMasterKey(true);
     if (!mk) throw new Error('Data is locked — unlock before changing password');
     const keys = await apiService.getKeys();
     if (!keys) throw new Error('No encryption keys found');
+    if ((keys.keyId ?? null) !== getMasterKeyId(mk)) throw new Error('Encryption changed; unlock again');
 
     const salt = generateSaltB64();
     const kek = await deriveKek(newPassword, salt, DEFAULT_KDF);
     const wrapped = wrapBytes(kek, mk);
 
+    assertAccount(session);
     await apiService.putKeys({
         ...keys,
+        recoveryKdf: keys.recoveryKdf ?? keys.kdf,
         wrappedKey: wrapped.wrapped,
         wrapNonce: wrapped.nonce,
         salt,
@@ -117,18 +190,22 @@ export const rewrapWithNewPassword = async (newPassword: string): Promise<void> 
 
 /** Issue a fresh recovery code (invalidates the old one). Shows once. */
 export const regenerateRecoveryCode = async (): Promise<string> => {
-    const mk = await getMasterKey();
+    const session = accountSession();
+    const mk = await getMasterKey(true);
     if (!mk) throw new Error('Data is locked');
     const keys = await apiService.getKeys();
     if (!keys) throw new Error('No encryption keys found');
+    if ((keys.keyId ?? null) !== getMasterKeyId(mk)) throw new Error('Encryption changed; unlock again');
 
     const recoveryCode = generateRecoveryCode();
     const recoverySalt = generateSaltB64();
     const recoveryKek = await deriveKek(recoveryCode, recoverySalt, DEFAULT_KDF);
     const recoveryWrapped = wrapBytes(recoveryKek, mk);
 
+    assertAccount(session);
     await apiService.putKeys({
         ...keys,
+        recoveryKdf: DEFAULT_KDF,
         recoveryWrappedKey: recoveryWrapped.wrapped,
         recoveryNonce: recoveryWrapped.nonce,
         recoverySalt,
@@ -147,12 +224,15 @@ export const regenerateRecoveryCode = async (): Promise<string> => {
  * code, which must be shown to the user ONCE.
  */
 export const recoverWithCode = async (codeInput: string, currentPassword: string): Promise<string> => {
+    const session = accountSession();
+    await verifyAccountPassword(currentPassword);
+    assertAccount(session);
     const keys = await apiService.getKeys();
     if (!keys?.recoveryWrappedKey || !keys.recoverySalt || !keys.recoveryNonce) {
         throw new Error('No recovery code was set up for this account');
     }
     const code = normalizeRecoveryCode(codeInput);
-    const recoveryKek = await deriveKek(code, keys.recoverySalt, keys.kdf);
+    const recoveryKek = await deriveKek(code, keys.recoverySalt, keys.recoveryKdf ?? keys.kdf);
 
     let mk: Uint8Array;
     try {
@@ -161,7 +241,6 @@ export const recoverWithCode = async (codeInput: string, currentPassword: string
         if (error instanceof DecryptionError) throw new WrongPasswordError('Invalid recovery code');
         throw error;
     }
-    await storeMasterKey(mk);
 
     const salt = generateSaltB64();
     const kek = await deriveKek(currentPassword, salt, DEFAULT_KDF);
@@ -173,8 +252,10 @@ export const recoverWithCode = async (codeInput: string, currentPassword: string
     const nextRecoveryKek = await deriveKek(nextCode, nextRecoverySalt, DEFAULT_KDF);
     const nextRecoveryWrapped = wrapBytes(nextRecoveryKek, mk);
 
+    assertAccount(session);
     await apiService.putKeys({
         ...keys,
+        recoveryKdf: DEFAULT_KDF,
         wrappedKey: wrapped.wrapped,
         wrapNonce: wrapped.nonce,
         salt,
@@ -184,6 +265,7 @@ export const recoverWithCode = async (codeInput: string, currentPassword: string
         recoverySalt: nextRecoverySalt,
         keyVersion: keys.keyVersion + 1,
     });
+    await storeMasterKey(session, mk, keys.keyId);
     return formatRecoveryCode(nextCode);
 };
 
@@ -192,7 +274,12 @@ export const recoverWithCode = async (codeInput: string, currentPassword: string
  * fresh master key. Returns the new recovery code.
  */
 export const resetEncryptedData = async (password: string): Promise<string> => {
+    const session = accountSession();
+    await verifyAccountPassword(password);
+    assertAccount(session);
     await apiService.deleteKeys();
+    if (auth.currentUser !== session.user) throw new Error('Account changed; sign in again');
     await lockLocal();
+    if (auth.currentUser !== session.user) throw new Error('Account changed; sign in again');
     return createKeys(password);
 };

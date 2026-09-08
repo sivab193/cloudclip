@@ -3,6 +3,8 @@
   "compilerOptions": {
 	"jsx": "react",
     "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "paths": {
       "@/*": [
         "./*"
@@ -14,7 +16,6 @@
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts",
-    "app/Login.tsx"
+    "expo-env.d.ts"
   ]
 }

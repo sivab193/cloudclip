@@ -1,11 +1,14 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useContext, ReactNode, useRef } from 'react';
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { getMasterKey, lockLocal } from '@/service/keyService';
+import { clearSyncState } from '@/service/syncEngine';
+import { socketService } from '@/service/socketService';
 
 interface AuthContextProps {
   user: User | null;
-  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  authenticating: boolean;
+  setAuthenticating: React.Dispatch<React.SetStateAction<boolean>>;
   logout: () => Promise<void>;
   /** True when the E2E master key is available on this device. */
   encryptionReady: boolean;
@@ -26,42 +29,54 @@ export const useAuth = () => {
 const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [encryptionReady, setEncryptionReady] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [authenticating, setAuthenticating] = useState(false);
+  const generation = useRef(0);
 
   const refreshEncryptionReady = async () => {
-    const mk = await getMasterKey();
-    setEncryptionReady(!!mk);
+    const current = generation.current;
+    const owner = auth.currentUser;
+    try {
+      const mk = await getMasterKey(true);
+      if (generation.current === current && auth.currentUser === owner) setEncryptionReady(!!mk);
+    } catch {
+      if (generation.current === current && auth.currentUser === owner) setEncryptionReady(false);
+    }
   };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (nextUser) => {
+      const current = ++generation.current;
+      socketService.disconnect();
       setUser(nextUser);
-      if (nextUser) {
-        const mk = await getMasterKey();
-        setEncryptionReady(!!mk);
-      } else {
-        setEncryptionReady(false);
+      setEncryptionReady(false);
+      try {
+        if (nextUser) {
+          const mk = await getMasterKey(true);
+          if (generation.current === current) setEncryptionReady(!!mk);
+        } else {
+          await lockLocal();
+          await clearSyncState();
+        }
+      } catch {
+        if (generation.current === current) setEncryptionReady(false);
       }
-      setLoading(false);
     });
     return unsubscribe;
   }, []);
 
   const logout = async () => {
-    try {
-      await signOut(auth);
-      await lockLocal();
-      setUser(null);
-      setEncryptionReady(false);
-    } catch (error) {
-      console.error('Error logging out: ', error);
-    }
+    generation.current++;
+    socketService.disconnect();
+    setEncryptionReady(false);
+    await lockLocal();
+    await clearSyncState();
+    await signOut(auth);
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, logout, encryptionReady, refreshEncryptionReady }}>
-      {/* Render the children only after loading is complete */}
-      {!loading && children}
+    <AuthContext.Provider value={{ user, authenticating, setAuthenticating, logout, encryptionReady, refreshEncryptionReady }}>
+      {children}
     </AuthContext.Provider>
   );
 };

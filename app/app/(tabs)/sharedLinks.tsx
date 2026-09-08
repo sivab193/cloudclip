@@ -1,16 +1,16 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, FlatList, View, Text, TouchableOpacity, SafeAreaView, TextInput, Platform, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import Header from '@/components/Header';
-import { router, useNavigation } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/auth/AuthContext';
 import { truncateContent } from '@/service/util';
 import { Shared } from '@/service/models';
 import { apiService } from '@/service/apiService';
 import { getMasterKey } from '@/service/keyService';
-import { isEnvelope, normalizeShareToken, formatShareToken } from '@/service/cryptoService';
+import { isEnvelope, normalizeShareToken, formatShareToken, isValidShareToken } from '@/service/cryptoService';
 import { createShare, tokenFromShared, decryptSharedContent, getSharedLinkURL } from '@/service/shareService';
 import NoItemsComponent from '@/components/NoItems';
 import Alert from '@/components/Alert';
@@ -18,6 +18,7 @@ import Confirmation from '@/components/Confirmation';
 import * as Clipboard from 'expo-clipboard';
 import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
+import useAccountGuard from '@/hooks/useAccountGuard';
 
 // A shared link decorated with its decrypted preview and recovered token.
 interface DecoratedShared {
@@ -29,7 +30,6 @@ interface DecoratedShared {
 const sharedId = (item: Shared): string => item._id || item.id || '';
 
 export default function SharedLinks() {
-	const navigation = useNavigation();
 	const t = useTheme();
 	const styles = useThemedStyles(makeStyles);
 	const [textToShare, setTextToShare] = useState('');
@@ -45,15 +45,21 @@ export default function SharedLinks() {
 	const [deleteAllConfirmationVisible, setDeleteAllConfirmationVisible] = useState(false);
 
 	const { user, encryptionReady } = useAuth();
+	const { capture } = useAccountGuard();
+	const revision = useRef(0);
+	const sharing = useRef<(() => boolean) | null>(null);
+	const alertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	useEffect(() => () => { if (alertTimer.current) clearTimeout(alertTimer.current); }, []);
 
 	const showAlert = (message: string) => {
 		setAlertMessage(message);
 		setAlertVisible(true);
-		setTimeout(() => setAlertVisible(false), 3000);
+		if (alertTimer.current) clearTimeout(alertTimer.current);
+		alertTimer.current = setTimeout(() => setAlertVisible(false), 3000);
 	};
 
 	const decorate = async (items: Shared[]): Promise<DecoratedShared[]> => {
-		const mk = await getMasterKey();
+		const mk = await getMasterKey(true);
 		return items.map((shared) => {
 			const token = mk ? tokenFromShared(shared, mk) : null;
 			let preview = '[Encrypted]';
@@ -71,18 +77,30 @@ export default function SharedLinks() {
 	};
 
 	const fetchSharedLinks = useCallback(async () => {
-		if (!user || !encryptionReady) return;
+		const valid = capture();
+		if (!valid()) return;
+		const started = revision.current;
 		try {
 			const links = await apiService.getSharedLinks();
-			setSharedLinks(await decorate(links));
+			if (!valid()) return;
+			const decorated = await decorate(links);
+			if (valid() && started === revision.current) setSharedLinks(decorated);
 		} catch {
-			showAlert('Could not load shared links');
+			if (valid()) showAlert('Could not load shared links');
 		}
-	}, [user, encryptionReady]);
+	}, [capture]);
 
+	useFocusEffect(useCallback(() => { void fetchSharedLinks(); }, [fetchSharedLinks]));
 	useEffect(() => {
-		fetchSharedLinks();
-	}, [fetchSharedLinks]);
+		revision.current++;
+		setSharedLinks([]);
+		setTextToShare('');
+		setSharedLink(null);
+		setSharedCode(null);
+		setShareDialogVisible(false);
+		setConfirmationVisible(false);
+		setDeleteAllConfirmationVisible(false);
+	}, [user?.uid, encryptionReady]);
 
 	const calculateTimeLeft = (expiryAt: string | null): string => {
 		if (!expiryAt) return '';
@@ -96,26 +114,28 @@ export default function SharedLinks() {
 
 	// Creates the shared link ONCE, then the dialog buttons only copy.
 	const handleShare = async () => {
-		const content = textToShare.trim();
-		if (!content) {
+		const valid = capture();
+		const content = textToShare;
+		if (!content.trim()) {
 			showAlert('Please enter text to share.');
 			return;
 		}
-		const mk = await getMasterKey();
-		if (!mk) {
-			showAlert('Log in and unlock your data to share text.');
-			return;
-		}
+		if (sharing.current?.()) return;
+		sharing.current = valid;
 		try {
+			const mk = await getMasterKey(true);
+			if (!mk || !valid()) throw new Error('Log in and unlock your data to share text.');
 			const result = await createShare(content, mk);
+			if (!valid()) return;
+			revision.current++;
 			setSharedLink(result.url);
 			setSharedCode(result.displayCode);
 			setShareDialogVisible(true);
 			setTextToShare('');
 			setSharedLinks(prev => [{ shared: result.shared, preview: content, token: result.token }, ...prev]);
-		} catch {
-			showAlert('Failed to create shared link.');
-		}
+		} catch (error) {
+			if (valid()) showAlert(error instanceof Error ? error.message : 'Failed to create shared link.');
+		} finally { if (sharing.current === valid) sharing.current = null; }
 	};
 
 	// Re-share an existing link: rebuild link/code from the stored token.
@@ -131,33 +151,41 @@ export default function SharedLinks() {
 
 	const handleRetrieve = () => {
 		const token = normalizeShareToken(retrieveText);
-		if (!token) {
-			showAlert('Please enter a code to retrieve your text.');
+		if (!isValidShareToken(token)) {
+			showAlert('Please enter the complete share code.');
 			return;
 		}
-		router.push(`/shared/${token}`);
+		router.push(`/shared#${token}`);
 		setRetrieveText('');
 	};
 
 	const handleCopyLink = async () => {
 		if (sharedLink) {
-			await Clipboard.setStringAsync(sharedLink);
-			setShareDialogVisible(false);
-			showAlert('Link copied to clipboard.');
+			try {
+				await Clipboard.setStringAsync(sharedLink);
+				setShareDialogVisible(false);
+				showAlert('Link copied to clipboard.');
+			} catch { showAlert('Could not copy to clipboard.'); }
 		}
 	};
 
 	const handleCopyCode = async () => {
 		if (sharedCode) {
-			await Clipboard.setStringAsync(sharedCode);
-			setShareDialogVisible(false);
-			showAlert('Code copied to clipboard.');
+			try {
+				await Clipboard.setStringAsync(sharedCode);
+				setShareDialogVisible(false);
+				showAlert('Code copied to clipboard.');
+			} catch { showAlert('Could not copy to clipboard.'); }
 		}
 	};
 
 	const handleRemove = async () => {
+		const valid = capture();
+		if (!valid()) return;
 		try {
 			await apiService.deleteSharedLink(itemToRemoveId);
+			if (!valid()) return;
+			revision.current++;
 			setSharedLinks(prev => prev.filter(item => sharedId(item.shared) !== itemToRemoveId));
 			setConfirmationVisible(false);
 			showAlert('Shared link deleted successfully.');
@@ -167,8 +195,12 @@ export default function SharedLinks() {
 	};
 
 	const handleDeleteAll = async () => {
+		const valid = capture();
+		if (!valid()) return;
 		try {
 			await apiService.deleteAllSharedLinks();
+			if (!valid()) return;
+			revision.current++;
 			setSharedLinks([]);
 			setDeleteAllConfirmationVisible(false);
 			showAlert('All shared links have been deleted.');
@@ -185,6 +217,7 @@ export default function SharedLinks() {
 				message="Are you sure you want to proceed?"
 				subtitle=''
 				visible={confirmationVisible}
+				onDismiss={() => setConfirmationVisible(false)}
 				buttons={[
 					{ label: 'No', onPress: () => setConfirmationVisible(false) },
 					{ label: 'Yes', onPress: handleRemove },
@@ -194,6 +227,7 @@ export default function SharedLinks() {
 				message={`Share this link or code — it expires in 7 days.\n`}
 				subtitle={`Link: ${sharedLink || ''}\nCode: ${sharedCode || ''}`}
 				visible={shareDialogVisible}
+				onDismiss={() => setShareDialogVisible(false)}
 				buttons={[
 					{ label: 'Copy Link', onPress: handleCopyLink },
 					{ label: 'Copy Code', onPress: handleCopyCode },
@@ -204,6 +238,7 @@ export default function SharedLinks() {
 				message="Are you sure you want to delete all shared links?"
 				subtitle=''
 				visible={deleteAllConfirmationVisible}
+				onDismiss={() => setDeleteAllConfirmationVisible(false)}
 				buttons={[
 					{ label: 'Cancel', onPress: () => setDeleteAllConfirmationVisible(false) },
 					{ label: 'Delete All', onPress: handleDeleteAll, variant: 'danger' },
@@ -215,7 +250,7 @@ export default function SharedLinks() {
 				horizontal={false}
 			>
 				<SafeAreaView style={styles.safeArea}>
-					<Header navigation={navigation} />
+					<Header />
 					<ThemedView style={styles.containerLight}>
 						<ThemedText type="defaultSemiBold" style={styles.heading}>
 							Paste your text here and click on Share to easily share text with friends!
@@ -276,7 +311,7 @@ export default function SharedLinks() {
 											data={sharedLinks}
 											keyExtractor={(item) => sharedId(item.shared)}
 											renderItem={({ item }) => (
-												<TouchableOpacity onPress={() => item.token && router.push(`/shared/${item.token}`)}>
+												<TouchableOpacity onPress={() => item.token && router.push(`/shared#${item.token}`)}>
 													<View style={styles.itemContainerLight}>
 														<View style={styles.textContainer}>
 															<Text style={styles.itemTitle}>

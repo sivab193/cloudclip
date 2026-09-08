@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IUserEncryption {
+  keyId?: string;
+  recoveryKdf?: { name: 'scrypt'; N: number; r: number; p: number };
   wrappedKey: string;
   wrapNonce: string;
   salt: string;
@@ -26,6 +28,11 @@ export interface IUser extends Document {
 }
 
 const EncryptionSchema: Schema = new Schema({
+  keyId: { type: String },
+  recoveryKdf: {
+    type: new Schema({ name: String, N: Number, r: Number, p: Number }, { _id: false }),
+    required: false,
+  },
   wrappedKey: { type: String, required: true, maxlength: 512 },
   wrapNonce: { type: String, required: true, maxlength: 64 },
   salt: { type: String, required: true, maxlength: 128 },

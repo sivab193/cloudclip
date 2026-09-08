@@ -6,10 +6,10 @@ import { useRouter } from 'expo-router';
 import { ThemeTokens } from '@/constants/Colors';
 import { useThemedStyles } from '@/hooks/useTheme';
 
-const Header = ({ navigation }: { navigation: any }) => {
+const Header = () => {
   const [isModalVisible, setModalVisible] = useState(false);
   const styles = useThemedStyles(makeStyles);
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
 
   const openModal = () => setModalVisible(true);
   const closeModal = () => setModalVisible(false);
@@ -18,13 +18,6 @@ const Header = ({ navigation }: { navigation: any }) => {
     closeModal();
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout(); // Call logout from AuthContext
-    } catch (error) {
-      console.error('Error logging out: ', error);
-    }
-  };
   const router = useRouter();
 
   const navigateToHome = () => {
@@ -54,6 +47,9 @@ const Header = ({ navigation }: { navigation: any }) => {
         onClose={closeModal}
         onSuccess={handleSuccess}
       />
+      <TouchableOpacity accessibilityRole="link" onPress={() => router.push('/privacy')}>
+        <Text style={styles.privacyLink}>Privacy</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -87,6 +83,12 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     padding: 10,
     backgroundColor: t.primary,
     borderRadius: 5,
+  },
+  privacyLink: {
+    fontSize: 14,
+    color: t.textMuted,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
   },
   loginButtonText: {
     color: t.onPrimary,

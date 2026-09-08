@@ -1,6 +1,7 @@
 import { apiService, ApiError } from './apiService';
 import { Shared } from './models';
 import { getWebUrl } from './util';
+import { getMasterKeyId } from './keyService';
 import {
     decryptEntry,
     deriveShareKey,
@@ -16,7 +17,7 @@ import {
 } from './cryptoService';
 
 /**
- * E2E shared links. One 20-char token does everything:
+ * E2E shared links. One 32-char token does everything (older 20-char links work):
  * - first 8 chars = server lookup code (yields only ciphertext by itself),
  * - the decryption key is derived from the FULL token, which the server never
  *   receives.
@@ -69,6 +70,7 @@ export const createShare = async (
         const ownerWrap = wrapBytes(masterKey, utf8ToBytes(token));
         try {
             const shared = await apiService.createSharedLink({
+                keyId: getMasterKeyId(masterKey),
                 content,
                 code: shareCodeFromToken(token),
                 ownerWrappedKey: ownerWrap.wrapped,

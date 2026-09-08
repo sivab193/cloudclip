@@ -3,6 +3,8 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { AuthProvider } from '@/auth/AuthContext';
@@ -19,22 +21,24 @@ SplashScreen.preventAutoHideAsync();
 const SITE_TITLE = 'CloudClip — Your clipboard, on every device';
 
 export default function RootLayout() {
-  const [loaded] = useFonts({
+  const [loaded, error] = useFonts({
+    ...Ionicons.font,
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   useEffect(() => {
-    if (loaded) {
+    if (loaded || error) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, error]);
 
-  if (!loaded) {
+  if (!loaded && !error) {
     return null;
   }
 
   return (
     <AuthProvider>
+      <StatusBar style="auto" />
       <Head>
         <title>{SITE_TITLE}</title>
       </Head>

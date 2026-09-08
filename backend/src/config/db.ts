@@ -9,17 +9,15 @@ export const connectDB = async () => {
         const conn = await mongoose.connect(process.env.MONGODB_URI as string);
         console.log(`MongoDB Connected: ${conn.connection.host}`);
 
-        // Reconcile schema indexes with the live collections. This drops the
-        // legacy global-unique deviceId_1 index in favor of {userId, deviceId}
-        // and creates the TTL/compound indexes on existing deployments.
+        // Add missing indexes without dropping operator-managed indexes on
+        // every restart. Legacy index removal is an explicit migration.
         await Promise.all([
-            User.syncIndexes(),
-            Device.syncIndexes(),
-            Clipboard.syncIndexes(),
-            Shared.syncIndexes(),
+            User.createIndexes(),
+            Device.createIndexes(),
+            Clipboard.createIndexes(),
+            Shared.createIndexes(),
         ]);
     } catch (error) {
-        console.error(`Error connecting to MongoDB: ${error}`);
-        process.exit(1);
+        throw new Error('Database connection or index initialization failed', { cause: error });
     }
 };

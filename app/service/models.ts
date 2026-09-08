@@ -8,6 +8,8 @@ export interface User {
 
 // Wrapped-key material stored server-side (server can never decrypt)
 export interface EncryptionKeys {
+    keyId?: string;
+    recoveryKdf?: { name: 'scrypt'; N: number; r: number; p: number };
     wrappedKey: string;
     wrapNonce: string;
     salt: string;

@@ -1,5 +1,6 @@
 import express from 'express';
-import { z } from 'zod';
+import { mutation } from '../middleware/mutation';
+import { createClipboard, createClipboardSchema, objectIdSchema } from '../services/clipboard';
 import { verifyFirebaseToken } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import Clipboard from '../models/Clipboard';
@@ -23,39 +24,25 @@ router.get('/', verifyFirebaseToken, async (req, res, next) => {
   }
 });
 
-const createSchema = z.object({
-  deviceId: z.string().min(1).max(256),
-  deviceName: z.string().min(1).max(256),
-  // E2E envelope — opaque to the server.
-  content: z.string().min(1).max(200_000),
-});
-
-// Create a new clipboard entry (REST fallback; real-time path is Socket.io)
-router.post('/', verifyFirebaseToken, validate(createSchema), async (req, res, next) => {
+// Durable write, followed by a notification to every owner device.
+router.post('/', verifyFirebaseToken, validate(createClipboardSchema), mutation(async (req, res, next) => {
   try {
     const firebaseUid = req.user?.uid;
-    const { deviceId, deviceName, content } = req.body;
-
-    const clipboard = new Clipboard({
-      userId: firebaseUid,
-      deviceId,
-      deviceName,
-      content
-    });
-
-    await clipboard.save();
+    const clipboard = await createClipboard(firebaseUid!, req.body);
+    req.app.get('io').to(`user:${firebaseUid}`).emit('clipboard:new', clipboard);
 
     res.status(201).json(clipboard);
   } catch (error) {
     next(error);
   }
-});
+}));
 
 // Delete a single clipboard entry
-router.delete('/:id', verifyFirebaseToken, async (req, res, next) => {
+router.delete('/:id', verifyFirebaseToken, mutation(async (req, res, next) => {
   try {
     const firebaseUid = req.user?.uid;
     const { id } = req.params;
+    if (!objectIdSchema.safeParse(id).success) return res.status(400).json({ error: 'Invalid clipboard ID' });
 
     const result = await Clipboard.findOneAndDelete({
       _id: id,
@@ -66,21 +53,23 @@ router.delete('/:id', verifyFirebaseToken, async (req, res, next) => {
       return res.status(404).json({ error: 'Clipboard entry not found or unauthorized' });
     }
 
+    req.app.get('io').to(`user:${firebaseUid}`).emit('clipboard:deleted', { id });
     res.json({ message: 'Deleted successfully' });
   } catch (error) {
     next(error);
   }
-});
+}));
 
 // Delete all clipboard entries for user
-router.delete('/', verifyFirebaseToken, async (req, res, next) => {
+router.delete('/', verifyFirebaseToken, mutation(async (req, res, next) => {
   try {
     const firebaseUid = req.user?.uid;
     await Clipboard.deleteMany({ userId: firebaseUid });
+    req.app.get('io').to(`user:${firebaseUid}`).emit('clipboard:cleared');
     res.json({ message: 'All clipboard entries deleted successfully' });
   } catch (error) {
     next(error);
   }
-});
+}));
 
 export default router;

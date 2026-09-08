@@ -17,7 +17,7 @@ import { base64 } from '@scure/base';
  * - The MK itself is stored server-side only in wrapped form: encrypted with
  *   a KEK derived (scrypt) from the account password, and separately with a
  *   KEK derived from a one-time recovery code.
- * - Share links use a 20-char token: the first 8 chars are the server lookup
+ * - New share links use a 32-char token: the first 8 chars are the server lookup
  *   code; the decryption key is HKDF-derived from the FULL token, which never
  *   reaches the server.
  */
@@ -63,6 +63,10 @@ export const generateMasterKey = (): Uint8Array => randomBytes(32);
 export const generateSaltB64 = (): string => base64.encode(randomBytes(16));
 
 export const deriveKek = async (secret: string, saltB64: string, kdf: KdfParams): Promise<Uint8Array> => {
+    if (kdf.name !== 'scrypt' || !Number.isInteger(kdf.N) || kdf.N < 2 || kdf.N > 65536 ||
+        (kdf.N & (kdf.N - 1)) !== 0 || kdf.r !== 8 || kdf.p !== 1) {
+        throw new Error('Unsupported encryption parameters');
+    }
     return scryptAsync(secret.normalize('NFKC'), base64.decode(saltB64), {
         N: kdf.N,
         r: kdf.r,
@@ -86,6 +90,7 @@ export const unwrapBytes = (key: Uint8Array, wrappedB64: string, nonceB64: strin
 };
 
 export const encryptEntry = (key: Uint8Array, plaintext: string): string => {
+    if (utf8ToBytes(plaintext).length > 140_000) throw new Error('Text is too large (maximum 140 KB)');
     const nonce = randomBytes(NONCE_LENGTH);
     const ct = gcm(key, nonce).encrypt(utf8ToBytes(plaintext));
     const envelope: Envelope = { v: 1, alg: 'A256GCM', n: base64.encode(nonce), ct: base64.encode(ct) };
@@ -99,8 +104,8 @@ export const decryptEntry = (key: Uint8Array, envelopeStr: string): string => {
     } catch {
         throw new DecryptionError('Not an encrypted envelope');
     }
-    if (envelope.alg !== 'A256GCM') {
-        throw new DecryptionError(`Unsupported algorithm: ${envelope.alg}`);
+    if (!envelope || envelope.v !== 1 || envelope.alg !== 'A256GCM') {
+        throw new DecryptionError('Unsupported encrypted envelope');
     }
     try {
         const plain = gcm(key, base64.decode(envelope.n)).decrypt(base64.decode(envelope.ct));
@@ -143,7 +148,7 @@ const randomFromAlphabet = (alphabet: string, length: number): string => {
 // --- share tokens ---
 
 const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-const SHARE_TOKEN_LENGTH = 20;
+const SHARE_TOKEN_LENGTH = 32; // 24 secret base58 characters after the public prefix (~140 bits).
 const SHARE_CODE_LENGTH = 8;
 
 export const generateShareToken = (): string => randomFromAlphabet(BASE58, SHARE_TOKEN_LENGTH);
@@ -160,7 +165,7 @@ export const formatShareToken = (token: string): string =>
 export const normalizeShareToken = (input: string): string => input.replace(/[\s-]/g, '');
 
 export const isValidShareToken = (token: string): boolean =>
-    token.length === SHARE_TOKEN_LENGTH && [...token].every(c => BASE58.includes(c));
+    [20, SHARE_TOKEN_LENGTH].includes(token.length) && [...token].every(c => BASE58.includes(c));
 
 // --- recovery codes ---
 

@@ -1,4 +1,5 @@
 import { getSharedLinkURL, tokenFromFragment } from '../shareService';
+jest.mock('../keyService', () => ({ getMasterKeyId: () => null }));
 
 // shareService pulls in apiService (and through it Firebase) at import time;
 // these tests only exercise the pure URL helpers.

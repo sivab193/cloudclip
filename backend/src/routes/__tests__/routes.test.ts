@@ -9,16 +9,16 @@ import Shared from '../../models/Shared';
 
 const deleteUserMock = jest.fn().mockResolvedValue(undefined);
 
-jest.mock('firebase-admin', () => {
+jest.mock('firebase-admin/app', () => ({ getApps: () => [{}] }));
+jest.mock('firebase-admin/auth', () => {
   return {
-    apps: [{}], // non-empty so lazy init skips initializeApp
-    auth: jest.fn().mockReturnValue({
+    getAuth: jest.fn().mockReturnValue({
       verifyIdToken: jest.fn((token: string) => {
         if (token === 'token_a') {
-          return Promise.resolve({ uid: 'user_a', email: 'a@example.com' });
+          return Promise.resolve({ uid: 'user_a', email: 'a@example.com', auth_time: Date.now() / 1000 });
         }
         if (token === 'token_b') {
-          return Promise.resolve({ uid: 'user_b', email: 'b@example.com' });
+          return Promise.resolve({ uid: 'user_b', email: 'b@example.com', auth_time: Date.now() / 1000 });
         }
         return Promise.reject(new Error('Invalid token'));
       }),
@@ -81,6 +81,25 @@ describe('REST routes', () => {
   });
 
   describe('users', () => {
+    it('preserves a custom name when a device refreshes its profile', async () => {
+      await request(bundle.app).post('/api/users/sync').set(asA).send({ name: 'Custom name' }).expect(201);
+      const res = await request(bundle.app).post('/api/users/sync').set(asA).send({}).expect(201);
+      expect(res.body.name).toBe('Custom name');
+    });
+
+    it('allows only one concurrent writer of a key version', async () => {
+      await request(bundle.app).post('/api/users/sync').set(asA).send({}).expect(201);
+      const results = await Promise.all([
+        request(bundle.app).put('/api/users/me/keys').set(asA).send(VALID_KEYS),
+        request(bundle.app).put('/api/users/me/keys').set(asA).send({ ...VALID_KEYS, wrappedKey: 'different' }),
+      ]);
+      expect(results.map(r => r.status).sort()).toEqual([200, 409]);
+    });
+
+    it('rejects key derivation parameters that can exhaust a phone', async () => {
+      await request(bundle.app).put('/api/users/me/keys').set(asA)
+        .send({ ...VALID_KEYS, kdf: { name: 'scrypt', N: 2 ** 22, r: 32, p: 16 } }).expect(400);
+    });
     it('sync takes email from the token, not the body', async () => {
       const res = await request(bundle.app)
         .post('/api/users/sync')
@@ -159,6 +178,51 @@ describe('REST routes', () => {
   });
 
   describe('clipboards', () => {
+    it('rejects old-key clipboard and share writes after an encryption reset', async () => {
+      const oldId = '11111111-1111-4111-8111-111111111111';
+      const newId = '22222222-2222-4222-8222-222222222222';
+      await request(bundle.app).post('/api/users/sync').set(asA).send({}).expect(201);
+      await request(bundle.app).put('/api/users/me/keys').set(asA).send({ ...VALID_KEYS, keyId: oldId }).expect(200);
+      const clip = { deviceId: 'd', deviceName: 'D', content: 'ciphertext', keyId: oldId };
+      await request(bundle.app).post('/api/clipboards').set(asA).send(clip).expect(201);
+      await request(bundle.app).delete('/api/users/me/keys').set(asA).expect(200);
+      await request(bundle.app).post('/api/clipboards').set(asA).send(clip).expect(412);
+      await request(bundle.app).put('/api/users/me/keys').set(asA).send({ ...VALID_KEYS, keyId: newId }).expect(200);
+      await request(bundle.app).post('/api/clipboards').set(asA).send(clip).expect(412);
+      await request(bundle.app).post('/api/shared').set(asA)
+        .send({ code: 'AAAAAAAA', content: 'ciphertext', keyId: oldId }).expect(412);
+      expect(await Clipboard.countDocuments()).toBe(0);
+      expect(await Shared.countDocuments()).toBe(0);
+      await request(bundle.app).post('/api/clipboards').set(asA).send({ ...clip, keyId: newId }).expect(201);
+    });
+
+    it('accepts an explicit legacy key precondition only while legacy keys exist', async () => {
+      const clip = { deviceId: 'd', deviceName: 'D', content: 'ciphertext', keyId: null };
+      await request(bundle.app).post('/api/clipboards').set(asA).send(clip).expect(412);
+      await request(bundle.app).post('/api/users/sync').set(asA).send({}).expect(201);
+      await request(bundle.app).put('/api/users/me/keys').set(asA).send(VALID_KEYS).expect(200);
+      await request(bundle.app).post('/api/clipboards').set(asA).send(clip).expect(201);
+    });
+
+    it('retries a lost create response without creating duplicate clips', async () => {
+      const payload = { deviceId: 'd', deviceName: 'Phone', content: 'encrypted', requestId: '11111111-1111-4111-8111-111111111111' };
+      const results = await Promise.all([
+        request(bundle.app).post('/api/clipboards').set(asA).send(payload).expect(201),
+        request(bundle.app).post('/api/clipboards').set(asA).send(payload).expect(201),
+      ]);
+      expect(results[0].body._id).toBe(results[1].body._id);
+      expect(await Clipboard.countDocuments({ userId: 'user_a' })).toBe(1);
+    });
+
+    it('returns a validation error for malformed IDs', async () => {
+      await request(bundle.app).delete('/api/clipboards/not-an-id').set(asA).expect(400);
+      await request(bundle.app).delete('/api/shared/not-an-id').set(asA).expect(400);
+    });
+
+    it('prevents sensitive API responses from being cached', async () => {
+      const res = await request(bundle.app).get('/api/clipboards').set(asA).expect(200);
+      expect(res.headers['cache-control']).toBe('no-store');
+    });
     it('scopes reads and deletes to the owner', async () => {
       const clipA = await Clipboard.create({ userId: 'user_a', deviceId: 'd', deviceName: 'D', content: 'secret-a' });
       await Clipboard.create({ userId: 'user_b', deviceId: 'd', deviceName: 'D', content: 'secret-b' });

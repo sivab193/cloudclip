@@ -3,18 +3,18 @@ import { StyleSheet, TextInput, View, Text, TouchableOpacity, SafeAreaView, Flat
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useAuth } from '@/auth/AuthContext';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { apiService } from '@/service/apiService';
 import { getDeviceOS } from '@/service/deviceService';
-import { rewrapWithNewPassword, regenerateRecoveryCode, lockLocal } from '@/service/keyService';
-import { getAutoReadSetting, setAutoReadSetting, clearSyncState } from '@/service/syncEngine';
+import { rewrapWithNewPassword, regenerateRecoveryCode, getMasterKey } from '@/service/keyService';
+import { getAutoReadSetting, setAutoReadSetting } from '@/service/syncEngine';
 import { Device } from '@/service/models';
 import Header from '@/components/Header';
-import { useNavigation } from 'expo-router';
 import Alert from '@/components/Alert';
 import Confirmation from '@/components/Confirmation';
 import RecoveryCodeModal from '@/components/RecoveryCodeModal';
+import DeleteAccountModal from '@/components/DeleteAccountModal';
 import useDeviceDetails from '@/hooks/useDeviceDetails';
 import NoItemsComponent from '@/components/NoItems';
 import { ThemeTokens } from '@/constants/Colors';
@@ -36,7 +36,7 @@ export default function Account() {
     const [alertMessage, setAlertMessage] = useState('');
     const [confirmationVisible, setConfirmationVisible] = useState(false);
     const [deviceToRemove, setDeviceToRemove] = useState<Device | null>(null);
-    const { deviceId, deviceName } = useDeviceDetails();
+    const { deviceId } = useDeviceDetails();
 
     // Security section state
     const [autoRead, setAutoRead] = useState(false);
@@ -49,10 +49,7 @@ export default function Account() {
     const [recoveryConfirmVisible, setRecoveryConfirmVisible] = useState(false);
     const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
     const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
-    const [deleteFinalVisible, setDeleteFinalVisible] = useState(false);
-    const [deleteBusy, setDeleteBusy] = useState(false);
 
-    const navigation = useNavigation();
 
     const showAlert = (message: string) => {
         setAlertVisible(true);
@@ -61,6 +58,9 @@ export default function Account() {
     };
 
     useEffect(() => {
+        let active = true;
+        setName('');
+        setDevices([]);
         const subscription = Dimensions.addEventListener('change', () => {
             setIsWideScreen(Dimensions.get('window').width >= 768);
         });
@@ -69,10 +69,10 @@ export default function Account() {
             try {
                 if (user) {
                     const userData = await apiService.syncUser();
-                    if (userData) setName(userData.name);
+                    if (userData && active) setName(userData.name);
                     const fetchedDevices = await apiService.getDevices();
-                    setDevices(fetchedDevices);
-                    setAutoRead(await getAutoReadSetting());
+                    const setting = await getAutoReadSetting();
+                    if (active) { setDevices(fetchedDevices); setAutoRead(setting); }
                 }
             } catch {
                 // Backend unreachable; screen still renders.
@@ -80,7 +80,7 @@ export default function Account() {
         };
         initialize();
 
-        return () => subscription.remove();
+        return () => { active = false; subscription.remove(); };
     }, [user, deviceId]);
 
     const handleSaveName = async () => {
@@ -94,8 +94,10 @@ export default function Account() {
     };
 
     const handleToggleAutoRead = async (value: boolean) => {
-        setAutoRead(value);
-        await setAutoReadSetting(value);
+        try {
+            await setAutoReadSetting(value);
+            setAutoRead(value);
+        } catch { showAlert('Could not save clipboard preference'); return; }
         if (Platform.OS === 'ios' && value) {
             showAlert('Note: iOS shows a paste banner whenever the app reads the clipboard.');
         }
@@ -145,11 +147,17 @@ export default function Account() {
         if (!user?.email) return;
         setPasswordBusy(true);
         try {
+            if (!await getMasterKey(true)) throw new Error('Unlock your data before changing your password.');
             const credential = EmailAuthProvider.credential(user.email, currentPassword);
             await reauthenticateWithCredential(user, credential);
             await updatePassword(user, newPassword);
-            // Re-wrap the E2E master key under the new password.
-            await rewrapWithNewPassword(newPassword);
+            try {
+                await rewrapWithNewPassword(newPassword);
+            } catch {
+                // A lost response may mean the wrap DID commit. Never blindly
+                // roll Firebase back, which could strand the newly wrapped key.
+                throw new Error('Your sign-in password changed, but the encryption update could not be confirmed. Stay signed in and retry using your new password as the current password, or recover with your recovery code.');
+            }
             setPasswordModalVisible(false);
             setCurrentPassword('');
             setNewPassword('');
@@ -161,7 +169,7 @@ export default function Account() {
             } else if (error?.code === 'auth/weak-password') {
                 setPasswordError('New password is too weak.');
             } else {
-                setPasswordError('Failed to change password. Your data encryption is unchanged.');
+                setPasswordError(error instanceof Error ? error.message : 'Failed to change password. Please try again.');
             }
         } finally {
             setPasswordBusy(false);
@@ -175,22 +183,6 @@ export default function Account() {
             setRecoveryCode(code);
         } catch (error) {
             showAlert(error instanceof Error ? error.message : 'Failed to generate recovery code.');
-        }
-    };
-
-    const handleDeleteAccount = async () => {
-        setDeleteFinalVisible(false);
-        setDeleteBusy(true);
-        try {
-            await apiService.deleteAccount();
-            await lockLocal();
-            await clearSyncState();
-            await logout();
-            showAlert('Your account and all data have been deleted.');
-        } catch {
-            showAlert('Failed to delete account — please try again.');
-        } finally {
-            setDeleteBusy(false);
         }
     };
 
@@ -228,6 +220,7 @@ export default function Account() {
             <Confirmation
                 message="Remove this device?"
                 visible={confirmationVisible}
+                onDismiss={() => setConfirmationVisible(false)}
                 buttons={[
                     { label: 'No', onPress: () => setConfirmationVisible(false) },
                     { label: 'Yes', onPress: handleRemoveDevice },
@@ -237,28 +230,16 @@ export default function Account() {
                 message="Generate a new recovery code?"
                 subtitle="Your old recovery code will stop working."
                 visible={recoveryConfirmVisible}
+                onDismiss={() => setRecoveryConfirmVisible(false)}
                 buttons={[
                     { label: 'Cancel', onPress: () => setRecoveryConfirmVisible(false) },
                     { label: 'Generate', onPress: handleRegenerateRecovery },
                 ]}
             />
-            <Confirmation
-                message="Delete your account?"
-                subtitle="This permanently deletes your account, all clipboard entries, shared links and devices. This cannot be undone."
+            <DeleteAccountModal
                 visible={deleteConfirmVisible}
-                buttons={[
-                    { label: 'Cancel', onPress: () => setDeleteConfirmVisible(false) },
-                    { label: 'Continue', onPress: () => { setDeleteConfirmVisible(false); setDeleteFinalVisible(true); }, variant: 'danger' },
-                ]}
-            />
-            <Confirmation
-                message="Are you absolutely sure?"
-                subtitle="All your data will be permanently erased."
-                visible={deleteFinalVisible}
-                buttons={[
-                    { label: 'Keep my account', onPress: () => setDeleteFinalVisible(false) },
-                    { label: 'Delete forever', onPress: handleDeleteAccount, variant: 'danger' },
-                ]}
+                onClose={() => setDeleteConfirmVisible(false)}
+                onDeleted={() => showAlert('Your account and all data have been deleted.')}
             />
             {recoveryCode && (
                 <RecoveryCodeModal visible={true} code={recoveryCode} onDone={() => setRecoveryCode(null)} />
@@ -342,7 +323,7 @@ export default function Account() {
                         </TouchableWithoutFeedback>
                     </Modal>
 
-                    <Header navigation={navigation} />
+                    <Header />
                     <ThemedView style={styles.containerLight}>
                         {user ? (
                             <View style={isWideScreen ? styles.wideContent : styles.narrowContent}>
@@ -391,7 +372,7 @@ export default function Account() {
                                         <View style={styles.settingTextContainer}>
                                             <Text style={styles.settingTitle}>Read clipboard on open</Text>
                                             <Text style={styles.settingSubtitle}>
-                                                Automatically sync what you copied when the app opens.
+                                                When enabled, CloudClip reads your clipboard while open, encrypts its text and uploads it to your account for your other devices. It can also replace your clipboard with your latest synced text.
                                                 {Platform.OS === 'ios' ? ' iOS shows a paste banner on every read.' : ''}
                                             </Text>
                                         </View>
@@ -408,10 +389,10 @@ export default function Account() {
                                         <Ionicons name="shield-checkmark-outline" size={20} color={t.icon} />
                                         <Text style={styles.settingButtonText}>Generate new recovery code</Text>
                                     </TouchableOpacity>
-                                    <TouchableOpacity style={styles.settingButton} onPress={() => setDeleteConfirmVisible(true)} disabled={deleteBusy}>
+                                    <TouchableOpacity style={styles.settingButton} onPress={() => setDeleteConfirmVisible(true)}>
                                         <Ionicons name="trash-outline" size={20} color={t.danger} />
                                         <Text style={[styles.settingButtonText, styles.dangerText]}>
-                                            {deleteBusy ? 'Deleting…' : 'Delete account & all data'}
+                                            Delete account & all data
                                         </Text>
                                     </TouchableOpacity>
                                 </ThemedView>
@@ -422,7 +403,7 @@ export default function Account() {
                             </View>
                         ) : (
                             <ThemedView style={styles.containerCenter}>
-                                <MaterialCommunityIcons name="hand-wave" size={24} color={t.icon} />
+                                <Ionicons name="hand-left-outline" size={24} color={t.icon} />
                                 <ThemedText type="subtitle" style={styles.text}>Hi there! {'\n'}</ThemedText>
                                 <ThemedText type="subtitle" style={styles.text}>Welcome! Please log in to access your account and enjoy personalized features.
                                 </ThemedText>

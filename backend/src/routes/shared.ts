@@ -1,9 +1,12 @@
 import express from 'express';
+import { mutation } from '../middleware/mutation';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
 import { verifyFirebaseToken } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import Shared from '../models/Shared';
+import { objectIdSchema } from '../services/clipboard';
+import { assertEncryptionKey } from '../services/encryption';
 
 const router = express.Router();
 
@@ -32,13 +35,15 @@ const createSchema = z.object({
   ownerWrapNonce: z.string().min(1).max(64).optional(),
   clipboardId: z.string().max(64).optional(),
   ttlDays: z.number().int().min(1).max(30).default(7),
+  keyId: z.uuid().nullable().optional(),
 });
 
 // Create a new shared link
-router.post('/', verifyFirebaseToken, validate(createSchema), async (req, res, next) => {
+router.post('/', verifyFirebaseToken, validate(createSchema), mutation(async (req, res, next) => {
   try {
     const firebaseUid = req.user?.uid;
     const { content, code, ownerWrappedKey, ownerWrapNonce, clipboardId, ttlDays } = req.body;
+    await assertEncryptionKey(firebaseUid!, req.body.keyId);
 
     const shared = new Shared({
       userId: firebaseUid,
@@ -59,10 +64,10 @@ router.post('/', verifyFirebaseToken, validate(createSchema), async (req, res, n
     }
     next(error);
   }
-});
+}));
 
 // Delete ALL shared links for the current user
-router.delete('/', verifyFirebaseToken, async (req, res, next) => {
+router.delete('/', verifyFirebaseToken, mutation(async (req, res, next) => {
   try {
     const firebaseUid = req.user?.uid;
     await Shared.deleteMany({ userId: firebaseUid });
@@ -70,7 +75,7 @@ router.delete('/', verifyFirebaseToken, async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+}));
 
 // Brute-forcing codes only yields ciphertext (E2E), but throttle anyway.
 const publicLookupLimiter = rateLimit({
@@ -84,6 +89,9 @@ const publicLookupLimiter = rateLimit({
 router.get('/:code', publicLookupLimiter, async (req, res, next) => {
   try {
     const { code } = req.params;
+    if (typeof code !== 'string' || !/^[1-9A-HJ-NP-Za-km-z]{8}$/.test(code)) {
+      return res.status(400).json({ error: 'Invalid share code' });
+    }
     const shared = await Shared.findOne({ code, expiryAt: { $gt: new Date() } });
 
     if (!shared) {
@@ -102,10 +110,11 @@ router.get('/:code', publicLookupLimiter, async (req, res, next) => {
 });
 
 // Delete a shared link
-router.delete('/:id', verifyFirebaseToken, async (req, res, next) => {
+router.delete('/:id', verifyFirebaseToken, mutation(async (req, res, next) => {
   try {
     const firebaseUid = req.user?.uid;
     const { id } = req.params;
+    if (!objectIdSchema.safeParse(id).success) return res.status(400).json({ error: 'Invalid shared link ID' });
 
     const result = await Shared.findOneAndDelete({
       _id: id,
@@ -120,6 +129,6 @@ router.delete('/:id', verifyFirebaseToken, async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+}));
 
 export default router;
