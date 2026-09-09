@@ -61,7 +61,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     width: '85%',
     maxWidth: 420,
     backgroundColor: t.surface,
-    borderRadius: 10,
+    borderRadius: 22,
     padding: 20,
   },
   title: {
@@ -91,7 +91,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   },
   button: {
     backgroundColor: t.primary,
-    borderRadius: 5,
+    borderRadius: 12,
     padding: 12,
     alignItems: 'center',
   },

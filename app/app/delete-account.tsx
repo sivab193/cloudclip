@@ -77,7 +77,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   },
   deleteButton: {
     backgroundColor: t.danger,
-    borderRadius: 8,
+    borderRadius: 14,
     padding: 14,
     alignItems: 'center',
   },

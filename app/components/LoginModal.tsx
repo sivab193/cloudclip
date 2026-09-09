@@ -321,17 +321,18 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   },
   modalBox: {
     width: '80%',
-    maxWidth: 400,
+    maxWidth: 440,
     backgroundColor: t.surface,
-    borderRadius: 10,
-    padding: 16,
+    borderRadius: 22,
+    padding: 24,
   },
   input: {
-    height: 40,
+    height: 48,
     borderColor: t.border,
     borderWidth: 1,
     marginBottom: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 14,
+    borderRadius: 12,
     color: t.text,
     backgroundColor: t.surface,
   },
@@ -365,7 +366,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   button: {
     marginBottom: 12,
     backgroundColor: t.primary,
-    borderRadius: 5,
+    borderRadius: 12,
     padding: 10,
   },
   busyText: {
@@ -382,7 +383,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 12,
     marginRight: 8,
     flexDirection: 'row'
   },

@@ -103,9 +103,9 @@ export default function Homepage() {
 							<>
 								<ThemedView style={styles.container}>
 									<View style={styles.headerWithButton}>
-										<ThemedText type="defaultSemiBold" style={styles.text}>Your latest copied text</ThemedText>
+										<ThemedText type="defaultSemiBold" style={styles.text}>Latest clip</ThemedText>
 										<View style={styles.buttonContainer}>
-											<TouchableOpacity style={[styles.copyButton, { marginLeft: 10 }]} onPress={() => handleCopy(latestText || '')}>
+											<TouchableOpacity style={[styles.copyButton, { marginLeft: 10 }]} accessibilityLabel="Copy latest clip" disabled={!latestText} onPress={() => handleCopy(latestText || '')}>
 												<Ionicons name="clipboard-outline" size={24} color={t.icon} />
 												{Platform.OS === 'web' && (
 													<Text style={[styles.copyButtonText, { color: t.text }]}> Copy Text</Text>
@@ -119,20 +119,20 @@ export default function Homepage() {
 												scrollEnabled={true}
 												nestedScrollEnabled={true}
 											>
-												<Text style={styles.catBodyText}>{latestText}</Text>
+												<Text style={styles.catBodyText}>{latestText || 'Your latest saved text will appear here.'}</Text>
 											</ScrollView>
 										</View>
 									</View>
 								</ThemedView>
 								<ThemedView style={styles.container}>
 									<View style={styles.headerWithButton}>
-										<ThemedText type="defaultSemiBold" style={styles.text}>Save to clipboard</ThemedText>
+										<ThemedText type="defaultSemiBold" style={styles.text}>Capture a thought</ThemedText>
 										<View style={styles.buttonContainer}>
 											<TouchableOpacity accessibilityRole="button" accessibilityLabel="Paste from clipboard" style={styles.copyButton} onPress={handlePaste}>
 												<Ionicons name="clipboard-outline" size={24} color={t.icon} />
 												<Text style={{ color: t.text }}> Paste</Text>
 											</TouchableOpacity>
-											<TouchableOpacity style={styles.copyButton} onPress={() => handleSave(saveTextData)}>
+											<TouchableOpacity accessibilityLabel="Save text" disabled={!saveTextData.trim()} style={[styles.copyButton, { backgroundColor: t.surfaceAlt, opacity: saveTextData.trim() ? 1 : 0.45 }]} onPress={() => handleSave(saveTextData)}>
 												<Ionicons name="save-outline" size={24} color={t.icon} />
 												{Platform.OS === 'web' && (
 													<Text style={[styles.copyButtonText, { color: t.text }]}> Save Text</Text>
@@ -164,11 +164,11 @@ export default function Homepage() {
 								</ThemedView>
 								<ThemedView style={styles.container}>
 									<View style={styles.headerWithButton}>
-										<ThemedText type="defaultSemiBold" style={styles.text}>Your Clipboard Entries ({clipboardEntries.length})</ThemedText>
+										<ThemedText type="defaultSemiBold" style={styles.text}>Your library ({clipboardEntries.length})</ThemedText>
 										<TouchableOpacity style={styles.copyButton} onPress={() => setConfirmationVisible(true)}>
 											<Ionicons name="trash-outline" size={24} color={t.icon} />
 											{Platform.OS === 'web' && (
-												<Text style={[styles.copyButtonText, { color: t.text }]}> Delete all Entries</Text>
+												<Text style={[styles.copyButtonText, { color: t.text }]}> Clear library</Text>
 											)}
 										</TouchableOpacity>
 									</View>
@@ -185,10 +185,11 @@ export default function Homepage() {
 
 const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 	catBody: {
+        backgroundColor: t.surfaceAlt,
 		height: 200,
 		borderWidth: 1,
 		borderColor: t.border,
-		borderRadius: 4,
+		borderRadius: 16,
 		overflow: 'hidden'
 	},
 	catBodyText: {
@@ -211,13 +212,16 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 		borderRadius: 16,
 	},
 	catContainer: {
-		backgroundColor: t.background,
+		backgroundColor: t.surface,
+        marginTop: 18,
 		paddingTop: 2,
 		borderRadius: 16,
 	},
 	container: {
-		backgroundColor: t.background,
-		padding: 10,
+        width: '100%', maxWidth: 1120, alignSelf: 'center', marginTop: 20,
+        borderWidth: 1, borderColor: t.borderSubtle,
+		backgroundColor: t.surface,
+		padding: 22,
 		borderRadius: 16,
 		overflow: 'hidden'
 	},
@@ -226,6 +230,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 		marginLeft: 10,
 	},
 	headerWithButton: {
+        flexWrap: 'wrap', gap: 10,
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
@@ -235,7 +240,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		padding: 8,
-		borderRadius: 5,
+		borderRadius: 12,
 	},
 	copyButtonText: {
 		marginLeft: 5,

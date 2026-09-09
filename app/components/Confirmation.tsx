@@ -64,7 +64,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     },
     container: {
         backgroundColor: t.surface,
-        borderRadius: 10,
+        borderRadius: 22,
         padding: 20,
         width: '80%',
         maxWidth: 400,
@@ -88,7 +88,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     button: {
         flex: 1,
         padding: 10,
-        borderRadius: 5,
+        borderRadius: 12,
         marginHorizontal: 5,
         alignItems: 'center',
         backgroundColor: t.primary,

@@ -46,8 +46,8 @@ export default function Root({ children }: PropsWithChildren) {
 
         {/* PWA */}
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#0A7EA4" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#151718" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#6850d8" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#12121d" media="(prefers-color-scheme: dark)" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -73,12 +73,20 @@ export default function Root({ children }: PropsWithChildren) {
 
 // Must stay in sync with Colors.light.background / Colors.dark.background.
 const responsiveBackground = `
+[role="button"], a, input, textarea { transition: background-color .2s, box-shadow .2s, transform .2s, opacity .2s; }
+[role="button"]:hover, a:hover { filter: brightness(0.96); }
+[role="button"]:active { transform: translateY(1px); }
+:focus-visible { outline: 3px solid #9984ef !important; outline-offset: 4px; }
+input:focus, textarea:focus { box-shadow: 0 0 0 3px #9984ef25; }
+@keyframes clip-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+[role="dialog"] { animation: clip-enter .3s ease-out; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 body {
-  background-color: #ffffff;
+  background-color: #f8f9fc;
 }
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #151718;
+    background-color: #12121d;
   }
 }`;
 

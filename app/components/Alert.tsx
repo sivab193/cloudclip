@@ -46,7 +46,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: t.primary,
     padding: 16,
-    borderRadius: 5,
+    borderRadius: 12,
     zIndex: 9999,
     alignItems: 'center',
   },

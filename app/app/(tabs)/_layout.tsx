@@ -9,10 +9,13 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: t.text,
+        tabBarActiveTintColor: t.primary,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarItemStyle: { paddingVertical: 8 },
         tabBarInactiveTintColor: t.tabIconDefault,
         tabBarStyle: {
-          backgroundColor: t.background,
+          backgroundColor: t.surface,
+          height: 72, paddingBottom: 8, paddingTop: 4,
           borderTopColor: t.borderSubtle,
         },
         headerShown: false,

@@ -54,30 +54,30 @@ export interface ThemeTokens {
   tabIconSelected: string;
 }
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const tintColorLight = '#6850d8';
+const tintColorDark = '#b9a8ff';
 
 const light: ThemeTokens = {
-  background: '#ffffff',
+  background: '#f8f9fc',
   surface: '#ffffff',
-  surfaceAlt: '#f0f0f0',
+  surfaceAlt: '#efedf9',
   surfaceDisabled: '#e6e8ea',
 
-  text: '#11181C',
-  textMuted: '#666666',
+  text: '#202039',
+  textMuted: '#6a6a80',
   textDisabled: '#4a5568',
-  placeholder: '#999999',
+  placeholder: '#77778c',
 
-  border: '#11181C',
-  borderSubtle: '#eeeeee',
+  border: '#d8d8e7',
+  borderSubtle: '#e6e5ef',
 
-  primary: '#000000',
+  primary: '#6850d8',
   onPrimary: '#ffffff',
   danger: '#b00020',
   onDanger: '#ffffff',
   accent: '#1a7f37',
 
-  icon: '#11181C',
+  icon: '#57516e',
   overlay: 'rgba(0, 0, 0, 0.5)',
   shadow: '#000000',
 
@@ -87,9 +87,9 @@ const light: ThemeTokens = {
 };
 
 const dark: ThemeTokens = {
-  background: '#151718',
-  surface: '#1e2022',
-  surfaceAlt: '#26292b',
+  background: '#12121d',
+  surface: '#1c1c2b',
+  surfaceAlt: '#252338',
   surfaceDisabled: '#2b2f31',
 
   text: '#ECEDEE',
@@ -97,12 +97,12 @@ const dark: ThemeTokens = {
   textDisabled: '#8a9296',
   placeholder: '#6b7175',
 
-  border: '#3a3f42',
-  borderSubtle: '#2a2e30',
+  border: '#45405d',
+  borderSubtle: '#302d44',
 
   // Inverted: a light fill with dark text reads as "primary" on a dark page.
-  primary: '#ECEDEE',
-  onPrimary: '#151718',
+  primary: '#b9a8ff',
+  onPrimary: '#19132f',
   // #b00020 fails contrast on a dark surface; this is the lightened pair.
   danger: '#ff6b6b',
   onDanger: '#151718',

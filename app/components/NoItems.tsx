@@ -11,7 +11,7 @@ const NoItemsComponent = () => {
     return (
         <View style={styles.container}>
             <Ionicons name="file-tray-outline" size={24} color={t.textMuted} />
-            <Text style={styles.text}>No items yet!</Text>
+            <Text style={styles.text}>A fresh start. Your clips will appear here.</Text>
         </View>
     );
 };
@@ -19,6 +19,7 @@ const NoItemsComponent = () => {
 const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     container: {
         height: 200,
+        gap: 14, borderRadius: 20, backgroundColor: t.surfaceAlt, padding: 24,
         justifyContent: 'center',
         alignItems: 'center',
     },

@@ -398,7 +398,7 @@ export default function Account() {
                                 </ThemedView>
 
                                 <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-                                    <Text style={styles.logoutButtonText}>Click here to logout!</Text>
+                                    <Text style={styles.logoutButtonText}>Sign out</Text>
                                 </TouchableOpacity>
                             </View>
                         ) : (
@@ -436,7 +436,8 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         flex: 1,
     },
     containerLight: {
-        backgroundColor: t.background,
+        backgroundColor: t.surface,
+        paddingVertical: 24, marginBottom: 20,
         borderRadius: 16,
         paddingHorizontal: 16,
     },
@@ -444,7 +445,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         marginBottom: 16,
     },
     inputLight: {
-        height: 40,
+        height: 48,
         borderColor: t.border,
         borderWidth: 1,
         marginTop: 2,
@@ -455,7 +456,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     buttonPrimary: {
         marginTop: 12,
         paddingVertical: 12,
-        borderRadius: 8,
+        borderRadius: 14,
         backgroundColor: t.primary,
         alignItems: 'center',
         minWidth: 100
@@ -474,10 +475,10 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         alignItems: 'center',
         padding: 16,
         marginBottom: 16,
-        borderRadius: 8,
+        borderRadius: 14,
         backgroundColor: t.surfaceAlt,
         shadowColor: t.shadow,
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.04,
         shadowOffset: { width: 0, height: 2 },
         shadowRadius: 2,
         elevation: 2,
@@ -491,6 +492,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         color: t.textMuted,
     },
     containerCenter: {
+        padding: 40, marginTop: 32, borderRadius: 24, borderWidth: 1, borderColor: t.borderSubtle,
         flex: 1,
         backgroundColor: t.background,
         justifyContent: 'center',
@@ -499,7 +501,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     wideContent: {
         flex: 1,
         alignSelf: Platform.OS === 'web' ? 'center' : 'stretch',
-        width: Platform.OS == 'web' ? '50%' : '100%'
+        width: '100%', maxWidth: 800
     },
     narrowContent: {
         flex: 1,
@@ -510,7 +512,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         marginTop: 24,
         marginBottom: 24,
         paddingVertical: 12,
-        borderRadius: 8,
+        borderRadius: 14,
         backgroundColor: 'transparent',
         alignItems: 'center'
     },
@@ -565,11 +567,11 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     modalView: {
         width: 300,
         backgroundColor: t.surface,
-        borderRadius: 10,
+        borderRadius: 22,
         padding: 20,
         shadowColor: t.shadow,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
+        shadowOpacity: 0.10,
         shadowRadius: 4,
         elevation: 5,
     },
@@ -579,7 +581,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         color: t.text,
     },
     input: {
-        height: 40,
+        height: 48,
         width: '100%',
         borderColor: t.border,
         borderWidth: 1,
@@ -593,7 +595,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         marginBottom: 10,
     },
     emailInput: {
-        height: 40,
+        height: 48,
         borderColor: t.border,
         borderWidth: 1,
         marginTop: 2,

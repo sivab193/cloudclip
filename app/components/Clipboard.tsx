@@ -155,7 +155,7 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
                                             {truncateContent(entry.content)}
                                         </ThemedText>
                                         <ThemedText type='default' style={styles.clipboardDevice}>
-                                            Content Length: {entry.content.length}
+                                            Characters: {entry.content.length}
                                         </ThemedText>
                                         <ThemedText type='default' style={styles.clipboardDevice}>
                                             Device: {entry.deviceName || 'Unknown Device'}
@@ -202,25 +202,25 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 10,
-        padding: 10,
-        borderRadius: 5,
+        padding: 18,
+        borderRadius: 12,
         backgroundColor: t.surfaceAlt,
         shadowOffset: { height: 2, width: 2 },
         shadowColor: t.shadow,
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.04,
         gap: 10,
         cursor: Platform.OS === 'web' ? 'pointer' : 'auto'
     },
     clipboardText: {
         fontSize: 14,
-        lineHeight: 16,
+        lineHeight: 22,
         flex: 1,
         color: t.text,
         fontWeight: '500'
     },
     clipboardDevice: {
         fontSize: 12,
-        lineHeight: 16,
+        lineHeight: 22,
         flex: 1,
         color: t.textMuted
     },

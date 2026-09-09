@@ -145,7 +145,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 8,
-    borderRadius: 5,
+    borderRadius: 12,
   },
   copyButtonText: {
     marginLeft: 5,
