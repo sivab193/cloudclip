@@ -19,6 +19,8 @@ import useDeviceDetails from '@/hooks/useDeviceDetails';
 import NoItemsComponent from '@/components/NoItems';
 import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
+import AmbientBackdrop from '@/components/AmbientBackdrop';
+import Reveal from '@/components/Reveal';
 
 export default function Account() {
     const t = useTheme();
@@ -250,6 +252,7 @@ export default function Account() {
                 horizontal={false}
             >
                 <SafeAreaView style={styles.safeArea}>
+                    <AmbientBackdrop />
                     {/* Rename current device */}
                     <Modal
                         animationType="fade"
@@ -324,13 +327,18 @@ export default function Account() {
                     </Modal>
 
                     <Header />
-                    <ThemedView style={styles.containerLight}>
+                    <Reveal>
+                    <ThemedView style={styles.accountShell}>
                         {user ? (
                             <View style={isWideScreen ? styles.wideContent : styles.narrowContent}>
-                                <ThemedText type="subtitle">Your Account</ThemedText>
-                                <Text>{'\n'}</Text>
+                                <View style={styles.accountHero}>
+                                    <View style={styles.avatar}><Text style={styles.avatarText}>{(name || email || 'C').slice(0, 1).toUpperCase()}</Text></View>
+                                    <View style={styles.heroCopy}><Text style={styles.eyebrow}>PERSONAL SPACE</Text><ThemedText style={styles.heroTitle}>{name ? `Hello, ${name.split(' ')[0]}.` : 'Your account.'}</ThemedText><Text style={styles.heroSubtitle}>Manage the devices and security behind your private clipboard.</Text></View>
+                                </View>
+                                <ThemedView style={styles.containerLight}>
+                                <View style={styles.sectionHeading}><View style={styles.sectionIcon}><Ionicons name="person-outline" size={19} color={t.primary} /></View><View><ThemedText style={styles.sectionTitle}>Profile</ThemedText><Text style={styles.sectionHint}>How you appear across CloudClip</Text></View></View>
                                 <View style={styles.fieldContainer}>
-                                    <ThemedText type="subtitle" style={styles.text}>Email</ThemedText>
+                                    <Text style={styles.fieldLabel}>EMAIL ADDRESS</Text>
                                     <TextInput
                                         style={styles.emailInput}
                                         value={email}
@@ -338,7 +346,7 @@ export default function Account() {
                                     />
                                 </View>
                                 <View style={styles.fieldContainer}>
-                                    <ThemedText type="subtitle" style={styles.text}>Name</ThemedText>
+                                    <Text style={styles.fieldLabel}>DISPLAY NAME</Text>
                                     <TextInput
                                         style={styles.inputLight}
                                         onChangeText={setName}
@@ -348,12 +356,11 @@ export default function Account() {
                                     />
                                 </View>
                                 <TouchableOpacity style={styles.buttonPrimary} onPress={handleSaveName}>
-                                    <Text style={styles.buttonPrimaryText}>Save</Text>
+                                    <Text style={styles.buttonPrimaryText}>Save profile</Text><Ionicons name="arrow-forward" size={17} color={t.onPrimary} />
                                 </TouchableOpacity>
-
-                                <Text>{'\n'}</Text>
+                                </ThemedView>
                                 <ThemedView style={styles.containerLight}>
-                                    <ThemedText type="subtitle" style={styles.text}>My Devices</ThemedText>
+                                    <View style={styles.sectionHeading}><View style={styles.sectionIcon}><Ionicons name="hardware-chip-outline" size={19} color={t.primary} /></View><View><ThemedText style={styles.sectionTitle}>Connected devices</ThemedText><Text style={styles.sectionHint}>Every place your clips can appear</Text></View></View>
                                     {devices.length > 0 ? (
                                         <FlatList
                                             data={devices}
@@ -364,10 +371,8 @@ export default function Account() {
                                         <NoItemsComponent></NoItemsComponent>
                                     )}
                                 </ThemedView>
-
-                                <Text>{'\n'}</Text>
                                 <ThemedView style={styles.containerLight}>
-                                    <ThemedText type="subtitle" style={styles.text}>Sync & Security</ThemedText>
+                                    <View style={styles.sectionHeading}><View style={styles.sectionIcon}><Ionicons name="shield-checkmark-outline" size={19} color={t.primary} /></View><View><ThemedText style={styles.sectionTitle}>Sync & security</ThemedText><Text style={styles.sectionHint}>Privacy controls for your encrypted data</Text></View></View>
                                     <View style={styles.settingRow}>
                                         <View style={styles.settingTextContainer}>
                                             <Text style={styles.settingTitle}>Read clipboard on open</Text>
@@ -410,6 +415,7 @@ export default function Account() {
                             </ThemedView>
                         )}
                     </ThemedView >
+                    </Reveal>
                 </SafeAreaView >
             </ScrollView>
         </>
@@ -421,12 +427,21 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         flex: 1,
         backgroundColor: t.background,
         paddingTop: Platform.OS === 'web' ? 0 : 30,
+        position: 'relative',
     },
     iconsContainer: {
         flexDirection: 'row',
     },
     iconButton: {
-        marginLeft: 10,
+        marginLeft: 8,
+        width: 38,
+        height: 38,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 12,
+        backgroundColor: t.surface,
+        borderWidth: 1,
+        borderColor: t.borderSubtle,
     },
     text: {
         fontSize: 16,
@@ -435,31 +450,60 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     textContainer: {
         flex: 1,
     },
+    accountShell: { width: '100%', maxWidth: 920, alignSelf: 'center', paddingHorizontal: 18, paddingTop: 48, paddingBottom: 100, backgroundColor: 'transparent' },
+    accountHero: { flexDirection: 'row', alignItems: 'center', gap: 18, marginBottom: 28, paddingHorizontal: 4 },
+    avatar: { width: 72, height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: t.primaryStrong, shadowColor: t.primaryStrong, shadowOpacity: 0.3, shadowRadius: 22, shadowOffset: { width: 0, height: 10 } },
+    avatarText: { color: t.onPrimary, fontSize: 28, fontWeight: '800' },
+    heroCopy: { flex: 1 }, eyebrow: { color: t.primary, fontSize: 9, fontWeight: '800', letterSpacing: 1.8, marginBottom: 4 },
+    heroTitle: { color: t.text, fontSize: 36, lineHeight: 42, fontWeight: '800', letterSpacing: -1.4 },
+    heroSubtitle: { color: t.textMuted, fontSize: 13, lineHeight: 20, marginTop: 3 },
     containerLight: {
-        backgroundColor: t.surface,
-        paddingVertical: 24, marginBottom: 20,
-        borderRadius: 16,
-        paddingHorizontal: 16,
+        backgroundColor: t.glass,
+        paddingVertical: 26,
+        marginBottom: 18,
+        borderRadius: 24,
+        paddingHorizontal: 24,
+        borderWidth: 1,
+        borderColor: t.borderSubtle,
+        shadowColor: t.shadow,
+        shadowOpacity: 0.06,
+        shadowRadius: 28,
+        shadowOffset: { width: 0, height: 12 },
     },
+    sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
+    sectionIcon: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: t.primarySoft },
+    sectionTitle: { color: t.text, fontSize: 19, lineHeight: 24, fontWeight: '700', letterSpacing: -0.5 },
+    sectionHint: { color: t.textMuted, fontSize: 11, marginTop: 2 },
+    fieldLabel: { color: t.textMuted, fontSize: 9, fontWeight: '800', letterSpacing: 1.4, marginBottom: 8 },
     fieldContainer: {
         marginBottom: 16,
     },
     inputLight: {
-        height: 48,
+        height: 52,
         borderColor: t.border,
         borderWidth: 1,
         marginTop: 2,
-        paddingHorizontal: 8,
-        backgroundColor: t.surface,
+        paddingHorizontal: 14,
+        backgroundColor: t.surfaceAlt,
         color: t.text,
+        borderRadius: 14,
     },
     buttonPrimary: {
         marginTop: 12,
+        minHeight: 48,
         paddingVertical: 12,
+        paddingHorizontal: 18,
         borderRadius: 14,
-        backgroundColor: t.primary,
+        backgroundColor: t.primaryStrong,
         alignItems: 'center',
-        minWidth: 100
+        justifyContent: 'center',
+        alignSelf: 'flex-start',
+        flexDirection: 'row',
+        gap: 10,
+        minWidth: 140,
+        shadowColor: t.primaryStrong,
+        shadowOpacity: 0.24,
+        shadowRadius: 14,
     },
     buttonPrimaryText: {
         color: t.onPrimary,
@@ -475,12 +519,12 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         alignItems: 'center',
         padding: 16,
         marginBottom: 16,
-        borderRadius: 14,
+        borderRadius: 16,
         backgroundColor: t.surfaceAlt,
         shadowColor: t.shadow,
         shadowOpacity: 0.04,
         shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 2,
+        shadowRadius: 14,
         elevation: 2,
     },
     itemTitle: {
@@ -529,7 +573,8 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 12,
+        paddingVertical: 16,
+        paddingHorizontal: 2,
     },
     settingTextContainer: {
         flex: 1,
@@ -546,6 +591,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     settingButton: {
         flexDirection: 'row',
         alignItems: 'center',
+        minHeight: 54,
         paddingVertical: 14,
         borderTopWidth: 1,
         borderTopColor: t.borderSubtle,
@@ -595,12 +641,13 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         marginBottom: 10,
     },
     emailInput: {
-        height: 48,
+        height: 52,
         borderColor: t.border,
         borderWidth: 1,
         marginTop: 2,
-        paddingHorizontal: 8,
+        paddingHorizontal: 14,
         color: t.textDisabled,
-        backgroundColor: t.surfaceDisabled,
+        backgroundColor: t.surfaceAlt,
+        borderRadius: 14,
     }
 });

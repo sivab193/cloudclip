@@ -33,6 +33,8 @@ export interface ThemeTokens {
 
   /** Primary action fill. */
   primary: string;
+  primaryStrong: string;
+  primarySoft: string;
   /** Text/icons on top of `primary`. */
   onPrimary: string;
   /** Destructive action fill and error text. */
@@ -41,6 +43,8 @@ export interface ThemeTokens {
   onDanger: string;
   /** Positive highlight (e.g. "this device"). */
   accent: string;
+  accentSoft: string;
+  glass: string;
 
   /** Default icon colour. */
   icon: string;
@@ -58,7 +62,7 @@ const tintColorLight = '#6850d8';
 const tintColorDark = '#b9a8ff';
 
 const light: ThemeTokens = {
-  background: '#f8f9fc',
+  background: '#f5f5fb',
   surface: '#ffffff',
   surfaceAlt: '#efedf9',
   surfaceDisabled: '#e6e8ea',
@@ -72,10 +76,14 @@ const light: ThemeTokens = {
   borderSubtle: '#e6e5ef',
 
   primary: '#6850d8',
+  primaryStrong: '#5038c6',
+  primarySoft: 'rgba(104, 80, 216, 0.13)',
   onPrimary: '#ffffff',
   danger: '#b00020',
   onDanger: '#ffffff',
   accent: '#1a7f37',
+  accentSoft: 'rgba(16, 185, 129, 0.11)',
+  glass: 'rgba(255, 255, 255, 0.88)',
 
   icon: '#57516e',
   overlay: 'rgba(0, 0, 0, 0.5)',
@@ -87,9 +95,9 @@ const light: ThemeTokens = {
 };
 
 const dark: ThemeTokens = {
-  background: '#12121d',
-  surface: '#1c1c2b',
-  surfaceAlt: '#252338',
+  background: '#09090f',
+  surface: '#14131f',
+  surfaceAlt: '#201d31',
   surfaceDisabled: '#2b2f31',
 
   text: '#ECEDEE',
@@ -102,11 +110,15 @@ const dark: ThemeTokens = {
 
   // Inverted: a light fill with dark text reads as "primary" on a dark page.
   primary: '#b9a8ff',
+  primaryStrong: '#8e75ff',
+  primarySoft: 'rgba(142, 117, 255, 0.16)',
   onPrimary: '#19132f',
   // #b00020 fails contrast on a dark surface; this is the lightened pair.
   danger: '#ff6b6b',
   onDanger: '#151718',
   accent: '#3fb950',
+  accentSoft: 'rgba(45, 212, 191, 0.12)',
+  glass: 'rgba(20, 19, 31, 0.90)',
 
   icon: '#ECEDEE',
   overlay: 'rgba(0, 0, 0, 0.7)',

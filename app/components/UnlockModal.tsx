@@ -11,6 +11,7 @@ import RecoveryCodeModal from './RecoveryCodeModal';
 import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { usePathname } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 type Mode = 'password' | 'recovery' | 'reset';
 
@@ -124,6 +125,7 @@ const UnlockModal: React.FC = () => {
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.box}>
+          <View style={styles.icon}><Ionicons name="lock-open-outline" size={24} color={t.primary} /></View>
           <Text style={styles.title}>Unlock your data</Text>
 
           {mode === 'password' && (
@@ -229,14 +231,21 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     backgroundColor: t.overlay,
   },
   box: {
-    width: '85%',
-    maxWidth: 420,
-    backgroundColor: t.surface,
-    borderRadius: 22,
-    padding: 20,
+    width: '90%',
+    maxWidth: 450,
+    backgroundColor: t.glass,
+    borderRadius: 28,
+    padding: 30,
+    borderWidth: 1,
+    borderColor: t.border,
+    shadowColor: t.primaryStrong,
+    shadowOpacity: 0.18,
+    shadowRadius: 42,
   },
+  icon: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: t.primarySoft, marginBottom: 18 },
   title: {
-    fontSize: 18,
+    fontSize: 26,
+    lineHeight: 32,
     fontWeight: 'bold',
     marginBottom: 10,
     color: t.text,
@@ -247,19 +256,20 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     marginBottom: 14,
   },
   input: {
-    height: 48,
+    height: 54,
     borderColor: t.border,
     borderWidth: 1,
     borderRadius: 12,
     marginBottom: 12,
     paddingHorizontal: 14,
     color: t.text,
-    backgroundColor: t.surface,
+    backgroundColor: t.surfaceAlt,
   },
   button: {
-    backgroundColor: t.primary,
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: t.primaryStrong,
+    borderRadius: 14,
+    minHeight: 50,
+    padding: 14,
     alignItems: 'center',
     marginBottom: 10,
   },

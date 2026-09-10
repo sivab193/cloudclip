@@ -1,19 +1,26 @@
 import React from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, Platform } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Text, Platform, View } from 'react-native';
 import Header from '@/components/Header';
 import { ThemeTokens } from '@/constants/Colors';
 import { useThemedStyles } from '@/hooks/useTheme';
+import AmbientBackdrop from '@/components/AmbientBackdrop';
+import Reveal from '@/components/Reveal';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useTheme } from '@/hooks/useTheme';
 
 const UPDATED = 'September 7, 2026';
 
 export default function PrivacyPolicy() {
   const styles = useThemedStyles(makeStyles);
+  const t = useTheme();
   return (
     <SafeAreaView style={styles.safeArea}>
+      <AmbientBackdrop />
       <Header />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>CloudClip Privacy Policy</Text>
-        <Text style={styles.meta}>Last updated: {UPDATED}</Text>
+        <Reveal>
+        <View style={styles.hero}><View style={styles.icon}><Ionicons name="shield-checkmark-outline" size={25} color={t.primary} /></View><Text style={styles.kicker}>YOUR DATA, YOURS</Text><Text style={styles.title}>Privacy without{ '\n' }the fine-print fog.</Text><Text style={styles.meta}>Last updated {UPDATED}</Text></View>
+        <View style={styles.document}>
 
         <Text style={styles.heading}>What CloudClip does</Text>
         <Text style={styles.body}>
@@ -81,6 +88,8 @@ export default function PrivacyPolicy() {
         <Text style={styles.body}>
           Questions or requests: sivaganesh1903@gmail.com
         </Text>
+        </View>
+        </Reveal>
       </ScrollView>
     </SafeAreaView>
   );
@@ -91,33 +100,43 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     flex: 1,
     backgroundColor: t.background,
     paddingTop: Platform.OS === 'web' ? 0 : 30,
+    position: 'relative',
   },
   content: {
     padding: 20,
-    maxWidth: 720,
+    width: '100%',
+    maxWidth: 800,
     alignSelf: 'center',
+    paddingTop: 50,
+    paddingBottom: 100,
   },
+  hero: { marginBottom: 28, paddingHorizontal: 4 },
+  icon: { width: 50, height: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: t.primarySoft, marginBottom: 18 },
+  kicker: { color: t.primary, fontSize: 9, fontWeight: '800', letterSpacing: 1.8, marginBottom: 8 },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 44,
+    lineHeight: 49,
+    letterSpacing: -2,
+    fontWeight: '800',
     color: t.text,
     marginBottom: 4,
   },
   meta: {
     fontSize: 13,
     color: t.textMuted,
-    marginBottom: 20,
+    marginTop: 12,
   },
+  document: { backgroundColor: t.glass, borderWidth: 1, borderColor: t.borderSubtle, borderRadius: 26, padding: 30, shadowColor: t.shadow, shadowOpacity: 0.06, shadowRadius: 28, shadowOffset: { width: 0, height: 12 } },
   heading: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: 'bold',
     color: t.text,
-    marginTop: 18,
-    marginBottom: 6,
+    marginTop: 24,
+    marginBottom: 8,
   },
   body: {
     fontSize: 15,
     color: t.textMuted,
-    lineHeight: 22,
+    lineHeight: 24,
   },
 });

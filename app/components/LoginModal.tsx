@@ -190,13 +190,15 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
           <TouchableWithoutFeedback onPress={handleModalContentPress}>
             <View style={styles.modalBox}>
               <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close sign-in dialog"
-                disabled={busy} style={{ alignSelf: 'flex-end', padding: 8, marginBottom: 8 }}
+                disabled={busy} style={styles.closeButton}
                 onPress={() => { onClose(); resetFields(); }}>
-                <Text style={{ color: t.text }}>Close</Text>
+                <Ionicons name="close" size={20} color={t.textMuted} />
               </TouchableOpacity>
+              <View style={styles.brandMark}><Ionicons name="cloud-done-outline" size={25} color={t.onPrimary} /></View>
               {isForgotPasswordMode ? (
                 <>
-                  <Text style={styles.titleText}>Reset Password</Text>
+                  <Text style={styles.titleText}>Reset your password</Text>
+                  <Text style={styles.subtitleText}>We’ll send a secure reset link to your inbox.</Text>
                   <TextInput
                     style={styles.input}
                     placeholder="Email"
@@ -215,6 +217,8 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                 </>
               ) : (
                 <>
+                  <Text style={styles.titleText}>{isSignUpMode ? 'Create your space' : 'Welcome back'}</Text>
+                  <Text style={styles.subtitleText}>{isSignUpMode ? 'Your encrypted clipboard starts here.' : 'Step back into your private clipboard.'}</Text>
                   <View style={styles.buttonContainer}>
                     <TouchableOpacity
                       style={[styles.toggleButton, !isSignUpMode && styles.activeButton]}
@@ -318,41 +322,53 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: t.overlay,
+    padding: 18,
   },
   modalBox: {
-    width: '80%',
-    maxWidth: 440,
-    backgroundColor: t.surface,
-    borderRadius: 22,
-    padding: 24,
+    width: '100%',
+    maxWidth: 460,
+    backgroundColor: t.glass,
+    borderRadius: 28,
+    padding: 30,
+    borderWidth: 1,
+    borderColor: t.border,
+    shadowColor: t.primaryStrong,
+    shadowOpacity: 0.2,
+    shadowRadius: 50,
+    shadowOffset: { width: 0, height: 22 },
   },
+  closeButton: { position: 'absolute', top: 16, right: 16, width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: t.surfaceAlt, zIndex: 2 },
+  brandMark: { width: 52, height: 52, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: t.primaryStrong, marginBottom: 20, shadowColor: t.primaryStrong, shadowOpacity: 0.3, shadowRadius: 18 },
   input: {
-    height: 48,
+    height: 54,
     borderColor: t.border,
     borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
+    marginBottom: 13,
+    paddingHorizontal: 16,
+    borderRadius: 14,
     color: t.text,
-    backgroundColor: t.surface,
+    backgroundColor: t.surfaceAlt,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 20,
+    padding: 4,
+    borderRadius: 14,
+    backgroundColor: t.surfaceAlt,
   },
   toggleButton: {
     flex: 1,
     alignItems: 'center',
-    padding: 10,
-    borderRadius: 0,
-    marginHorizontal: 4,
+    padding: 11,
+    borderRadius: 11,
+    marginHorizontal: 2,
   },
   activeButton: {
-    borderRadius: 0,
-    backgroundColor: 'transparent',
-    borderBottomColor: t.text,
-    borderBottomWidth: 3,
+    borderRadius: 11,
+    backgroundColor: t.surface,
+    borderWidth: 1,
+    borderColor: t.borderSubtle,
   },
   secondarybuttonText: {
     color: t.text,
@@ -365,9 +381,14 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   },
   button: {
     marginBottom: 12,
-    backgroundColor: t.primary,
-    borderRadius: 12,
-    padding: 10,
+    backgroundColor: t.primaryStrong,
+    borderRadius: 14,
+    minHeight: 52,
+    padding: 14,
+    justifyContent: 'center',
+    shadowColor: t.primaryStrong,
+    shadowOpacity: 0.26,
+    shadowRadius: 16,
   },
   busyText: {
     textAlign: 'center',
@@ -396,10 +417,14 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     color: t.text,
   },
   titleText: {
-    fontSize: 18,
+    fontSize: 29,
+    lineHeight: 35,
+    fontWeight: '800',
+    letterSpacing: -1.2,
     color: t.text,
-    marginBottom: 10
+    marginBottom: 6
   },
+  subtitleText: { color: t.textMuted, fontSize: 13, lineHeight: 20, marginBottom: 24 },
 });
 
 export default LoginModal;

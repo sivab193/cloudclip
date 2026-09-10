@@ -47,7 +47,7 @@ export default function Root({ children }: PropsWithChildren) {
         {/* PWA */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#6850d8" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#12121d" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#09090f" media="(prefers-color-scheme: dark)" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -81,14 +81,30 @@ input:focus, textarea:focus { box-shadow: 0 0 0 3px #9984ef25; }
 @keyframes clip-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 [role="dialog"] { animation: clip-enter .3s ease-out; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+.cloudclip-grid {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(104,80,216,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(104,80,216,.045) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(to bottom, black, transparent 78%);
+}
+.cloudclip-aurora { position: absolute; width: 48vw; height: 48vw; min-width: 440px; min-height: 440px; border-radius: 999px; filter: blur(80px); opacity: .72; will-change: transform; }
+.cloudclip-aurora-one { top: -20%; right: -12%; animation: cloudclip-float-a 15s ease-in-out infinite alternate; }
+.cloudclip-aurora-two { top: 42%; left: -18%; animation: cloudclip-float-b 19s ease-in-out infinite alternate; }
+.cloudclip-noise { position: absolute; inset: 0; opacity: .022; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E"); }
+@keyframes cloudclip-float-a { to { transform: translate3d(-10%, 14%, 0) scale(1.08); } }
+@keyframes cloudclip-float-b { to { transform: translate3d(15%, -9%, 0) scale(.92); } }
 body {
-  background-color: #f8f9fc;
+  background-color: #f5f5fb;
+  font-feature-settings: "kern" 1, "liga" 1;
+  -webkit-font-smoothing: antialiased;
 }
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #12121d;
+    background-color: #09090f;
   }
-}`;
+}
+@media (prefers-reduced-motion: reduce) { .cloudclip-aurora { animation: none !important; } }
+`;
 
 // Registered after load so it never competes with the app bundle for bandwidth.
 const registerServiceWorker = `

@@ -1,7 +1,7 @@
 import React, { PropsWithChildren, useEffect, useRef } from 'react';
-import { AccessibilityInfo, Animated } from 'react-native';
+import { AccessibilityInfo, Animated, ViewStyle } from 'react-native';
 
-export default function Reveal({ children }: PropsWithChildren) {
+export default function Reveal({ children, delay = 0, style }: PropsWithChildren<{ delay?: number; style?: ViewStyle }>) {
   const progress = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     let mounted = true;
@@ -11,9 +11,9 @@ export default function Reveal({ children }: PropsWithChildren) {
     AccessibilityInfo.isReduceMotionEnabled().then(reduced => {
       if (!mounted || reduced) return;
       progress.setValue(0);
-      Animated.timing(progress, { toValue: 1, duration: 650, useNativeDriver: true }).start();
+      Animated.spring(progress, { toValue: 1, delay, damping: 18, stiffness: 100, mass: 0.8, useNativeDriver: true }).start();
     });
     return () => { mounted = false; progress.stopAnimation(); subscription.remove(); };
-  }, [progress]);
-  return <Animated.View style={{ opacity: progress, transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>{children}</Animated.View>;
+  }, [delay, progress]);
+  return <Animated.View style={[style, { transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) }, { scale: progress.interpolate({ inputRange: [0, 1], outputRange: [0.99, 1] }) }] }]}>{children}</Animated.View>;
 }

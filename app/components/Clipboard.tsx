@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableOpacity, Platform, Text } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -143,22 +143,22 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
                     <ScrollView contentContainerStyle={styles.scrollContainer}
                         scrollEnabled={true}
                         nestedScrollEnabled={true}>
-                        {clipboardEntries.map((entry) => (
+                        {clipboardEntries.map((entry, index) => (
                             <TouchableOpacity
                                 disabled={entry.unreadable}
                                 onPress={() => handleClickEntry(entry.content)}
                                 key={entry._id || entry.id}
                             >
                                 <View style={styles.entryContainer}>
+                                    <View style={styles.entryIcon}>
+                                        <Text style={styles.entryIndex}>{String(index + 1).padStart(2, '0')}</Text>
+                                    </View>
                                     <View style={styles.textContainer}>
                                         <ThemedText type='default' style={styles.clipboardText}>
                                             {truncateContent(entry.content)}
                                         </ThemedText>
                                         <ThemedText type='default' style={styles.clipboardDevice}>
-                                            Characters: {entry.content.length}
-                                        </ThemedText>
-                                        <ThemedText type='default' style={styles.clipboardDevice}>
-                                            Device: {entry.deviceName || 'Unknown Device'}
+                                            {entry.content.length} characters · {entry.deviceName || 'Unknown device'}
                                         </ThemedText>
                                     </View>
                                     <View style={styles.iconContainer}>
@@ -166,14 +166,14 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
                                             style={styles.iconButton}
                                             onPress={() => showConfirmation(entry._id || entry.id || '')}
                                         >
-                                            <Ionicons name="trash-outline" size={20} color={t.icon} />
+                                            <Ionicons name="trash-outline" size={17} color={t.textMuted} />
                                         </TouchableOpacity>
                                         <TouchableOpacity
                                             disabled={entry.unreadable}
                                             style={styles.iconButton}
                                             onPress={() => handleShareConfirmation(entry.content)}
                                         >
-                                            <Ionicons name="share-social-outline" size={20} color={t.icon} />
+                                            <Ionicons name="share-social-outline" size={17} color={t.primary} />
                                         </TouchableOpacity>
                                     </View>
                                 </View>
@@ -191,8 +191,8 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
 
 const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     container: {
-        backgroundColor: t.background,
-        marginTop: 16,
+        backgroundColor: 'transparent',
+        marginTop: 20,
         height: 300,
     },
     scrollContainer: {
@@ -202,18 +202,20 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 10,
-        padding: 18,
-        borderRadius: 12,
+        padding: 14,
+        borderRadius: 16,
         backgroundColor: t.surfaceAlt,
+        borderWidth: 1,
+        borderColor: t.borderSubtle,
         shadowOffset: { height: 2, width: 2 },
         shadowColor: t.shadow,
-        shadowOpacity: 0.04,
-        gap: 10,
+        shadowOpacity: 0.025,
+        gap: 12,
         cursor: Platform.OS === 'web' ? 'pointer' : 'auto'
     },
     clipboardText: {
         fontSize: 14,
-        lineHeight: 22,
+        lineHeight: 20,
         flex: 1,
         color: t.text,
         fontWeight: '500'
@@ -227,12 +229,22 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     textContainer: {
         flex: 1,
     },
+    entryIcon: { width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: t.primarySoft },
+    entryIndex: { color: t.primary, fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
     iconContainer: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     iconButton: {
-        marginLeft: 10,
+        marginLeft: 7,
+        width: 38,
+        height: 38,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 12,
+        backgroundColor: t.surface,
+        borderWidth: 1,
+        borderColor: t.borderSubtle,
     },
 });
 

@@ -33,7 +33,7 @@ const Alert: React.FC<AlertProps> = ({ message, visible }) => {
   if (!showing) return null;
 
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+    <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }] }]}>
       <Text style={styles.message}>{message}</Text>
     </Animated.View>
   );
@@ -44,11 +44,18 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     position: 'absolute',
     top: Platform.OS === 'web' ? 30 : 70,
     alignSelf: 'center',
-    backgroundColor: t.primary,
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: t.primaryStrong,
+    paddingVertical: 13,
+    paddingHorizontal: 18,
+    borderRadius: 16,
     zIndex: 9999,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: t.primary,
+    shadowColor: t.primaryStrong,
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
   },
   message: {
     color: t.onPrimary,

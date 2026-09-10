@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 interface ButtonConfig {
     label: string;
@@ -31,6 +32,7 @@ const Confirmation: React.FC<ConfirmationProps> = ({ message, subtitle, visible,
         >
             <View style={styles.overlay}>
                 <View style={styles.container}>
+                    <View style={styles.icon}><Ionicons name="sparkles-outline" size={22} color={t.primary} /></View>
                     <Text style={styles.message}>{message}</Text>
                     <Text style={styles.subtitle}>{subtitle}</Text>
                     <View style={styles.buttonsContainer}>
@@ -39,10 +41,10 @@ const Confirmation: React.FC<ConfirmationProps> = ({ message, subtitle, visible,
                             return (
                                 <TouchableOpacity
                                     key={index}
-                                    style={[styles.button, danger && styles.buttonDanger]}
+                                    style={[styles.button, index < buttons.length - 1 && !danger && styles.buttonSecondary, danger && styles.buttonDanger]}
                                     onPress={button.onPress}
                                 >
-                                    <Text style={[styles.buttonText, { color: danger ? t.onDanger : t.onPrimary }]}>
+                                    <Text style={[styles.buttonText, { color: danger ? t.onDanger : index < buttons.length - 1 ? t.text : t.onPrimary }]}>
                                         {button.label}
                                     </Text>
                                 </TouchableOpacity>
@@ -63,21 +65,32 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         backgroundColor: t.overlay,
     },
     container: {
-        backgroundColor: t.surface,
-        borderRadius: 22,
-        padding: 20,
-        width: '80%',
-        maxWidth: 400,
+        backgroundColor: t.glass,
+        borderRadius: 28,
+        padding: 28,
+        width: '90%',
+        maxWidth: 440,
+        borderWidth: 1,
+        borderColor: t.border,
+        shadowColor: t.primaryStrong,
+        shadowOpacity: 0.2,
+        shadowRadius: 45,
+        shadowOffset: { width: 0, height: 20 },
     },
+    icon: { width: 46, height: 46, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: t.primarySoft, marginBottom: 17 },
     message: {
-        fontSize: 18,
-        marginBottom: 20,
+        fontSize: 21,
+        lineHeight: 28,
+        fontWeight: '700',
+        letterSpacing: -0.5,
+        marginBottom: 10,
         textAlign: 'center',
         color: t.text,
     },
     subtitle: {
         fontSize: 14,
-        marginBottom: 20,
+        lineHeight: 21,
+        marginBottom: 24,
         textAlign: 'center',
         color: t.textMuted,
     },
@@ -87,12 +100,14 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     },
     button: {
         flex: 1,
-        padding: 10,
-        borderRadius: 12,
+        minHeight: 48,
+        padding: 12,
+        borderRadius: 14,
         marginHorizontal: 5,
         alignItems: 'center',
-        backgroundColor: t.primary,
+        backgroundColor: t.primaryStrong,
     },
+    buttonSecondary: { backgroundColor: t.surfaceAlt, borderWidth: 1, borderColor: t.borderSubtle },
     buttonDanger: {
         backgroundColor: t.danger,
     },

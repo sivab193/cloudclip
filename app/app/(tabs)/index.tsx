@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, ScrollView, TextInput, Platform } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, ScrollView, TextInput, Platform, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
@@ -13,6 +13,8 @@ import Alert from '@/components/Alert';
 import Confirmation from '@/components/Confirmation';
 import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
+import AmbientBackdrop from '@/components/AmbientBackdrop';
+import Reveal from '@/components/Reveal';
 
 export default function Homepage() {
  const t = useTheme();
@@ -23,6 +25,8 @@ export default function Homepage() {
  const [confirmationVisible, setConfirmationVisible] = useState(false);
  const [legacyPromptVisible, setLegacyPromptVisible] = useState(false);
  const { user } = useAuth();
+ const { width } = useWindowDimensions();
+ const wide = width >= 860;
  const legacyPromptShownRef = useRef(false);
  const alertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
  const showAlert = useCallback((message: string) => {
@@ -95,86 +99,61 @@ export default function Homepage() {
 				horizontal={false}
 			>
 				<SafeAreaView style={styles.safeArea}>
+					<AmbientBackdrop />
 					<Header />
 					<ThemedView style={styles.centerContainer}>
 						{!user ? (
 							<Description />
 						) : (
-							<>
-								<ThemedView style={styles.container}>
+							<Reveal>
+							<View style={styles.workspace}>
+								<View style={styles.workspaceHero}>
+									<View style={styles.eyebrowRow}><View style={styles.liveDot} /><Text style={styles.eyebrow}>YOUR SECURE WORKSPACE</Text></View>
+									<ThemedText style={styles.workspaceTitle}>Good to see you.</ThemedText>
+									<ThemedText style={styles.workspaceSubtitle}>Move ideas between your devices without breaking your flow.</ThemedText>
+									<View style={styles.metrics}>
+										<View style={styles.metric}><Ionicons name="layers-outline" size={17} color={t.primary} /><Text style={styles.metricValue}>{clipboardEntries.length}</Text><Text style={styles.metricLabel}>clips</Text></View>
+										<View style={styles.metric}><Ionicons name="shield-checkmark-outline" size={17} color={t.accent} /><Text style={styles.metricLabel}>encrypted</Text></View>
+										<View style={styles.metric}><Ionicons name="flash-outline" size={17} color={t.primary} /><Text style={styles.metricLabel}>live sync</Text></View>
+									</View>
+								</View>
+								<View style={[styles.workspaceGrid, !wide && styles.workspaceGridStack]}>
+								<ThemedView style={[styles.container, styles.composerCard]}>
 									<View style={styles.headerWithButton}>
-										<ThemedText type="defaultSemiBold" style={styles.text}>Latest clip</ThemedText>
+										<View><Text style={styles.cardEyebrow}>NEW CLIP</Text><ThemedText style={styles.cardTitle}>Capture a thought</ThemedText></View>
 										<View style={styles.buttonContainer}>
-											<TouchableOpacity style={[styles.copyButton, { marginLeft: 10 }]} accessibilityLabel="Copy latest clip" disabled={!latestText} onPress={() => handleCopy(latestText || '')}>
-												<Ionicons name="clipboard-outline" size={24} color={t.icon} />
-												{Platform.OS === 'web' && (
-													<Text style={[styles.copyButtonText, { color: t.text }]}> Copy Text</Text>
-												)}
+											<TouchableOpacity accessibilityRole="button" accessibilityLabel="Paste from clipboard" style={styles.iconAction} onPress={handlePaste}>
+												<Ionicons name="clipboard-outline" size={19} color={t.primary} /><Text style={styles.iconActionText}>Paste</Text>
 											</TouchableOpacity>
 										</View>
 									</View>
-									<View style={styles.catContainer}>
-										<View style={styles.catBody}>
-											<ScrollView
-												scrollEnabled={true}
-												nestedScrollEnabled={true}
-											>
-												<Text style={styles.catBodyText}>{latestText || 'Your latest saved text will appear here.'}</Text>
-											</ScrollView>
-										</View>
+									<View style={styles.composerBody}>
+										<TextInput style={styles.composerInput} placeholder="Paste a link, command, note, or little spark…" placeholderTextColor={t.placeholder} value={saveTextData} onChangeText={setSaveTextData} multiline editable selectionColor={t.primary} />
+										<View style={styles.composerFooter}><Text style={styles.characterCount}>{saveTextData.length} characters</Text><TouchableOpacity accessibilityLabel="Save text" disabled={!saveTextData.trim()} style={[styles.saveButton, { opacity: saveTextData.trim() ? 1 : 0.42 }]} onPress={() => handleSave(saveTextData)}><Ionicons name="arrow-up" size={19} color={t.onPrimary} /><Text style={styles.saveButtonText}>Save clip</Text></TouchableOpacity></View>
 									</View>
 								</ThemedView>
-								<ThemedView style={styles.container}>
+								<ThemedView style={[styles.container, styles.latestCard]}>
 									<View style={styles.headerWithButton}>
-										<ThemedText type="defaultSemiBold" style={styles.text}>Capture a thought</ThemedText>
+										<View><Text style={styles.cardEyebrow}>MOST RECENT</Text><ThemedText style={styles.cardTitle}>Latest clip</ThemedText></View>
 										<View style={styles.buttonContainer}>
-											<TouchableOpacity accessibilityRole="button" accessibilityLabel="Paste from clipboard" style={styles.copyButton} onPress={handlePaste}>
-												<Ionicons name="clipboard-outline" size={24} color={t.icon} />
-												<Text style={{ color: t.text }}> Paste</Text>
-											</TouchableOpacity>
-											<TouchableOpacity accessibilityLabel="Save text" disabled={!saveTextData.trim()} style={[styles.copyButton, { backgroundColor: t.surfaceAlt, opacity: saveTextData.trim() ? 1 : 0.45 }]} onPress={() => handleSave(saveTextData)}>
-												<Ionicons name="save-outline" size={24} color={t.icon} />
-												{Platform.OS === 'web' && (
-													<Text style={[styles.copyButtonText, { color: t.text }]}> Save Text</Text>
-												)}
-											</TouchableOpacity>
+											<TouchableOpacity style={styles.roundAction} accessibilityLabel="Copy latest clip" disabled={!latestText} onPress={() => handleCopy(latestText || '')}><Ionicons name="copy-outline" size={19} color={t.primary} /></TouchableOpacity>
 										</View>
 									</View>
-									<View style={styles.catContainer}>
-										<View style={styles.catBody}>
-											<ScrollView
-												scrollEnabled={true}
-												nestedScrollEnabled={true}
-											>
-												<TextInput
-													style={[
-														{ height: 198, padding: 10, textAlignVertical: 'top', color: t.text }
-													]}
-													placeholder='Enter your text here...'
-													placeholderTextColor={t.placeholder}
-													value={saveTextData}
-													onChangeText={setSaveTextData}
-													multiline={true}
-													editable={true}
-													selectionColor={t.text}
-												/>
-											</ScrollView>
-										</View>
-									</View>
+									<View style={styles.latestBody}><View style={styles.quoteMark}><Ionicons name="sparkles" size={18} color={t.primary} /></View><ScrollView nestedScrollEnabled><Text style={[styles.latestText, !latestText && styles.latestPlaceholder]}>{latestText || 'Your newest clip will glow here the moment you save it.'}</Text></ScrollView></View>
+									<View style={styles.latestFooter}><View style={styles.securityTag}><Ionicons name="lock-closed" size={12} color={t.accent} /><Text style={styles.securityText}>Private & encrypted</Text></View><Text style={styles.characterCount}>{latestText?.length ?? 0} chars</Text></View>
 								</ThemedView>
-								<ThemedView style={styles.container}>
+								</View>
+								<ThemedView style={[styles.container, styles.libraryCard]}>
 									<View style={styles.headerWithButton}>
-										<ThemedText type="defaultSemiBold" style={styles.text}>Your library ({clipboardEntries.length})</ThemedText>
-										<TouchableOpacity style={styles.copyButton} onPress={() => setConfirmationVisible(true)}>
-											<Ionicons name="trash-outline" size={24} color={t.icon} />
-											{Platform.OS === 'web' && (
-												<Text style={[styles.copyButtonText, { color: t.text }]}> Clear library</Text>
-											)}
+										<View><Text style={styles.cardEyebrow}>HISTORY</Text><ThemedText style={styles.cardTitle}>Your clip library</ThemedText></View>
+										<TouchableOpacity style={styles.iconAction} onPress={() => setConfirmationVisible(true)} disabled={!clipboardEntries.length}>
+											<Ionicons name="trash-outline" size={17} color={t.textMuted} /><Text style={styles.iconActionText}>Clear all</Text>
 										</TouchableOpacity>
 									</View>
 									<ClipboardScreen clipboardEntries={clipboardEntries} showAlert={showAlert} onDelete={remove} />
 								</ThemedView>
-							</>
+							</View>
+							</Reveal>
 						)}
 					</ThemedView>
 				</SafeAreaView>
@@ -201,16 +180,30 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 		flex: 1,
 		backgroundColor: t.background,
 		paddingTop: Platform.OS === 'web' ? 0 : 30,
+		position: 'relative',
 	},
 	text: {
 		color: t.text
 	},
 	centerContainer: {
-		backgroundColor: t.background,
-		padding: Platform.OS === 'web' ? 16 : 5,
+		backgroundColor: 'transparent',
+		padding: Platform.OS === 'web' ? 18 : 10,
 		paddingTop: 2,
 		borderRadius: 16,
 	},
+	workspace: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingTop: 42, paddingBottom: 90 },
+	workspaceHero: { paddingHorizontal: 6, marginBottom: 30 },
+	eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
+	liveDot: { width: 7, height: 7, borderRadius: 8, backgroundColor: t.accent, shadowColor: t.accent, shadowOpacity: 0.5, shadowRadius: 7 },
+	eyebrow: { color: t.textMuted, fontSize: 10, fontWeight: '800', letterSpacing: 2 },
+	workspaceTitle: { color: t.text, fontSize: 42, lineHeight: 48, fontWeight: '800', letterSpacing: -1.8 },
+	workspaceSubtitle: { color: t.textMuted, fontSize: 16, lineHeight: 25, marginTop: 7 },
+	metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 20 },
+	metric: { minHeight: 38, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, borderRadius: 99, backgroundColor: t.glass, borderWidth: 1, borderColor: t.borderSubtle },
+	metricValue: { color: t.text, fontSize: 13, fontWeight: '800' },
+	metricLabel: { color: t.textMuted, fontSize: 11, fontWeight: '600' },
+	workspaceGrid: { flexDirection: 'row', gap: 18, alignItems: 'stretch' },
+	workspaceGridStack: { flexDirection: 'column' },
 	catContainer: {
 		backgroundColor: t.surface,
         marginTop: 18,
@@ -218,13 +211,32 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 		borderRadius: 16,
 	},
 	container: {
-        width: '100%', maxWidth: 1120, alignSelf: 'center', marginTop: 20,
-        borderWidth: 1, borderColor: t.borderSubtle,
-		backgroundColor: t.surface,
-		padding: 22,
-		borderRadius: 16,
+		borderWidth: 1, borderColor: t.borderSubtle,
+		backgroundColor: t.glass,
+		padding: 24,
+		borderRadius: 24,
 		overflow: 'hidden'
 	},
+	composerCard: { flex: 1.15, minHeight: 330, shadowColor: t.shadow, shadowOpacity: 0.07, shadowRadius: 30, shadowOffset: { width: 0, height: 14 }, elevation: 5 },
+	latestCard: { flex: 0.85, minHeight: 330, backgroundColor: t.surfaceAlt },
+	libraryCard: { width: '100%', marginTop: 18 },
+	cardEyebrow: { color: t.primary, fontSize: 9, lineHeight: 14, fontWeight: '800', letterSpacing: 1.8, marginBottom: 3 },
+	cardTitle: { color: t.text, fontSize: 20, lineHeight: 27, fontWeight: '700', letterSpacing: -0.6 },
+	composerBody: { flex: 1, marginTop: 20, borderRadius: 18, backgroundColor: t.surfaceAlt, borderWidth: 1, borderColor: t.borderSubtle, padding: 16 },
+	composerInput: { flex: 1, minHeight: 165, color: t.text, fontSize: 16, lineHeight: 24, textAlignVertical: 'top', outlineStyle: 'none' } as any,
+	composerFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: t.borderSubtle },
+	characterCount: { color: t.textMuted, fontSize: 10, fontWeight: '600' },
+	saveButton: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, borderRadius: 13, backgroundColor: t.primaryStrong, shadowColor: t.primaryStrong, shadowOpacity: 0.28, shadowRadius: 14, shadowOffset: { width: 0, height: 7 } },
+	saveButtonText: { color: t.onPrimary, fontSize: 12, fontWeight: '800' },
+	iconAction: { minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, borderRadius: 12, backgroundColor: t.primarySoft, borderWidth: 1, borderColor: t.borderSubtle },
+	iconActionText: { color: t.text, fontSize: 11, fontWeight: '700' },
+	roundAction: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: t.surface, borderWidth: 1, borderColor: t.borderSubtle },
+	latestBody: { flex: 1, minHeight: 180, marginTop: 22, flexDirection: 'row', gap: 12 },
+	quoteMark: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: t.primarySoft },
+	latestText: { flex: 1, color: t.text, fontSize: 17, lineHeight: 28, letterSpacing: -0.2 },
+	latestPlaceholder: { color: t.textMuted },
+	latestFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 14, borderTopWidth: 1, borderTopColor: t.borderSubtle },
+	securityTag: { flexDirection: 'row', alignItems: 'center', gap: 6 }, securityText: { color: t.textMuted, fontSize: 10, fontWeight: '600' },
 	buttonContainer: {
 		flexDirection: 'row',
 		marginLeft: 10,

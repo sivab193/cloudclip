@@ -3,6 +3,8 @@ import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { ThemeTokens } from '@/constants/Colors';
 import { useThemedStyles } from '@/hooks/useTheme';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useTheme } from '@/hooks/useTheme';
 
 interface RecoveryCodeModalProps {
   visible: boolean;
@@ -16,6 +18,7 @@ interface RecoveryCodeModalProps {
  */
 const RecoveryCodeModal: React.FC<RecoveryCodeModalProps> = ({ visible, code, onDone }) => {
   const styles = useThemedStyles(makeStyles);
+  const t = useTheme();
   const [copied, setCopied] = React.useState(false);
   const [copyError, setCopyError] = React.useState(false);
 
@@ -28,6 +31,7 @@ const RecoveryCodeModal: React.FC<RecoveryCodeModalProps> = ({ visible, code, on
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.box}>
+          <View style={styles.icon}><Ionicons name="shield-checkmark-outline" size={25} color={t.primary} /></View>
           <Text style={styles.title}>Save your recovery code</Text>
           <Text style={styles.body}>
             Your clipboard data is end-to-end encrypted. If you ever reset your
@@ -58,14 +62,21 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     backgroundColor: t.overlay,
   },
   box: {
-    width: '85%',
-    maxWidth: 420,
-    backgroundColor: t.surface,
-    borderRadius: 22,
-    padding: 20,
+    width: '90%',
+    maxWidth: 460,
+    backgroundColor: t.glass,
+    borderRadius: 28,
+    padding: 30,
+    borderWidth: 1,
+    borderColor: t.border,
+    shadowColor: t.primaryStrong,
+    shadowOpacity: 0.18,
+    shadowRadius: 42,
   },
+  icon: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: t.primarySoft, marginBottom: 18 },
   title: {
-    fontSize: 18,
+    fontSize: 25,
+    lineHeight: 31,
     fontWeight: 'bold',
     marginBottom: 10,
     color: t.text,
@@ -78,8 +89,8 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   codeBox: {
     borderWidth: 1,
     borderColor: t.border,
-    borderRadius: 6,
-    padding: 12,
+    borderRadius: 16,
+    padding: 18,
     marginBottom: 12,
     backgroundColor: t.surfaceAlt,
   },
@@ -90,9 +101,10 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     color: t.text,
   },
   button: {
-    backgroundColor: t.primary,
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: t.primaryStrong,
+    borderRadius: 14,
+    minHeight: 50,
+    padding: 14,
     alignItems: 'center',
   },
   buttonText: {
@@ -100,9 +112,12 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     fontWeight: 'bold',
   },
   secondaryButton: {
+    minHeight: 46,
     padding: 12,
     alignItems: 'center',
     marginBottom: 4,
+    borderRadius: 14,
+    backgroundColor: t.surfaceAlt,
   },
   secondaryButtonText: {
     color: t.text,
