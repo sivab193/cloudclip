@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, Platform, Text } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableOpacity, Platform, Text, Share } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -13,6 +13,7 @@ import * as Clipboard from 'expo-clipboard';
 import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import useAccountGuard from '@/hooks/useAccountGuard';
+import { eternalLink, findText, isBabelEligible } from '@/service/babelService';
 
 
 interface ClipboardScreenProps {
@@ -30,6 +31,8 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
     const [itemToRemove, setItemToRemove] = useState('');
     const [sharedLink, setSharedLink] = useState<string | null>(null);
     const [sharedCode, setSharedCode] = useState<string | null>(null);
+    const [babelPrompt, setBabelPrompt] = useState<string | null>(null);
+    const sharedNormally = useRef(new Set<string>());
     const { capture } = useAccountGuard();
     const sharing = useRef<(() => boolean) | null>(null);
     useEffect(() => {
@@ -76,8 +79,10 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
         handleDelete(itemToRemove);
     };
 
-    // Creates the shared link ONCE, then the dialog buttons only copy.
-    const handleShareConfirmation = async (content: string) => {
+    // Creates the expiring shared link ONCE, then the dialog buttons only copy.
+    const shareNormally = async (content: string) => {
+        sharedNormally.current.add(content);
+        setBabelPrompt(null);
         const valid = capture();
         if (sharing.current?.()) return;
         sharing.current = valid;
@@ -92,6 +97,31 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
         } catch (error) {
             if (valid()) showAlert(error instanceof Error ? error.message : 'Failed to create shared link.');
         } finally { if (sharing.current === valid) sharing.current = null; }
+    };
+
+    const handleShare = (content: string) => {
+        if (isBabelEligible(content) && !sharedNormally.current.has(content)) setBabelPrompt(content);
+        else void shareNormally(content);
+    };
+
+    const createEternalLink = async () => {
+        if (!babelPrompt) return;
+        const link = eternalLink(findText(babelPrompt));
+        setBabelPrompt(null);
+        try {
+            if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.share) {
+                await navigator.share({ title: 'CloudClip eternal link', text: link, url: link });
+            } else {
+                await Share.share({ title: 'CloudClip eternal link', message: link, url: link });
+            }
+        } catch (error) {
+            // A cancelled platform share sheet is not an error the user needs to resolve.
+            if (error instanceof Error && error.name === 'AbortError') return;
+            try {
+                await Clipboard.setStringAsync(link);
+                showAlert('Eternal link copied to clipboard');
+            } catch { showAlert('Could not share the eternal link.'); }
+        }
     };
 
     const handleCopyLink = async () => {
@@ -117,6 +147,16 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
 
     return (
         <>
+            <Confirmation
+                message="Make this link eternal?"
+                subtitle={'This text uses only characters from the Library of Babel — so it already exists there, at a permanent address. Anyone with the link can read it, forever. No account, no expiry, and it can\'t be deleted.\n\nPublic: anyone with the link can read this text. Make sure this isn\'t private.'}
+                visible={babelPrompt !== null}
+                onDismiss={() => { if (babelPrompt) void shareNormally(babelPrompt); }}
+                buttons={[
+                    { label: 'Create eternal link', onPress: createEternalLink },
+                    { label: 'Share normally', onPress: () => { if (babelPrompt) void shareNormally(babelPrompt); } },
+                ]}
+            />
             <Confirmation
                 message="Are you sure you want to proceed?"
                 visible={confirmationVisible}
@@ -171,7 +211,7 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
                                         <TouchableOpacity
                                             disabled={entry.unreadable}
                                             style={styles.iconButton}
-                                            onPress={() => handleShareConfirmation(entry.content)}
+                                            onPress={() => handleShare(entry.content)}
                                         >
                                             <Ionicons name="share-social-outline" size={17} color={t.primary} />
                                         </TouchableOpacity>
