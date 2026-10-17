@@ -16,6 +16,7 @@ const Header = () => {
   const hydrated = useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot);
   const { width } = useWindowDimensions();
   const compact = !hydrated || width < 500;
+  const tiny = width < 360;
   const [isModalVisible, setModalVisible] = useState(false);
   const [isRegionVisible, setRegionVisible] = useState(false);
   const styles = useThemedStyles(makeStyles);
@@ -38,7 +39,7 @@ const Header = () => {
 
   return (
     <View style={styles.headerWrap}>
-    <View style={[styles.header, compact && { paddingHorizontal: 14, gap: 8 }]}>
+    <View style={[styles.header, compact && { gap: 4 }]}>
       <TouchableOpacity accessibilityRole="link" accessibilityLabel="CloudClip home" style={styles.logoContainer} onPress={navigateToHome} activeOpacity={0.7}>
         <Image
           source={require('@/assets/images/logo.png')}
@@ -46,7 +47,7 @@ const Header = () => {
           resizeMode="contain"
           accessibilityLabel="CloudClip"
         />
-        <Text style={styles.headerTitle}>CloudClip</Text>
+        <Text style={[styles.headerTitle, tiny && styles.headerTitleTiny]}>CloudClip</Text>
       </TouchableOpacity>
       {user && hydrated && width >= 640 ? (
         <View style={styles.statusPill}>
@@ -54,7 +55,7 @@ const Header = () => {
           <Text style={styles.statusText}>Encrypted sync active</Text>
         </View>
       ) : null}
-      <View style={styles.navActions}>
+      <View style={[styles.navActions, compact && styles.navActionsCompact]}>
         {!compact ? <TouchableOpacity accessibilityRole="link" onPress={() => router.push('/privacy')}>
           <Text style={styles.privacyLink}>Privacy</Text>
         </TouchableOpacity> : null}
@@ -63,9 +64,9 @@ const Header = () => {
           {!compact ? <Text style={styles.themeLabel}>{themeName === 'dark' ? 'Light' : 'Dark'}</Text> : null}
         </TouchableOpacity>
       {!user ? (
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Get started" style={styles.loginButton} onPress={openModal}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Get started" style={[styles.loginButton, compact && styles.loginButtonCompact]} onPress={openModal}>
           <Text style={styles.loginButtonText}>{compact ? 'Enter' : 'Get started'}</Text>
-          <Ionicons name="arrow-forward" size={16} color={t.onPrimary} />
+          {!tiny && <Ionicons name="arrow-forward" size={16} color={t.onPrimary} />}
         </TouchableOpacity>
       ) : null}
       </View>
@@ -83,7 +84,7 @@ const Header = () => {
 const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   headerWrap: {
     width: '100%',
-    paddingHorizontal: Platform.OS === 'web' ? 22 : 10,
+    paddingHorizontal: Platform.OS === 'web' ? 12 : 10,
     borderBottomWidth: 1,
     borderColor: t.borderSubtle,
     backgroundColor: t.background,
@@ -114,6 +115,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     fontWeight: '800',
     color: t.text,
   },
+  headerTitleTiny: { fontSize: 17 },
   loginButton: {
     minHeight: 42,
     paddingVertical: 11, paddingHorizontal: 17,
@@ -123,6 +125,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     alignItems: 'center',
     gap: 9,
   },
+  loginButtonCompact: { paddingHorizontal: 11, gap: 6 },
   privacyLink: {
     fontSize: 14,
     color: t.textMuted,
@@ -134,6 +137,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     fontWeight: 'bold',
   },
   navActions: { flexDirection: 'row', alignItems: 'center', gap: 20 },
+  navActionsCompact: { gap: 4 },
   themeButton: { minWidth: 44, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 8, borderRadius: 8 },
   themeLabel: { color: t.text, fontSize: 13, fontWeight: '600' },
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 99, backgroundColor: t.accentSoft, borderWidth: 1, borderColor: t.borderSubtle },

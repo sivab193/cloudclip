@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, TextInput, View, Text, TouchableOpacity, SafeAreaView, FlatList, Platform, Modal, TouchableWithoutFeedback, ScrollView, Dimensions, Switch, ActivityIndicator } from 'react-native';
+import { StyleSheet, TextInput, View, Text, TouchableOpacity, SafeAreaView, FlatList, Platform, Modal, TouchableWithoutFeedback, ScrollView, Dimensions, Switch, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useAuth } from '@/auth/AuthContext';
@@ -21,6 +21,9 @@ import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import AmbientBackdrop from '@/components/AmbientBackdrop';
 import Reveal from '@/components/Reveal';
+import PasswordField from '@/components/PasswordField';
+import PasswordStrength from '@/components/PasswordStrength';
+import { passwordAssessment } from '@/utils/passwordStrength';
 
 export default function Account() {
     const t = useTheme();
@@ -144,6 +147,10 @@ export default function Account() {
         }
         if (newPassword !== confirmNewPassword) {
             setPasswordError('New passwords do not match.');
+            return;
+        }
+        if (!passwordAssessment(newPassword, [user?.email ?? '', name]).acceptable) {
+            setPasswordError('Choose a unique password of at least 12 characters. Avoid common words or personal details.');
             return;
         }
         if (!user?.email) return;
@@ -287,32 +294,31 @@ export default function Account() {
                         visible={passwordModalVisible}
                         onRequestClose={() => setPasswordModalVisible(false)}
                     >
-                        <TouchableWithoutFeedback onPress={() => !passwordBusy && setPasswordModalVisible(false)}>
-                            <View style={styles.modalContainer}>
-                                <TouchableWithoutFeedback>
+                        <KeyboardAvoidingView style={styles.modalContainer} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.passwordModalScroll}>
+                                <TouchableWithoutFeedback onPress={() => !passwordBusy && setPasswordModalVisible(false)}>
+                                  <View style={styles.passwordBackdrop}>
+                                   <TouchableWithoutFeedback>
                                     <View style={styles.modalView}>
                                         <Text style={styles.modalText}>Change Password</Text>
-                                        <TextInput
-                                            style={styles.input}
+                                        <PasswordField
+                                            containerStyle={styles.passwordInput}
                                             placeholder="Current password"
-                                            placeholderTextColor={t.placeholder}
-                                            secureTextEntry
                                             value={currentPassword}
                                             onChangeText={setCurrentPassword}
                                         />
-                                        <TextInput
-                                            style={styles.input}
+                                        <PasswordField
+                                            containerStyle={styles.passwordInput}
                                             placeholder="New password"
-                                            placeholderTextColor={t.placeholder}
-                                            secureTextEntry
+                                            autoComplete="new-password"
                                             value={newPassword}
                                             onChangeText={setNewPassword}
                                         />
-                                        <TextInput
-                                            style={styles.input}
+                                        <PasswordStrength password={newPassword} personalWords={[user?.email ?? '', name]} />
+                                        <PasswordField
+                                            containerStyle={styles.passwordInput}
                                             placeholder="Confirm new password"
-                                            placeholderTextColor={t.placeholder}
-                                            secureTextEntry
+                                            autoComplete="new-password"
                                             value={confirmNewPassword}
                                             onChangeText={setConfirmNewPassword}
                                         />
@@ -321,9 +327,11 @@ export default function Account() {
                                             {passwordBusy ? <ActivityIndicator color={t.onPrimary} /> : <Text style={styles.buttonPrimaryText}>Change Password</Text>}
                                         </TouchableOpacity>
                                     </View>
+                                   </TouchableWithoutFeedback>
+                                  </View>
                                 </TouchableWithoutFeedback>
-                            </View>
-                        </TouchableWithoutFeedback>
+                            </ScrollView>
+                        </KeyboardAvoidingView>
                     </Modal>
 
                     <Header />
@@ -611,7 +619,8 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         backgroundColor: t.overlay,
     },
     modalView: {
-        width: 300,
+        width: '100%',
+        maxWidth: 420,
         backgroundColor: t.surface,
         borderRadius: 22,
         padding: 20,
@@ -621,6 +630,9 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         shadowRadius: 4,
         elevation: 5,
     },
+    passwordModalScroll: { flexGrow: 1 },
+    passwordBackdrop: { flexGrow: 1, minHeight: '100%', width: '100%', justifyContent: 'center', alignItems: 'center', padding: 16 },
+    passwordInput: { marginBottom: 12 },
     modalText: {
         fontSize: 18,
         marginBottom: 15,

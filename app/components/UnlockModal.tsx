@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useAuth } from '@/auth/AuthContext';
 import {
   unlockWithPassword,
@@ -12,6 +12,7 @@ import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { usePathname } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import PasswordField from './PasswordField';
 
 type Mode = 'password' | 'recovery' | 'reset';
 
@@ -123,7 +124,8 @@ const UnlockModal: React.FC = () => {
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scrollContent}>
         <View style={styles.box}>
           <View style={styles.icon}><Ionicons name="lock-open-outline" size={24} color={t.primary} /></View>
           <Text style={styles.title}>Unlock your data</Text>
@@ -134,11 +136,9 @@ const UnlockModal: React.FC = () => {
                 Your clipboard data is end-to-end encrypted. Enter your account
                 password to unlock it on this device.
               </Text>
-              <TextInput
-                style={styles.input}
+              <PasswordField
+                containerStyle={styles.passwordInput}
                 placeholder="Account password"
-                placeholderTextColor={t.placeholder}
-                secureTextEntry
                 value={password}
                 onChangeText={setPassword}
               />
@@ -167,11 +167,9 @@ const UnlockModal: React.FC = () => {
                 value={recoveryCode}
                 onChangeText={setRecoveryCode}
               />
-              <TextInput
-                style={styles.input}
+              <PasswordField
+                containerStyle={styles.passwordInput}
                 placeholder="Current account password"
-                placeholderTextColor={t.placeholder}
-                secureTextEntry
                 value={password}
                 onChangeText={setPassword}
               />
@@ -196,11 +194,9 @@ const UnlockModal: React.FC = () => {
                 PERMANENTLY DELETE all your synced clipboard entries and shared
                 links, and set up fresh encryption with your current password.
               </Text>
-              <TextInput
-                style={styles.input}
+              <PasswordField
+                containerStyle={styles.passwordInput}
                 placeholder="Current account password"
-                placeholderTextColor={t.placeholder}
-                secureTextEntry
                 value={password}
                 onChangeText={setPassword}
               />
@@ -218,7 +214,8 @@ const UnlockModal: React.FC = () => {
             <Text style={styles.link}>Log out</Text>
           </TouchableOpacity>
         </View>
-      </View>
+       </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -226,10 +223,9 @@ const UnlockModal: React.FC = () => {
 const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: t.overlay,
   },
+  scrollContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 20 },
   box: {
     width: '90%',
     maxWidth: 450,
@@ -264,7 +260,9 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     paddingHorizontal: 14,
     color: t.text,
     backgroundColor: t.surfaceAlt,
+    fontSize: 16,
   },
+  passwordInput: { marginBottom: 12 },
   button: {
     backgroundColor: t.primaryStrong,
     borderRadius: 14,

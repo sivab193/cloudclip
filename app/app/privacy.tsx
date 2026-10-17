@@ -72,16 +72,18 @@ export default function PrivacyPolicy() {
         <Text style={styles.heading}>Data retention</Text>
         <Text style={styles.body}>
           Shared links expire automatically (up to 30 days). Clipboard entries
-          remain until you delete them. Account deletion removes your account
-          and associated data from the active service. Content already copied
+          remain until you delete them. Account deletion removes your shared
+          sign-in and data in the active region, but does not currently remove
+          data from the other region. Content already copied
           by you or a share recipient remains on those devices. Hosting-provider
           security logs and backups follow the provider's retention policies.
         </Text>
 
         <Text style={styles.heading}>Deleting your account</Text>
         <Text style={styles.body}>
-          You can delete your account and all associated data at any time from
-          the Account tab in the regional CloudClip app where your data is stored.
+          You can delete your account from the Account tab in the regional
+          CloudClip app where your data is stored. If you used both regions,
+          contact us before deleting your sign-in so we can remove data in both.
         </Text>
 
         <Text style={styles.heading}>Contact</Text>

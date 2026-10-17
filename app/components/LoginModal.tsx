@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, Alert, TouchableOpacity, Text, Modal, TouchableWithoutFeedback, ActivityIndicator, Platform, Image } from 'react-native';
+import { View, TextInput, StyleSheet, Alert, TouchableOpacity, Text, Modal, TouchableWithoutFeedback, ActivityIndicator, Platform, Image, KeyboardAvoidingView, ScrollView, useWindowDimensions } from 'react-native';
 import { auth } from '../firebaseConfig';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -9,6 +9,9 @@ import { unlockWithPassword, WrongPasswordError } from '@/service/keyService';
 import RecoveryCodeModal from './RecoveryCodeModal';
 import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
+import PasswordField from './PasswordField';
+import PasswordStrength from './PasswordStrength';
+import { passwordAssessment } from '@/utils/passwordStrength';
 
 // Web `alert` fallback since RN Alert.alert is a no-op on react-native-web.
 const showMessage = (title: string, message: string) => {
@@ -30,6 +33,8 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
   const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
   const t = useTheme();
   const styles = useThemedStyles(makeStyles);
+  const { width } = useWindowDimensions();
+  const compact = width < 390;
 
   const { setAuthenticating, refreshEncryptionReady } = useAuth();
 
@@ -108,6 +113,10 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
       showMessage('Password Error', 'Passwords do not match.');
       return;
     }
+    if (!passwordAssessment(password, [username, name]).acceptable) {
+      showMessage('Password needs work', 'Choose a unique password of at least 12 characters. Avoid common words or personal details.');
+      return;
+    }
     setBusy(true);
     setAuthenticating(true);
     try {
@@ -181,14 +190,12 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
 
   return (
     <Modal visible={isVisible} transparent={true} animationType="fade" onRequestClose={() => { if (!busy) { onClose(); resetFields(); } }}>
-      <TouchableWithoutFeedback onPress={() => {
-        if (busy) return;
-        onClose();
-        resetFields();
-      }}>
-        <View style={styles.overlay}>
-          <TouchableWithoutFeedback onPress={handleModalContentPress}>
-            <View style={styles.modalBox}>
+      <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scrollContent}>
+          <TouchableWithoutFeedback onPress={() => { if (!busy) { onClose(); resetFields(); } }}>
+            <View style={styles.backdropHitArea}>
+              <TouchableWithoutFeedback onPress={handleModalContentPress}>
+                <View accessibilityViewIsModal style={[styles.modalBox, compact && styles.modalBoxCompact]}>
               <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close sign-in dialog"
                 disabled={busy} style={styles.closeButton}
                 onPress={() => { onClose(); resetFields(); }}>
@@ -202,6 +209,7 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                   <TextInput
                     style={styles.input}
                     placeholder="Email"
+                    accessibilityLabel="Email"
                     placeholderTextColor={t.placeholder}
                     value={username}
                     onChangeText={setUsername}
@@ -222,12 +230,16 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                   <View style={styles.buttonContainer}>
                     <TouchableOpacity
                       style={[styles.toggleButton, !isSignUpMode && styles.activeButton]}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: !isSignUpMode }}
                       onPress={() => setIsSignUpMode(false)}
                     >
                       <Text style={[styles.secondarybuttonText, !isSignUpMode && styles.activeToggleText]}>Log in</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.toggleButton, isSignUpMode && styles.activeButton]}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: isSignUpMode }}
                       onPress={() => setIsSignUpMode(true)}
                     >
                       <Text style={[styles.secondarybuttonText, isSignUpMode && styles.activeToggleText]}>Sign up</Text>
@@ -239,6 +251,8 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                       <TextInput
                         style={styles.input}
                         placeholder="Name"
+                        accessibilityLabel="Name"
+                        autoComplete="name"
                         placeholderTextColor={t.placeholder}
                         value={name}
                         onChangeText={setName}
@@ -246,25 +260,26 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                       <TextInput
                         style={styles.input}
                         placeholder="Email"
+                        accessibilityLabel="Email"
+                        autoComplete="email"
                         placeholderTextColor={t.placeholder}
                         value={username}
                         onChangeText={setUsername}
                         keyboardType="email-address"
                         autoCapitalize="none"
                       />
-                      <TextInput
-                        style={styles.input}
+                      <PasswordField
+                        containerStyle={styles.passwordInput}
                         placeholder="Password"
-                        placeholderTextColor={t.placeholder}
-                        secureTextEntry
+                        autoComplete="new-password"
                         value={password}
                         onChangeText={setPassword}
                       />
-                      <TextInput
-                        style={styles.input}
+                      <PasswordStrength password={password} personalWords={[username, name]} />
+                      <PasswordField
+                        containerStyle={styles.passwordInput}
                         placeholder="Confirm Password"
-                        placeholderTextColor={t.placeholder}
-                        secureTextEntry
+                        autoComplete="new-password"
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
                       />
@@ -277,17 +292,17 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                       <TextInput
                         style={styles.input}
                         placeholder="Email"
+                        accessibilityLabel="Email"
+                        autoComplete="email"
                         placeholderTextColor={t.placeholder}
                         value={username}
                         onChangeText={setUsername}
                         keyboardType="email-address"
                         autoCapitalize="none"
                       />
-                      <TextInput
-                        style={styles.input}
+                      <PasswordField
+                        containerStyle={styles.passwordInput}
                         placeholder="Password"
-                        placeholderTextColor={t.placeholder}
-                        secureTextEntry
                         value={password}
                         onChangeText={setPassword}
                       />
@@ -308,10 +323,12 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                   </View>
                 </>
               )}
+                </View>
+              </TouchableWithoutFeedback>
             </View>
           </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -319,17 +336,16 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
 const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: t.overlay,
-    padding: 18,
   },
+  scrollContent: { flexGrow: 1 },
+  backdropHitArea: { flexGrow: 1, minHeight: '100%', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 20 },
   modalBox: {
     width: '100%',
     maxWidth: 460,
     backgroundColor: t.glass,
     borderRadius: 16,
-    padding: 28,
+    padding: 26,
     borderWidth: 1,
     borderColor: t.border,
     shadowColor: t.shadow,
@@ -337,6 +353,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     shadowRadius: 28,
     shadowOffset: { width: 0, height: 14 },
   },
+  modalBoxCompact: { padding: 19 },
   closeButton: { position: 'absolute', top: 16, right: 16, width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: t.surfaceAlt, zIndex: 2 },
   brandMark: { width: 46, height: 46, borderRadius: 10, marginBottom: 22 },
   input: {
@@ -348,7 +365,9 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     borderRadius: 9,
     color: t.text,
     backgroundColor: t.surface,
+    fontSize: 16,
   },
+  passwordInput: { marginBottom: 13 },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',

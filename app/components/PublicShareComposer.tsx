@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Header from './Header';
 import AmbientBackdrop from './AmbientBackdrop';
@@ -15,6 +15,8 @@ const MAX_LENGTH = 12_000;
 export default function PublicShareComposer() {
   const styles = useThemedStyles(makeStyles);
   const t = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 600;
   const [text, setText] = useState('');
   const [ttlDays, setTtlDays] = useState<1 | 7>(1);
   const [result, setResult] = useState<AnonymousShareResult | null>(null);
@@ -52,8 +54,8 @@ export default function PublicShareComposer() {
     <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
       <Header />
       <Reveal style={styles.reveal}>
-        <View style={styles.shell}>
-          <Text accessibilityRole="header" style={styles.title}>{result ? 'Your private link is ready.' : 'Share text. Skip the account.'}</Text>
+        <View style={[styles.shell, compact && styles.shellCompact]}>
+          <Text accessibilityRole="header" style={[styles.title, compact && styles.titleCompact]}>{result ? 'Your private link is ready.' : 'Share text. Skip the account.'}</Text>
           <Text style={styles.subtitle}>{result ? 'The decryption key lives after the # and never reaches CloudClip. Send the complete link.' : 'Type or paste text below. It is encrypted in this browser before it is uploaded, and expires automatically.'}</Text>
 
           {result ? <View style={styles.result}>
@@ -67,7 +69,7 @@ export default function PublicShareComposer() {
             <View style={styles.resultMeta}><View style={styles.metaItem}><Ionicons name="timer-outline" size={16} color={t.textMuted} /><Text style={styles.metaText}>Expires in {ttlDays === 1 ? '24 hours' : '7 days'}</Text></View><View style={styles.metaItem}><Ionicons name="lock-closed-outline" size={16} color={t.accent} /><Text style={styles.metaText}>End-to-end encrypted</Text></View></View>
             <Pressable accessibilityRole="button" onPress={reset} style={styles.secondaryButton}><Ionicons name="add" size={18} color={t.text} /><Text style={styles.secondaryButtonText}>Share another text</Text></Pressable>
           </View> : <>
-            <View style={styles.editor}>
+            <View style={[styles.editor, compact && styles.editorCompact]}>
               <TextInput
                 accessibilityLabel="Text to share"
                 autoCapitalize="sentences"
@@ -76,7 +78,7 @@ export default function PublicShareComposer() {
                 placeholder="Paste a note, command, address, or anything worth passing on…"
                 placeholderTextColor={t.placeholder}
                 selectionColor={t.primary}
-                style={styles.input}
+                style={[styles.input, compact && styles.inputCompact]}
                 textAlignVertical="top"
                 value={text}
               />
@@ -84,7 +86,7 @@ export default function PublicShareComposer() {
             </View>
             <View style={styles.controls}>
               <View><Text style={styles.label}>LINK EXPIRES</Text><View accessibilityRole="radiogroup" style={styles.ttlGroup}>{([1, 7] as const).map(days => <Pressable key={days} accessibilityRole="radio" accessibilityState={{ checked: ttlDays === days }} onPress={() => setTtlDays(days)} style={[styles.ttl, ttlDays === days && styles.ttlActive]}><Text style={[styles.ttlText, ttlDays === days && styles.ttlTextActive]}>{days === 1 ? '24 hours' : '7 days'}</Text></Pressable>)}</View></View>
-              <Pressable accessibilityRole="button" disabled={!text.trim() || loading} onPress={createLink} style={[styles.primaryButton, (!text.trim() || loading) && styles.primaryDisabled]}>{loading ? <ActivityIndicator color={t.onPrimary} /> : <><Text style={[styles.primaryText, !text.trim() && styles.primaryTextDisabled]}>Create private link</Text><Ionicons name="arrow-forward" size={19} color={!text.trim() ? t.textMuted : t.onPrimary} /></>}</Pressable>
+              <Pressable accessibilityRole="button" disabled={!text.trim() || loading} onPress={createLink} style={[styles.primaryButton, compact && styles.primaryButtonCompact, (!text.trim() || loading) && styles.primaryDisabled]}>{loading ? <ActivityIndicator color={t.onPrimary} /> : <><Text style={[styles.primaryText, !text.trim() && styles.primaryTextDisabled]}>Create private link</Text><Ionicons name="arrow-forward" size={19} color={!text.trim() ? t.textMuted : t.onPrimary} /></>}</Pressable>
             </View>
             {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
             <View style={styles.privacyLine}><Ionicons name="shield-checkmark-outline" size={17} color={t.accent} /><Text style={styles.privacyText}>No login · No plaintext on the server · Rate-limited to prevent abuse</Text></View>
@@ -99,15 +101,20 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: t.background, paddingTop: Platform.OS === 'web' ? 0 : 30 },
   scroll: { flexGrow: 1 }, reveal: { flex: 1 },
   shell: { width: '90%', maxWidth: 820, alignSelf: 'center', marginTop: 72, marginBottom: 100, padding: 0 },
+  shellCompact: { width: '100%', paddingHorizontal: 18, marginTop: 42, marginBottom: 60 },
   title: { color: t.text, fontSize: 42, lineHeight: 49, fontWeight: '800', letterSpacing: -1.3 },
+  titleCompact: { fontSize: 32, lineHeight: 38 },
   subtitle: { color: t.textMuted, fontSize: 15, lineHeight: 24, maxWidth: 650, marginTop: 10 },
   editor: { minHeight: 280, marginTop: 36, borderRadius: 10, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, overflow: 'hidden' },
+  editorCompact: { minHeight: 220, marginTop: 26 },
   input: { flex: 1, minHeight: 240, padding: 18, paddingBottom: 44, color: t.text, fontSize: 16, lineHeight: 25 },
+  inputCompact: { minHeight: 180, padding: 15, paddingBottom: 42 },
   count: { position: 'absolute', right: 16, bottom: 13, color: t.textMuted, fontSize: 11 },
   controls: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, marginTop: 22 },
   label: { color: t.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: .8, marginBottom: 9 },
   ttlGroup: { flexDirection: 'row', gap: 8 }, ttl: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 15, borderRadius: 8, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border }, ttlActive: { backgroundColor: t.primarySoft, borderColor: t.primary }, ttlText: { color: t.textMuted, fontSize: 13, fontWeight: '700' }, ttlTextActive: { color: t.primary },
   primaryButton: { minHeight: 50, minWidth: 190, paddingHorizontal: 20, borderRadius: 9, backgroundColor: t.primaryStrong, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 }, primaryDisabled: { backgroundColor: t.surfaceDisabled }, primaryText: { color: t.onPrimary, fontSize: 14, fontWeight: '700' }, primaryTextDisabled: { color: t.textMuted },
+  primaryButtonCompact: { width: '100%' },
   error: { color: t.danger, fontSize: 13, lineHeight: 20, marginTop: 14 },
   privacyLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 25, paddingTop: 20, borderTopWidth: 1, borderColor: t.borderSubtle }, privacyText: { flex: 1, color: t.textMuted, fontSize: 11, lineHeight: 18 },
   result: { marginTop: 36 }, linkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 9, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border }, linkText: { flex: 1, color: t.text, fontSize: 14, lineHeight: 20 }, iconButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: t.primaryStrong },

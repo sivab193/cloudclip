@@ -10,6 +10,8 @@ CloudClip runs two independent data regions behind one public gateway.
 
 The regions do not replicate. Users must select the same region on every device they want to sync. Shared links use the originating regional web hostname.
 
+Authentication is shared through one Firebase project, so the same email and password work in both regions. Each region creates its own profile and encryption keys on first sign-in, and clips and shared links remain separate. **Current deletion limitation:** deleting an account in either region removes the shared Firebase identity and only that region's MongoDB records; the other region's records are not automatically purged. Coordinate deletion in both regions before removing the Firebase identity.
+
 ## Secrets and configuration
 
 Store the US MongoDB URL and Firebase Admin credentials in `backend/.env` on the US Mac mini. Store the India MongoDB URL and a separately issued Firebase Admin credential in `backend/.env` on the India server. These files are ignored by Git and are consumed by Docker Compose; never put MongoDB or Firebase Admin credentials in Vercel.
