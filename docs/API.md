@@ -1,6 +1,6 @@
 # API contract
 
-Base: `https://cc-api.siv19.dev/api`. Authenticated routes require `Authorization: Bearer <Firebase ID token>`. Error bodies use `{error: string}`; validation errors can include details. Responses are `Cache-Control: no-store`.
+Regional bases are `https://api.in.cclip.cc/api` and `https://api.us.cclip.cc/api`. A user selects one region and all of that account session's requests remain in it. Authenticated routes require `Authorization: Bearer <Firebase ID token>`. Error bodies use `{error: string}`; validation errors can include details. Responses are `Cache-Control: no-store`.
 
 | Method | Path | Behavior |
 | --- | --- | --- |

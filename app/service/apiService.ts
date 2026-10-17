@@ -2,7 +2,7 @@ import { auth } from '../firebaseConfig';
 import { Device, CustomClipboard, Shared, PublicShared, User, EncryptionKeys } from './models';
 
 // Bare origin (no /api suffix) — shared with socketService.
-export const API_ORIGIN = (process.env.EXPO_PUBLIC_API_URL || 'https://cc-api.siv19.dev').replace(/\/+$/, '');
+export const API_ORIGIN = (process.env.EXPO_PUBLIC_API_URL || 'https://api.us.cclip.cc').replace(/\/+$/, '');
 const BACKEND_URL = `${API_ORIGIN}/api`;
 
 const fetch = async (url: string, init?: RequestInit): Promise<Response> => {

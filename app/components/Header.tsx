@@ -6,6 +6,8 @@ import { useRouter } from 'expo-router';
 import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import RegionPicker from './RegionPicker';
+import { deploymentMode } from '@/config/regions';
 
 const subscribe = () => () => {};
 const clientSnapshot = () => true;
@@ -15,11 +17,12 @@ const Header = () => {
   const { width } = useWindowDimensions();
   const compact = !hydrated || width < 500;
   const [isModalVisible, setModalVisible] = useState(false);
+  const [isRegionVisible, setRegionVisible] = useState(false);
   const styles = useThemedStyles(makeStyles);
   const t = useTheme();
   const { user } = useAuth()
 
-  const openModal = () => setModalVisible(true);
+  const openModal = () => deploymentMode === 'gateway' ? setRegionVisible(true) : setModalVisible(true);
   const closeModal = () => setModalVisible(false);
 
   const handleSuccess = () => {
@@ -66,6 +69,7 @@ const Header = () => {
         onClose={closeModal}
         onSuccess={handleSuccess}
       />
+      <RegionPicker visible={isRegionVisible} onClose={() => setRegionVisible(false)} />
     </View>
     </View>
   );

@@ -30,6 +30,7 @@ functions
 app/android/
 app/ios/
 app/dist-android/
+.impeccable/
 *.aab
 *.apk
 config.txt

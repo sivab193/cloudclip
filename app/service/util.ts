@@ -5,7 +5,7 @@ export const getWebUrl = (): string => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
         return window.location.origin;
     }
-    return process.env.EXPO_PUBLIC_WEB_URL || 'https://cc.siv19.dev';
+    return process.env.EXPO_PUBLIC_WEB_URL || 'https://us.cclip.cc';
 };
 
 export const truncateContent = (content: string, startLength = 15, endLength = 15) => {

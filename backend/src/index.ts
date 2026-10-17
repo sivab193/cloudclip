@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { connectDB } from './config/db';
 import { createApp } from './app';
 import { getFirebaseAuth } from './middleware/auth';
+import { closeRedis, connectRedis } from './config/redis';
 
 const start = async () => {
   const required = ['MONGODB_URI', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
@@ -12,8 +13,9 @@ const start = async () => {
   if (missing.length) throw new Error(`Missing configuration: ${missing.join(', ')}`);
   getFirebaseAuth();
   await connectDB();
+  const redis = await connectRedis();
 
-  const { server, io } = createApp();
+  const { server, io } = createApp(redis);
 
   const PORT = process.env.PORT || 3000;
   server.listen(PORT, () => {
@@ -24,6 +26,7 @@ const start = async () => {
     console.log(`${signal} received, shutting down`);
     io.close();
     server.close(async () => {
+      await closeRedis(redis);
       await mongoose.connection.close();
       process.exit(0);
     });

@@ -18,7 +18,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.cloudclip",
       "associatedDomains": [
-        "applinks:cc.siv19.dev"
+        "applinks:in.cclip.cc",
+        "applinks:us.cclip.cc"
       ]
     },
     "android": {
@@ -41,7 +42,12 @@
           "data": [
             {
               "scheme": "https",
-              "host": "cc.siv19.dev",
+              "host": "in.cclip.cc",
+              "pathPrefix": "/shared"
+            },
+            {
+              "scheme": "https",
+              "host": "us.cclip.cc",
               "pathPrefix": "/shared"
             }
           ],

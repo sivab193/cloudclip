@@ -1,5 +1,9 @@
+# Keep container installs aligned with the npm major used to generate the lockfile.
+FROM node:22-alpine AS base
+RUN npm install -g npm@11.17.0
+
 # Build stage
-FROM node:22-alpine AS builder
+FROM base AS builder
 
 WORKDIR /app
 
@@ -13,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:22-alpine
+FROM base
 
 WORKDIR /app
 

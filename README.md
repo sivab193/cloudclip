@@ -1,8 +1,21 @@
 # CloudClip
 
-CloudClip syncs text between Android, iOS and web, and shares text through expiring encrypted links. The release target is Android; iOS remains a secondary build target.
+CloudClip is a private clipboard cloud for syncing encrypted text and sharing it through expiring encrypted links. The web app is available now. iOS, Android, macOS, Windows and Linux apps are on the roadmap.
 
-Clipboard content is encrypted on the client. Automatic clipboard access is opt-in and runs only while the app is visible. Images, file transfer, background clipboard monitoring and an offline write queue are not implemented.
+Clipboard content is encrypted on the client. Automatic clipboard access is opt-in and runs only while the app is visible. Encrypted file transfer, a custom CloudClip keyboard, native apps and a user-friendly self-hosted edition are coming soon. Images, background clipboard monitoring and an offline write queue are not implemented today.
+
+## How the regional deployment works
+
+`cclip.cc` is the public gateway. Before signing in or opening a shared clip, a visitor chooses an available region. The gateway then redirects to the matching regional web app:
+
+- India: `in.cclip.cc` → `api.in.cclip.cc` → India backend → Mumbai MongoDB cluster
+- United States: `us.cclip.cc` → `api.us.cclip.cc` → US backend → N. Virginia MongoDB cluster
+
+Each backend runs as a Docker container beside Redis. Redis backs distributed rate limiting and Socket.IO event delivery. Regional data stays in that region's MongoDB cluster; the clusters are intentionally independent rather than cross-region replicas.
+
+The public API hostnames are connected with Cloudflare Tunnel. A `cloudflared` container creates an outbound encrypted connection to Cloudflare, so the home server does not need an inbound port exposed on the router. Cloudflare terminates HTTPS for `api.<region>.cclip.cc` and forwards requests through that tunnel to `http://backend:3000` on the private Docker network.
+
+MongoDB URLs and tunnel tokens belong only in the ignored `backend/.env` file on the corresponding server. They must never be committed, embedded into an image, or added to the frontend/Vercel environment.
 
 ## Run locally
 
@@ -52,6 +65,6 @@ npm run build:web
 - [Deployment and rollback](docs/deployment.md)
 - [Google Play submission and device checklist](docs/store-submission.md)
 
-The app uses Expo SDK 57 / React Native 0.86. REST owns durable writes; Socket.io delivers live notifications. One Node process runs behind Caddy, with MongoDB for persistence and Firebase Authentication for identity. There is no Redis dependency or horizontal scaling in this release.
+The app uses Expo SDK 57 / React Native 0.86. REST owns durable writes; Socket.IO delivers live notifications. Each regional Node backend runs behind Caddy, with MongoDB for persistence, Firebase Authentication for identity, Redis for shared rate limits and events, and an optional Cloudflare Tunnel sidecar for private ingress.
 
 A passing source check is not a Play approval: the signed bundle, production deployment, device tests and Play Console declarations must also be verified.

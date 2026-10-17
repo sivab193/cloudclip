@@ -5,6 +5,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import { RedisStore } from 'rate-limit-redis';
+import { createAdapter } from '@socket.io/redis-adapter';
 import mongoose from 'mongoose';
 import { authenticateSocket, registerSocketHandlers } from './socket/handlers';
 
@@ -14,6 +16,7 @@ import deviceRoutes from './routes/devices';
 import clipboardRoutes from './routes/clipboards';
 import sharedRoutes from './routes/shared';
 import { EncryptionChangedError } from './services/encryption';
+import { RedisConnections } from './config/redis';
 
 export interface AppBundle {
   app: express.Express;
@@ -21,7 +24,7 @@ export interface AppBundle {
   io: Server;
 }
 
-export const createApp = (): AppBundle => {
+export const createApp = (redis: RedisConnections | null = null): AppBundle => {
   const app = express();
   const server = http.createServer(app);
 
@@ -57,6 +60,10 @@ export const createApp = (): AppBundle => {
     limit: 300,
     standardHeaders: true,
     legacyHeaders: false,
+    store: redis ? new RedisStore({
+      prefix: 'cloudclip:rate:api:',
+      sendCommand: (...args: string[]) => redis.command.sendCommand(args),
+    }) : undefined,
   }));
 
   // API Routes
@@ -105,6 +112,7 @@ export const createApp = (): AppBundle => {
     },
     maxHttpBufferSize: 512 * 1024,
   });
+  if (redis) io.adapter(createAdapter(redis.publisher, redis.subscriber));
   app.set('io', io);
 
   io.use(authenticateSocket);

@@ -7,7 +7,7 @@ import { type PropsWithChildren } from 'react';
  * The contents of this function only run in Node.js environments and do not have access to the DOM or browser APIs.
  */
 
-const SITE_URL = 'https://cc.siv19.dev';
+const SITE_URL = process.env.EXPO_PUBLIC_WEB_URL || 'https://cclip.cc';
 const TITLE = 'CloudClip — Your clipboard, on every device';
 const DESCRIPTION =
   'End-to-end encrypted clipboard sync. Copy on one device, paste on another in real time, and share text through expiring links.';
@@ -81,12 +81,6 @@ input:focus, textarea:focus { box-shadow: 0 0 0 3px #9984ef25; }
 @keyframes clip-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 [role="dialog"] { animation: clip-enter .3s ease-out; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
-.cloudclip-grid {
-  position: absolute; inset: 0;
-  background-image: linear-gradient(rgba(104,80,216,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(104,80,216,.045) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: linear-gradient(to bottom, black, transparent 78%);
-}
 .cloudclip-aurora { position: absolute; width: 48vw; height: 48vw; min-width: 440px; min-height: 440px; border-radius: 999px; filter: blur(80px); opacity: .72; will-change: transform; }
 .cloudclip-aurora-one { top: -20%; right: -12%; animation: cloudclip-float-a 15s ease-in-out infinite alternate; }
 .cloudclip-aurora-two { top: 42%; left: -18%; animation: cloudclip-float-b 19s ease-in-out infinite alternate; }

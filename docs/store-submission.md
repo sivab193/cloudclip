@@ -24,9 +24,9 @@ Full description:
 > MANAGE YOUR DATA
 > Delete individual entries, clear your history, or delete your account and associated data.
 >
-> No ads. Also available in the browser at https://cc.siv19.dev.
+> No ads. Also available in the browser at https://cclip.cc.
 >
-> Privacy policy: https://cc.siv19.dev/privacy
+> Privacy policy: https://cclip.cc/privacy
 
 Category: Productivity. Support contact: sivaganesh1903@gmail.com.
 
@@ -57,7 +57,7 @@ Complete the real Console questionnaires after inspecting the final bundle and d
 
 Data inventory for the Data safety review: email, display name, Firebase user ID, installation/device IDs and labels, encrypted user content, and provider technical logs. Document purposes, required/optional status, service-provider processing, retention and deletion accurately. Verify any E2E exclusions against [Google's Data safety guidance](https://support.google.com/googleplay/android-developer/answer/10787469).
 
-Account deletion is available inside the app and at `https://cc.siv19.dev/delete-account`, with password reauthentication. See [Google's account-deletion requirements](https://support.google.com/googleplay/android-developer/answer/13327111). Verify both deployed flows.
+Account deletion is available inside each regional app's Account screen, with password reauthentication. See [Google's account-deletion requirements](https://support.google.com/googleplay/android-developer/answer/13327111). Verify both regional flows.
 
 Declare private text sharing accurately in the content-rating/user-interaction questionnaire. Private links can transfer user-generated content; do not automatically answer “no interaction.” Supply a designated reviewer/test account through Play Console; never commit credentials.
 

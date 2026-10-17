@@ -81,7 +81,7 @@ export default function PrivacyPolicy() {
         <Text style={styles.heading}>Deleting your account</Text>
         <Text style={styles.body}>
           You can delete your account and all associated data at any time from
-          the Account tab in the app, or at https://cc.siv19.dev/delete-account.
+          the Account tab in the regional CloudClip app where your data is stored.
         </Text>
 
         <Text style={styles.heading}>Contact</Text>

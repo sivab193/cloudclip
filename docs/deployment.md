@@ -1,18 +1,18 @@
 # Deployment and rollback
 
-The release architecture is one Node process + Caddy + MongoDB + Firebase Authentication, with the web export on Vercel. The VM can be on GCP or IBM; no provider migration is required by this code change.
+The release architecture is one independent Node + Redis + MongoDB stack per data region, with the gateway and regional web exports on Vercel. See [regional deployment](REGIONAL-DEPLOYMENT.md) for the active hostnames and environment split.
 
 ## Current verification
 
-The web privacy URL returned HTTP 200 on 2026-09-07, but `cc-api.siv19.dev` still did not resolve on 2026-09-08. Restore or supply the production API before treating the app as live. This repository cannot prove that production credentials have been rotated.
+The Vercel gateway, India, and US builds have been created. Public custom domains and both API health checks must succeed before treating the service as live. This repository cannot prove that production credentials have been rotated.
 
 ## Configure
 
 1. Restrict MongoDB network access to the backend host. Use a database user scoped to the CloudClip database.
-2. Configure `backend/.env` from its example. Supply `MONGODB_URI`, Firebase service-account fields and `ALLOWED_ORIGINS=https://cc.siv19.dev`. Rotate any previously exposed service-account key and remove it from old deployment images through your normal retention process.
-3. Point `cc-api.siv19.dev` at the backend host. Expose only 80/443 publicly; keep port 3000 and MongoDB private. Limit SSH to trusted sources.
-4. Add `cc.siv19.dev` to Firebase authorized domains and enable Email/Password authentication.
-5. Configure Vercel with root directory `app`, Node 22 and values from `app/.env.example`. The repository defines its static export command.
+2. Configure a separate `backend/.env` on each server. Supply only that region's `MONGODB_URI`, Firebase service-account fields, regional `CADDY_HOST`, and allowed gateway/regional origins. Rotate any previously exposed service-account key.
+3. Route `api.in.cclip.cc` and `api.us.cclip.cc` to their respective backends using Cloudflare Tunnel or HTTPS ingress. Keep Node, Redis, and MongoDB private.
+4. Add `cclip.cc`, `in.cclip.cc`, and `us.cclip.cc` to Firebase authorized domains and enable Email/Password authentication.
+5. Configure the three Vercel projects with the public values described in [regional deployment](REGIONAL-DEPLOYMENT.md).
 6. Configure the EAS production environment with the Firebase public-app values. Production API/web origins are also set explicitly in `app/eas.json`; review them if hosting changes.
 
 ## Backend release

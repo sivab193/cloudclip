@@ -14,6 +14,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
@@ -22,11 +23,18 @@
     "helmet": "^8.2.0",
     "mongoose": "^9.3.0",
     "morgan": "^1.11.0",
+    "rate-limit-redis": "^6.0.1",
+    "redis": "^6.3.0",
     "socket.io": "^4.8.3",
     "zod": "^4.4.3"
   },
-  "overrides": { "uuid": "^11.1.1" },
-  "engines": { "node": ">=22.13.0" },
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "packageManager": "npm@11.17.0",
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",

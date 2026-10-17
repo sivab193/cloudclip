@@ -7,17 +7,33 @@ services:
       - PORT=3000
       - NODE_ENV=production
       - MONGODB_URI=${MONGODB_URI}
+      - REDIS_URL=redis://redis:6379
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
       - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
       - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
     restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    expose:
+      - "6379"
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   caddy:
     image: caddy:2-alpine
@@ -28,9 +44,23 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    environment:
+      - CADDY_HOST=${CADDY_HOST:-api.us.cclip.cc}
     restart: always
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    restart: always
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   caddy_data:
