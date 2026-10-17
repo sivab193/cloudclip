@@ -2,7 +2,7 @@
 
 CloudClip is a quiet place to keep useful text and share it through private, expiring links. The [web app](https://cclip.cc) is available now. iOS, Android, macOS, Windows and Linux apps are on the roadmap.
 
-The website has an [About page](https://cclip.cc/about), a [privacy policy](https://cclip.cc/privacy), and an account-free sharing flow. CloudClip is built in the open by [siv19.dev](https://siv19.dev/); the site footer also links to [GitHub](https://github.com/sivab193), [LinkedIn](https://www.linkedin.com/in/sivab193/), and [Instagram](https://www.instagram.com/siv19.dev/). The source repository is [sivab193/cloud-clip-ui](https://github.com/sivab193/cloud-clip-ui).
+The website has an [About page](https://cclip.cc/about), a [privacy policy](https://cclip.cc/privacy), and an account-free sharing flow. CloudClip is built in the open by [siv19.dev](https://siv19.dev/); the site footer also links to [GitHub](https://github.com/sivab193), [LinkedIn](https://www.linkedin.com/in/sivab193/), and [Instagram](https://www.instagram.com/siv19.dev/). The source repository is [sivab193/cloudclip](https://github.com/sivab193/cloudclip).
 
 Anyone can create a client-side encrypted, expiring text link without registering. Anonymous shares are rate-limited, expire after one or seven days, and are not attached to an account history.
 
