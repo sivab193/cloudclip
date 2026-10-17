@@ -1,6 +1,6 @@
-# Release readiness — 2026-09-08
+# Release readiness — 2026-09-08 snapshot
 
-The repository has been audited, hardened and checked as a release candidate. **It is not yet ready for public Play distribution.** No release has been submitted to Google Play, and this work has not deployed the backend.
+This is a historical release-candidate snapshot, not a current production status report. **It is not proof of readiness for public Play distribution.** Re-run every check against the current commit before relying on a result below.
 
 ## Verified locally
 
@@ -9,7 +9,7 @@ The repository has been audited, hardened and checked as a release candidate. **
 | App strict TypeScript and unused-symbol checks | Pass |
 | App regression tests | 53 pass across crypto, key lifecycle, sharing helpers, sync decisions and async sync/account boundaries |
 | Backend TypeScript build and integration tests | Build passes; 30 tests pass using ephemeral MongoDB and mocked Firebase |
-| Dependency audits | Zero reported vulnerabilities in both packages |
+| Dependency audits | Historical result only. The October 2026 frontend audit reports outstanding advisories; the backend production-dependency audit currently passes. |
 | Expo Doctor | 21/21 checks pass |
 | Release configuration gate | Pass; validates shape, not external credentials |
 | Web static export | Pass |
@@ -30,7 +30,7 @@ Browser sharing used a synthetic encrypted response, not production accounts. It
 - Web share fragments, static icon-font loading and dark-theme hydration are corrected. Sign-in has an explicit close action, and confirmation dialogs have safe back/dismiss handlers.
 - Removed unused helpers, duplicate screen/sync/deletion logic, unused `nanoid` dependencies and the unconfigured development-client build profile. Consolidating icons eliminates about 1.5 MB of raw font assets from the three single-icon fonts alone.
 - Replaced obsolete Redis/file-transfer/provider assumptions with [accepted architecture decisions](ARCHITECTURE.md), an [API contract](API.md), and deployment/rollback instructions. Dependency folders and generated build output are not source-code size.
-- CI validates both packages on pushes. Backend deployment is a separate manual workflow on `main`, with a `production` environment available for approval rules.
+- CI validates both packages on relevant pushes. The former manual SSH backend deployment workflow was retired in October 2026; regional backends are deployed from their respective hosts.
 
 ## Release blockers requiring owner input or external validation
 

@@ -31,7 +31,7 @@ docker compose exec backend wget -qO- http://localhost:3000/health
 
 Then check the public HTTPS health URL and exercise save/delete between two test devices. A health response only checks database connectivity; it does not test the full auth/sync path.
 
-The GitHub workflow runs CI automatically on code pushes. Backend deployment is a separate **Run workflow** action on `main`, after production hosting has been verified. It uses the `production` GitHub environment; configure required reviewers there for an approval gate. The `GCE_HOST`, `GCE_USER` and `SSH_PRIVATE_KEY` secrets retain their names for compatibility even if the actual host is IBM. Deployment runs only after backend CI, uses fast-forward-only checkout, verifies the tested commit, and performs a public health check. Old images are retained for rollback; prune them deliberately after validating the release.
+GitHub Actions runs backend CI automatically when backend code changes. The old SSH deployment job for the former `cc-api.siv19.dev` host has been retired; it must not be used to deploy the current regional servers. Deploy each regional Docker stack from its host using the commands above and the [regional deployment guide](REGIONAL-DEPLOYMENT.md), then verify that region's public API health endpoint. Old images are retained for rollback; prune them deliberately after validating the release.
 
 ## Operations
 

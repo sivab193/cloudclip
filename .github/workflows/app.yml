@@ -15,8 +15,8 @@ jobs:
         working-directory: app
     # Build-only public configuration. CI never signs in or touches user data.
     env:
-      EXPO_PUBLIC_API_URL: https://cc-api.siv19.dev
-      EXPO_PUBLIC_WEB_URL: https://cc.siv19.dev
+      EXPO_PUBLIC_API_URL: https://api-us.cclip.cc
+      EXPO_PUBLIC_WEB_URL: https://us.cclip.cc
       EXPO_PUBLIC_FIREBASE_API_KEY: ci-build-only-api-key
       EXPO_PUBLIC_FIREBASE_PROJECT_ID: cloudclip-ci
       EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: cloudclip-ci.firebaseapp.com
