@@ -17,9 +17,9 @@ import { base64 } from '@scure/base';
  * - The MK itself is stored server-side only in wrapped form: encrypted with
  *   a KEK derived (scrypt) from the account password, and separately with a
  *   KEK derived from a one-time recovery code.
- * - New share links use a 32-char token: the first 8 chars are the server lookup
- *   code; the decryption key is HKDF-derived from the FULL token, which never
- *   reaches the server.
+ * - New share links use a 32-char token: the first 4 chars are an uppercase
+ *   alphanumeric server reference; the decryption key is HKDF-derived from the
+ *   FULL token, which never reaches the server.
  */
 
 export interface KdfParams {
@@ -148,13 +148,21 @@ const randomFromAlphabet = (alphabet: string, length: number): string => {
 // --- share tokens ---
 
 const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-const SHARE_TOKEN_LENGTH = 32; // 24 secret base58 characters after the public prefix (~140 bits).
-const SHARE_CODE_LENGTH = 8;
+const SHARE_CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+const SHARE_TOKEN_LENGTH = 32;
+const SHARE_CODE_LENGTH = 4;
+const SHARE_TOKEN_VERSION_MARKER = '0'; // Not in base58; distinguishes new links from legacy tokens.
 
-export const generateShareToken = (): string => randomFromAlphabet(BASE58, SHARE_TOKEN_LENGTH);
+export const generateShareToken = (): string =>
+    randomFromAlphabet(SHARE_CODE_ALPHABET, SHARE_CODE_LENGTH)
+    + SHARE_TOKEN_VERSION_MARKER
+    + randomFromAlphabet(BASE58, SHARE_TOKEN_LENGTH - SHARE_CODE_LENGTH - 1);
 
 /** The server-side lookup code: possession of it alone yields only ciphertext. */
-export const shareCodeFromToken = (token: string): string => token.slice(0, SHARE_CODE_LENGTH);
+export const shareCodeFromToken = (token: string): string =>
+    token[SHARE_CODE_LENGTH] === SHARE_TOKEN_VERSION_MARKER
+        ? token.slice(0, SHARE_CODE_LENGTH)
+        : token.slice(0, 8); // Existing links used an 8-character base58 prefix.
 
 export const deriveShareKey = (token: string): Uint8Array =>
     hkdf(sha256, utf8ToBytes(token), undefined, utf8ToBytes('cloudclip-share-v1'), 32);
@@ -165,7 +173,9 @@ export const formatShareToken = (token: string): string =>
 export const normalizeShareToken = (input: string): string => input.replace(/[\s-]/g, '');
 
 export const isValidShareToken = (token: string): boolean =>
-    [20, SHARE_TOKEN_LENGTH].includes(token.length) && [...token].every(c => BASE58.includes(c));
+    (token.length === SHARE_TOKEN_LENGTH
+        && /^[A-Z0-9]{4}0[1-9A-HJ-NP-Za-km-z]{27}$/.test(token))
+    || ([20, SHARE_TOKEN_LENGTH].includes(token.length) && [...token].every(c => BASE58.includes(c)));
 
 // --- recovery codes ---
 

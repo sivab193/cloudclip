@@ -10,8 +10,8 @@ import { truncateContent } from '@/service/util';
 import { Shared } from '@/service/models';
 import { apiService } from '@/service/apiService';
 import { getMasterKey } from '@/service/keyService';
-import { isEnvelope, normalizeShareToken, formatShareToken, isValidShareToken } from '@/service/cryptoService';
-import { createShare, tokenFromShared, decryptSharedContent, getSharedLinkURL } from '@/service/shareService';
+import { isEnvelope, normalizeShareToken, shareCodeFromToken, isValidShareToken } from '@/service/cryptoService';
+import { createShare, tokenFromShared, decryptSharedContent, getSharedLinkURL, tokenFromFragment } from '@/service/shareService';
 import NoItemsComponent from '@/components/NoItems';
 import Alert from '@/components/Alert';
 import Confirmation from '@/components/Confirmation';
@@ -149,14 +149,14 @@ export default function SharedLinks() {
 			return;
 		}
 		setSharedLink(getSharedLinkURL(item.token));
-		setSharedCode(formatShareToken(item.token));
+		setSharedCode(shareCodeFromToken(item.token));
 		setShareDialogVisible(true);
 	};
 
 	const handleRetrieve = () => {
-		const token = normalizeShareToken(retrieveText);
+		const token = normalizeShareToken(tokenFromFragment(retrieveText) || retrieveText);
 		if (!isValidShareToken(token)) {
-			showAlert('Please enter the complete share code.');
+			showAlert('Please enter the complete shared link. A reference alone cannot decrypt it.');
 			return;
 		}
 		router.push(`/shared#${token}`);
@@ -178,7 +178,7 @@ export default function SharedLinks() {
 			try {
 				await Clipboard.setStringAsync(sharedCode);
 				setShareDialogVisible(false);
-				showAlert('Code copied to clipboard.');
+				showAlert('Reference copied to clipboard.');
 			} catch { showAlert('Could not copy to clipboard.'); }
 		}
 	};
@@ -228,13 +228,13 @@ export default function SharedLinks() {
 				]}
 			/>
 			<Confirmation
-				message={`Share this link or code — it expires in 7 days.\n`}
-				subtitle={`Link: ${sharedLink || ''}\nCode: ${sharedCode || ''}`}
+				message={`Share this encrypted link — it expires in 7 days.\n`}
+				subtitle={`Link: ${sharedLink || ''}\nReference: ${sharedCode || ''}`}
 				visible={shareDialogVisible}
 				onDismiss={() => setShareDialogVisible(false)}
 				buttons={[
 					{ label: 'Copy Link', onPress: handleCopyLink },
-					{ label: 'Copy Code', onPress: handleCopyCode },
+					{ label: 'Copy Reference', onPress: handleCopyCode },
 					{ label: 'Close', onPress: () => setShareDialogVisible(false), variant: 'danger' },
 				]}
 			/>
@@ -286,12 +286,12 @@ export default function SharedLinks() {
 					</ThemedView>
 					<ThemedView style={[styles.containerLight]}>
 						<View style={styles.cardIcon}><Ionicons name="key-outline" size={22} color={t.primary} /></View>
-						<ThemedText type="defaultSemiBold" style={styles.heading}>Open with a code</ThemedText>
-						<Text style={styles.cardHint}>Paste the private code to unlock a shared clip.</Text>
+						<ThemedText type="defaultSemiBold" style={styles.heading}>Open a shared link</ThemedText>
+						<Text style={styles.cardHint}>Paste the complete private link. The 4-character reference alone cannot decrypt it.</Text>
 						<ThemedView style={[styles.inputContainer, !wide && styles.inputContainerStack]}>
 							<TextInput
 								style={[styles.inputLight2, !wide && styles.inputCompact]}
-								placeholder="Enter the code here to retrieve your text"
+								placeholder="Paste the complete shared link"
 								placeholderTextColor={t.placeholder}
 								value={retrieveText}
 								onChangeText={setRetrieveText}

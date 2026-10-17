@@ -141,7 +141,7 @@ describe('REST routes', () => {
     it('DELETE /me cascades all user data and deletes the Firebase user', async () => {
       await request(bundle.app).post('/api/users/sync').set(asA).send({}).expect(201);
       await Clipboard.create({ userId: 'user_a', deviceId: 'd1', deviceName: 'D', content: 'x' });
-      await Shared.create({ userId: 'user_a', content: 'x', code: 'AAAAAAAA' });
+      await Shared.create({ userId: 'user_a', content: 'x', code: 'AAAA' });
       await Device.create({ userId: 'user_a', deviceId: 'd1', deviceName: 'D', os: 'android' });
       // Another user's data must survive
       await Clipboard.create({ userId: 'user_b', deviceId: 'd2', deviceName: 'E', content: 'y' });
@@ -190,7 +190,7 @@ describe('REST routes', () => {
       await request(bundle.app).put('/api/users/me/keys').set(asA).send({ ...VALID_KEYS, keyId: newId }).expect(200);
       await request(bundle.app).post('/api/clipboards').set(asA).send(clip).expect(412);
       await request(bundle.app).post('/api/shared').set(asA)
-        .send({ code: 'AAAAAAAA', content: 'ciphertext', keyId: oldId }).expect(412);
+        .send({ code: 'AAAA', content: 'ciphertext', keyId: oldId }).expect(412);
       expect(await Clipboard.countDocuments()).toBe(0);
       expect(await Shared.countDocuments()).toBe(0);
       await request(bundle.app).post('/api/clipboards').set(asA).send({ ...clip, keyId: newId }).expect(201);
@@ -267,18 +267,18 @@ describe('REST routes', () => {
         .send({ content: 'ciphertext-blob', code, ...extra });
 
     it('stores the client-supplied code and 409s on collisions', async () => {
-      await create(asA, 'AbCdEfGh').expect(201);
-      await create(asB, 'AbCdEfGh').expect(409);
+      await create(asA, 'AB12').expect(201);
+      await create(asB, 'AB12').expect(409);
     });
 
     it('creates an encrypted anonymous share without an account identity', async () => {
       const res = await request(bundle.app)
         .post('/api/shared/anonymous')
-        .send({ content: 'encrypted-envelope', code: 'AnonLink', ttlDays: 1 })
+        .send({ content: 'encrypted-envelope', code: 'A7K2', ttlDays: 1 })
         .expect(201);
-      expect(res.body.code).toBe('AnonLink');
+      expect(res.body.code).toBe('A7K2');
       expect(res.body.userId).toBeUndefined();
-      const stored = await Shared.findOne({ code: 'AnonLink' });
+      const stored = await Shared.findOne({ code: 'A7K2' });
       expect(stored?.content).toBe('encrypted-envelope');
       expect(stored?.userId).toBeUndefined();
     });
@@ -286,41 +286,53 @@ describe('REST routes', () => {
     it('rejects oversized expiry for anonymous shares', async () => {
       await request(bundle.app)
         .post('/api/shared/anonymous')
-        .send({ content: 'encrypted-envelope', code: 'AnonWeek', ttlDays: 30 })
+        .send({ content: 'encrypted-envelope', code: 'W7K2', ttlDays: 30 })
         .expect(400);
     });
 
     it('rejects malformed codes', async () => {
-      await create(asA, 'short').expect(400);
-      await create(asA, 'has 0 l!').expect(400);
+      await create(asA, 'ABC').expect(400);
+      await create(asA, 'ab12').expect(400);
+      await create(asA, 'AB-2').expect(400);
     });
 
     it('public lookup returns only content/dates — never userId', async () => {
-      await create(asA, 'AbCdEfGh').expect(201);
-      const res = await request(bundle.app).get('/api/shared/AbCdEfGh').expect(200);
+      await create(asA, 'AB12').expect(201);
+      const res = await request(bundle.app).get('/api/shared/AB12').expect(200);
       expect(res.body.content).toBe('ciphertext-blob');
       expect(res.body.userId).toBeUndefined();
       expect(res.body._id).toBeUndefined();
       expect(res.body.expiryAt).toBeDefined();
     });
 
+    it('continues resolving legacy 8-character references', async () => {
+      await Shared.create({
+        userId: 'user_a',
+        content: 'legacy-ciphertext',
+        code: 'AbCdEfGh',
+        expiryAt: new Date(Date.now() + 60_000),
+      });
+      const res = await request(bundle.app).get('/api/shared/AbCdEfGh').expect(200);
+      expect(res.body.content).toBe('legacy-ciphertext');
+    });
+
     it('expired links are not returned', async () => {
       await Shared.create({
         userId: 'user_a',
         content: 'old',
-        code: 'ExPiReDx',
+        code: 'XP9D',
         expiryAt: new Date(Date.now() - 1000),
       });
-      await request(bundle.app).get('/api/shared/ExPiReDx').expect(404);
+      await request(bundle.app).get('/api/shared/XP9D').expect(404);
 
       const list = await request(bundle.app).get('/api/shared').set(asA).expect(200);
       expect(list.body).toHaveLength(0);
     });
 
     it('delete-all removes only the caller\'s links', async () => {
-      await create(asA, 'AAAAAAAA').expect(201);
-      await create(asA, 'BBBBBBBB').expect(201);
-      await create(asB, 'CCCCCCCC').expect(201);
+      await create(asA, 'AAAA').expect(201);
+      await create(asA, 'BBBB').expect(201);
+      await create(asB, 'CCCC').expect(201);
 
       await request(bundle.app).delete('/api/shared').set(asA).expect(200);
       expect(await Shared.countDocuments({ userId: 'user_a' })).toBe(0);
@@ -329,10 +341,10 @@ describe('REST routes', () => {
 
     // Keep last: exhausts the public lookup rate limit for this IP.
     it('rate limits the public lookup route', async () => {
-      await create(asA, 'RateLimT').expect(201);
+      await create(asA, 'R8LT').expect(201);
       let lastStatus = 200;
       for (let i = 0; i < 25; i++) {
-        const res = await request(bundle.app).get('/api/shared/RateLimT');
+        const res = await request(bundle.app).get('/api/shared/R8LT');
         lastStatus = res.status;
         if (lastStatus === 429) break;
       }

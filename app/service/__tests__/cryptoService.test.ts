@@ -95,22 +95,20 @@ describe('key wrapping (password + recovery)', () => {
 });
 
 describe('share tokens', () => {
-    it('generates tokens with at least 128 secret bits after the public prefix', () => {
+    it('generates a 4-character uppercase reference plus a high-entropy secret', () => {
         const token = generateShareToken();
         expect(token).toHaveLength(32);
-        expect((token.length - 8) * Math.log2(58)).toBeGreaterThan(128);
+        expect(token.slice(0, 4)).toMatch(/^[A-Z0-9]{4}$/);
+        expect(token[4]).toBe('0');
+        expect(27 * Math.log2(58)).toBeGreaterThan(128);
         expect(isValidShareToken(token)).toBe(true);
-        // base58: no 0, O, I, l
-        expect(token).not.toMatch(/[0OIl]/);
     });
 
-    it('code is the first 8 chars; key derivation is deterministic on the full token', () => {
+    it('reference is the first 4 chars; key derivation uses the full token', () => {
         const token = generateShareToken();
-        expect(shareCodeFromToken(token)).toBe(token.slice(0, 8));
+        expect(shareCodeFromToken(token)).toBe(token.slice(0, 4));
         expect(deriveShareKey(token)).toEqual(deriveShareKey(token));
-        // A different tail (same code) must yield a different key — the server
-        // code alone cannot decrypt.
-        const sibling = token.slice(0, 8) + generateShareToken().slice(8);
+        const sibling = token.slice(0, 5) + generateShareToken().slice(5);
         expect(deriveShareKey(sibling)).not.toEqual(deriveShareKey(token));
     });
 
@@ -135,6 +133,7 @@ describe('share tokens', () => {
 
     it('continues accepting existing 20-character encrypted links', () => {
         expect(isValidShareToken('AbCdEfGhAbCdEfGh1234')).toBe(true);
+        expect(shareCodeFromToken('AbCdEfGhAbCdEfGh1234')).toBe('AbCdEfGh');
     });
 });
 

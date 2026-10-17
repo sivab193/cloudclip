@@ -6,7 +6,6 @@ import {
     decryptEntry,
     deriveShareKey,
     encryptEntry,
-    formatShareToken,
     generateShareToken,
     isEnvelope,
     shareCodeFromToken,
@@ -17,8 +16,8 @@ import {
 } from './cryptoService';
 
 /**
- * E2E shared links. One 32-char token does everything (older 20-char links work):
- * - first 8 chars = server lookup code (yields only ciphertext by itself),
+ * E2E shared links. One 32-char token does everything (older links still work):
+ * - first 4 chars = uppercase alphanumeric server reference,
  * - the decryption key is derived from the FULL token, which the server never
  *   receives.
  * "Copy link" and "copy code" are two renderings of the same token, backed by
@@ -42,7 +41,7 @@ export interface AnonymousShareResult {
 /**
  * The token is the decryption key, so it goes in the URL *fragment*: browsers
  * never send fragments to the server, keeping it out of hosting/CDN access
- * logs and out of Referer headers. Only the 8-char lookup prefix is ever sent,
+ * logs and out of Referer headers. Only the 4-char reference is ever sent,
  * and that alone yields nothing but ciphertext.
  */
 export const getSharedLinkURL = (token: string): string => `${getWebUrl()}/shared#${token}`;
@@ -67,8 +66,8 @@ export const createShare = async (
     ttlDays = 7,
     clipboardId?: string
 ): Promise<ShareResult> => {
-    // Retry on the (unlikely) 8-char code collision with a fresh token.
-    for (let attempt = 0; attempt < 3; attempt++) {
+    // Four-character references can collide, so retry with a fresh token.
+    for (let attempt = 0; attempt < 8; attempt++) {
         const token = generateShareToken();
         const shareKey = deriveShareKey(token);
         const content = encryptEntry(shareKey, plaintext);
@@ -88,7 +87,7 @@ export const createShare = async (
             return {
                 token,
                 url: getSharedLinkURL(token),
-                displayCode: formatShareToken(token),
+                displayCode: shareCodeFromToken(token),
                 shared,
             };
         } catch (error) {
@@ -101,7 +100,7 @@ export const createShare = async (
 
 /** Create an E2E-encrypted share without an account or owner metadata. */
 export const createAnonymousShare = async (plaintext: string, ttlDays: 1 | 7 = 1): Promise<AnonymousShareResult> => {
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 8; attempt++) {
         const token = generateShareToken();
         const content = encryptEntry(deriveShareKey(token), plaintext);
         try {
@@ -113,7 +112,7 @@ export const createAnonymousShare = async (plaintext: string, ttlDays: 1 | 7 = 1
             return {
                 token,
                 url: getSharedLinkURL(token),
-                displayCode: formatShareToken(token),
+                displayCode: shareCodeFromToken(token),
                 expiryAt: shared.expiryAt,
             };
         } catch (error) {

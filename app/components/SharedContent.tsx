@@ -60,7 +60,7 @@ const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
   const handleOpenLink = () => {
     const candidate = normalizeShareToken(tokenFromFragment(linkInput) || linkInput);
     if (!isValidShareToken(candidate)) {
-      setInputError('Paste the complete CloudClip link or share code.');
+      setInputError('Paste the complete CloudClip link. The 4-character reference alone cannot decrypt it.');
       return;
     }
     setInputError('');
@@ -88,14 +88,14 @@ const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
       setLoading(true);
       setError('');
       try {
-        // The server only ever sees the 8-char lookup prefix; the decryption
+        // The server only ever sees the short lookup reference; the decryption
         // key is derived from the full token client-side.
         const shared = await apiService.getSharedLinkByCode(shareCodeFromToken(token));
         if (active) setData(decryptSharedContent(token, shared.content));
       } catch (e) {
         if (!active) return;
         if (e instanceof DecryptionError) {
-          setError('This link is incomplete or corrupted — make sure you copied the whole link or code.');
+          setError('This link is incomplete or corrupted — make sure you copied the complete link.');
         } else {
           setError(e instanceof Error ? e.message : 'Could not load this link. Check your connection and try again.');
         }
@@ -129,9 +129,9 @@ const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
         </View>
         {needsLink ? (
           <View style={styles.linkForm}>
-            <Text style={styles.helperText}>CloudClip links contain the decryption key after the #. Paste the complete link—or the share code—to open it privately in this browser.</Text>
+            <Text style={styles.helperText}>CloudClip links contain the decryption key after the #. Paste the complete link to open it privately. Its 4-character reference cannot decrypt the clip by itself.</Text>
             <TextInput
-              accessibilityLabel="CloudClip shared link or code"
+              accessibilityLabel="Complete CloudClip shared link"
               autoCapitalize="none"
               autoCorrect={false}
               onChangeText={(value) => { setLinkInput(value); if (inputError) setInputError(''); }}

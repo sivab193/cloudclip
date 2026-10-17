@@ -28,9 +28,9 @@ router.get('/', verifyFirebaseToken, async (req, res, next) => {
 const createSchema = z.object({
   // E2E envelope — opaque to the server.
   content: z.string().min(1).max(200_000),
-  // Client-generated lookup code: the first 8 chars of the share token. The
+  // Client-generated reference: the first 4 chars of the share token. The
   // decryption key is derived from the full token, which never reaches us.
-  code: z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{8}$/, 'code must be 8 base58 characters'),
+  code: z.string().regex(/^[A-Z0-9]{4}$/, 'code must be 4 uppercase alphanumeric characters'),
   ownerWrappedKey: z.string().min(1).max(512).optional(),
   ownerWrapNonce: z.string().min(1).max(64).optional(),
   clipboardId: z.string().max(64).optional(),
@@ -122,7 +122,9 @@ const publicLookupLimiter = rateLimit({
 router.get('/:code', publicLookupLimiter, async (req, res, next) => {
   try {
     const { code } = req.params;
-    if (typeof code !== 'string' || !/^[1-9A-HJ-NP-Za-km-z]{8}$/.test(code)) {
+    // Eight-character base58 references remain readable for links created
+    // before the four-character format was introduced.
+    if (typeof code !== 'string' || !(/^([A-Z0-9]{4}|[1-9A-HJ-NP-Za-km-z]{8})$/.test(code))) {
       return res.status(400).json({ error: 'Invalid share code' });
     }
     const shared = await Shared.findOne({ code, expiryAt: { $gt: new Date() } });

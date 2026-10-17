@@ -60,6 +60,11 @@ export default function PublicShareComposer() {
           {result ? <View style={styles.result}>
             <Text style={styles.label}>ENCRYPTED SHARE LINK</Text>
             <View style={styles.linkRow}><Text selectable numberOfLines={2} style={styles.linkText}>{result.url}</Text><Pressable accessibilityRole="button" accessibilityLabel="Copy shared link" onPress={() => copy(result.url, 'Shared link copied')} style={styles.iconButton}><Ionicons name="copy-outline" size={20} color={t.onPrimary} /></Pressable></View>
+            <View style={styles.referenceBlock}>
+              <View><Text style={styles.label}>REFERENCE</Text><Text selectable style={styles.referenceText}>{result.displayCode}</Text></View>
+              <Text style={styles.referenceHint}>Identifies this share. The complete link is still required to decrypt it.</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Copy share reference" onPress={() => copy(result.displayCode, 'Reference copied')} style={styles.referenceButton}><Ionicons name="copy-outline" size={17} color={t.primary} /><Text style={styles.referenceButtonText}>Copy reference</Text></Pressable>
+            </View>
             <View style={styles.resultMeta}><View style={styles.metaItem}><Ionicons name="timer-outline" size={16} color={t.textMuted} /><Text style={styles.metaText}>Expires in {ttlDays === 1 ? '24 hours' : '7 days'}</Text></View><View style={styles.metaItem}><Ionicons name="lock-closed-outline" size={16} color={t.accent} /><Text style={styles.metaText}>End-to-end encrypted</Text></View></View>
             <Pressable accessibilityRole="button" onPress={reset} style={styles.secondaryButton}><Ionicons name="add" size={18} color={t.text} /><Text style={styles.secondaryButtonText}>Share another text</Text></Pressable>
           </View> : <>
@@ -108,6 +113,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   error: { color: t.danger, fontSize: 13, lineHeight: 20, marginTop: 14 },
   privacyLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 25, paddingTop: 20, borderTopWidth: 1, borderColor: t.borderSubtle }, privacyText: { flex: 1, color: t.textMuted, fontSize: 11, lineHeight: 18 },
   result: { marginTop: 30 }, linkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14, backgroundColor: t.surfaceAlt, borderWidth: 1, borderColor: t.border }, linkText: { flex: 1, color: t.text, fontSize: 14, lineHeight: 20 }, iconButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: t.primaryStrong },
+  referenceBlock: { marginTop: 18, padding: 16, borderRadius: 14, backgroundColor: t.surfaceAlt }, referenceText: { color: t.text, fontSize: 28, lineHeight: 34, fontWeight: '800', letterSpacing: 4 }, referenceHint: { color: t.textMuted, fontSize: 12, lineHeight: 18, marginTop: 8, maxWidth: 440 }, referenceButton: { minHeight: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 12, paddingHorizontal: 13, borderRadius: 12, borderWidth: 1, borderColor: t.border }, referenceButtonText: { color: t.primary, fontSize: 12, fontWeight: '800' },
   resultMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, marginTop: 18 }, metaItem: { flexDirection: 'row', alignItems: 'center', gap: 7 }, metaText: { color: t.textMuted, fontSize: 12 },
   secondaryButton: { minHeight: 46, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 28, paddingHorizontal: 16, borderRadius: 13, backgroundColor: t.surfaceAlt }, secondaryButtonText: { color: t.text, fontSize: 13, fontWeight: '700' },
 });

@@ -10,6 +10,8 @@ adaptive
 
 People who move short-lived text—links, commands, notes, credentials, and ideas—between devices or share it with another person without wanting a heavyweight workspace.
 
+Shared clips use a four-character uppercase alphanumeric reference for lookup while retaining a separate high-entropy decryption secret in the complete URL. The reference alone cannot reveal or decrypt a clip.
+
 ## Product Purpose
 
 CloudClip provides a private encrypted clipboard stream and expiring encrypted sharing links. Success means moving a useful fragment between contexts quickly while preserving user control and privacy.

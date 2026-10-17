@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IShared extends Document {
   clipboardId?: string;
   // Opaque E2E-encrypted envelope, encrypted with a key derived from the full
-  // share token. The server only ever stores the 8-char lookup code, which by
+  // share token. The server only ever stores the 4-char reference, which by
   // itself cannot decrypt the content.
   content: string;
   userId?: string;

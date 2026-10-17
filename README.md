@@ -4,6 +4,8 @@ CloudClip is a private clipboard cloud for syncing encrypted text and sharing it
 
 Anyone can create a client-side encrypted, expiring text link without registering. Anonymous shares are rate-limited, expire after one or seven days, and are not attached to an account history.
 
+Every new share also has a four-character uppercase alphanumeric reference (for example, `A7K2`). The reference is only used to locate encrypted data; the complete link remains required because its URL fragment contains the high-entropy decryption secret that is never sent to CloudClip.
+
 Clipboard content is encrypted on the client. Automatic clipboard access is opt-in and runs only while the app is visible. Encrypted file transfer, a custom CloudClip keyboard, native apps and a user-friendly self-hosted edition are coming soon. Images, background clipboard monitoring and an offline write queue are not implemented today.
 
 ## How the regional deployment works
