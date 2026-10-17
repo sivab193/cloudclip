@@ -45,7 +45,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     environment:
-      - CADDY_HOST=${CADDY_HOST:-api.us.cclip.cc}
+      - CADDY_HOST=${CADDY_HOST:-api-us.cclip.cc}
     restart: always
     depends_on:
       backend:

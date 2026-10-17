@@ -1,5 +1,5 @@
 # Automatic Let's Encrypt TLS + WebSocket-aware reverse proxy.
 # Override CADDY_HOST in backend/.env for each regional server.
-{$CADDY_HOST:api.us.cclip.cc} {
+{$CADDY_HOST:api-us.cclip.cc} {
 	reverse_proxy backend:3000
 }

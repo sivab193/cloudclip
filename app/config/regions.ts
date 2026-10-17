@@ -27,7 +27,7 @@ export const regions: CloudClipRegion[] = [
     name: 'United States',
     location: 'N. Virginia',
     webUrl: (process.env.EXPO_PUBLIC_US_WEB_URL || 'https://us.cclip.cc').replace(/\/+$/, ''),
-    apiUrl: (process.env.EXPO_PUBLIC_US_API_URL || 'https://api.us.cclip.cc').replace(/\/+$/, ''),
+    apiUrl: (process.env.EXPO_PUBLIC_US_API_URL || 'https://api-us.cclip.cc').replace(/\/+$/, ''),
   },
 ];
 

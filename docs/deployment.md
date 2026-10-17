@@ -10,7 +10,7 @@ The Vercel gateway, India, and US builds have been created. Public custom domain
 
 1. Restrict MongoDB network access to the backend host. Use a database user scoped to the CloudClip database.
 2. Configure a separate `backend/.env` on each server. Supply only that region's `MONGODB_URI`, Firebase service-account fields, regional `CADDY_HOST`, and allowed gateway/regional origins. Rotate any previously exposed service-account key.
-3. Route `api.in.cclip.cc` and `api.us.cclip.cc` to their respective backends using Cloudflare Tunnel or HTTPS ingress. Keep Node, Redis, and MongoDB private.
+3. Route `api.in.cclip.cc` and `api-us.cclip.cc` to their respective backends using Cloudflare Tunnel or HTTPS ingress. Keep Node, Redis, and MongoDB private.
 4. Add `cclip.cc`, `in.cclip.cc`, and `us.cclip.cc` to Firebase authorized domains and enable Email/Password authentication.
 5. Configure the three Vercel projects with the public values described in [regional deployment](REGIONAL-DEPLOYMENT.md).
 6. Configure the EAS production environment with the Firebase public-app values. Production API/web origins are also set explicitly in `app/eas.json`; review them if hosting changes.

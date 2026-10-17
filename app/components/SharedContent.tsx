@@ -33,6 +33,9 @@ const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [manualToken, setManualToken] = useState('');
+  const [linkInput, setLinkInput] = useState('');
+  const [inputError, setInputError] = useState('');
 
   // On web the fragment lives on window.location and is not part of the
   // expo-router params; on native it arrives with the deep link.
@@ -41,7 +44,8 @@ const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
       ? tokenFromFragment(window.location.hash)
       : tokenFromFragment(linkedUrl);
 
-  const rawToken = tokenFromFragment(params['#'] ? `#${params['#']}` : '') || fragmentToken || legacyToken || '';
+  const rawToken = tokenFromFragment(params['#'] ? `#${params['#']}` : '') || fragmentToken || legacyToken || manualToken || '';
+  const needsLink = !rawToken;
 
   const showAlert = (message: string) => {
     setAlertMessage(message);
@@ -53,10 +57,28 @@ const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
     setClipboard(text, showAlert, 'Copied to clipboard');
   };
 
+  const handleOpenLink = () => {
+    const candidate = normalizeShareToken(tokenFromFragment(linkInput) || linkInput);
+    if (!isValidShareToken(candidate)) {
+      setInputError('Paste the complete CloudClip link or share code.');
+      return;
+    }
+    setInputError('');
+    setManualToken(candidate);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.history.replaceState(null, '', `${window.location.pathname}#${candidate}`);
+    }
+  };
+
   useEffect(() => {
     let active = true;
     setData('');
     const fetchData = async () => {
+      if (!rawToken) {
+        setError('');
+        setLoading(false);
+        return;
+      }
       const token = normalizeShareToken(rawToken);
       if (!isValidShareToken(token)) {
         setError('Invalid share link.');
@@ -93,9 +115,9 @@ const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
       <Header />
       <Reveal style={styles.reveal}>
       <ThemedView style={styles.container}>
-        <View style={styles.icon}><Ionicons name={error ? 'alert-circle-outline' : 'mail-open-outline'} size={24} color={error ? t.danger : t.primary} /></View>
+        <View style={styles.icon}><Ionicons name={error ? 'alert-circle-outline' : needsLink ? 'link-outline' : 'mail-open-outline'} size={24} color={error ? t.danger : t.primary} /></View>
         <View style={styles.headerWithButton}>
-          <View><Text style={styles.eyebrow}>SHARED WITH YOU</Text><ThemedText style={styles.title}>A private clip</ThemedText></View>
+          <View><Text style={styles.eyebrow}>{needsLink ? 'OPEN A SHARED CLIP' : 'SHARED WITH YOU'}</Text><ThemedText style={styles.title}>{needsLink ? 'Paste the private link.' : 'A private clip'}</ThemedText></View>
           {!error && !loading && (
             <TouchableOpacity style={[styles.copyButton, { marginLeft: 10 }]} onPress={() => handleCopy(data || '')}>
               <Ionicons name="copy-outline" size={18} color={t.onPrimary} />
@@ -105,7 +127,28 @@ const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
             </TouchableOpacity>
           )}
         </View>
-        {loading ? (
+        {needsLink ? (
+          <View style={styles.linkForm}>
+            <Text style={styles.helperText}>CloudClip links contain the decryption key after the #. Paste the complete link—or the share code—to open it privately in this browser.</Text>
+            <TextInput
+              accessibilityLabel="CloudClip shared link or code"
+              autoCapitalize="none"
+              autoCorrect={false}
+              onChangeText={(value) => { setLinkInput(value); if (inputError) setInputError(''); }}
+              onSubmitEditing={handleOpenLink}
+              placeholder="https://us.cclip.cc/shared#…"
+              placeholderTextColor={t.placeholder}
+              selectionColor={t.primary}
+              style={[styles.linkInput, inputError ? styles.linkInputError : null]}
+              value={linkInput}
+            />
+            {inputError ? <Text accessibilityRole="alert" style={styles.inputError}>{inputError}</Text> : null}
+            <TouchableOpacity accessibilityRole="button" disabled={!linkInput.trim()} style={[styles.openButton, !linkInput.trim() && styles.openButtonDisabled]} onPress={handleOpenLink}>
+              <Text style={styles.openButtonText}>Open encrypted clip</Text>
+              <Ionicons name="arrow-forward" size={18} color={t.onPrimary} />
+            </TouchableOpacity>
+          </View>
+        ) : loading ? (
           <ActivityIndicator size="large" color={t.icon} style={styles.loader} />
         ) : error ? (
           <Text style={styles.errorText}>{error}</Text>
@@ -187,6 +230,14 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     fontSize: 16,
     marginTop: 20,
   },
+  linkForm: { marginTop: 24, maxWidth: 650 },
+  helperText: { color: t.textMuted, fontSize: 14, lineHeight: 22, marginBottom: 18 },
+  linkInput: { minHeight: 52, color: t.text, backgroundColor: t.surfaceAlt, borderWidth: 1, borderColor: t.border, borderRadius: 14, paddingHorizontal: 16, fontSize: 15 },
+  linkInputError: { borderColor: t.danger },
+  inputError: { color: t.danger, fontSize: 13, lineHeight: 19, marginTop: 8 },
+  openButton: { minHeight: 48, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 16, paddingHorizontal: 18, borderRadius: 14, backgroundColor: t.primaryStrong },
+  openButtonDisabled: { backgroundColor: t.surfaceDisabled, opacity: 0.7 },
+  openButtonText: { color: t.onPrimary, fontSize: 14, fontWeight: '800' },
   textBox: {
     flex: 1,
     borderWidth: 1,

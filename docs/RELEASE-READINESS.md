@@ -34,7 +34,7 @@ Browser sharing used a synthetic encrypted response, not production accounts. It
 
 ## Release blockers requiring owner input or external validation
 
-1. **Regional production APIs:** deploy the US and India backend stacks, route `api.us.cclip.cc` and `api.in.cclip.cc`, and verify real two-device authentication/sync/deletion flows inside each region.
+1. **Regional production APIs:** deploy the US and India backend stacks, route `api-us.cclip.cc` and `api.in.cclip.cc`, and verify real two-device authentication/sync/deletion flows inside each region.
 2. **Android signing:** the attempted EAS production build stopped before upload/native compilation because no existing signing key was available and noninteractive builds cannot generate one. EAS incremented remote versionCode from 2 to 3; no new AAB was produced. Confirm whether Play Console already owns this application and recover/configure the correct upload keystore. Generate a new key only if appropriate for that app's signing history. Never use the generated debug keystore for release.
 3. **Signed native build and device testing:** after signing is resolved, build the production AAB and inspect its actual manifest, target SDK and native 16 KB alignment. Run the complete [device checklist](store-submission.md), including upgrade, password/recovery/reset and cross-account cases. JavaScript export and prebuild do not replace this gate.
 4. **Play Console:** verify the Play app-signing fingerprint, supply actual Android screenshots, complete truthful Data safety/content-rating/app-access declarations, and satisfy any account-specific testing requirements.

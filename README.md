@@ -9,7 +9,7 @@ Clipboard content is encrypted on the client. Automatic clipboard access is opt-
 `cclip.cc` is the public gateway. Before signing in or opening a shared clip, a visitor chooses an available region. The gateway then redirects to the matching regional web app:
 
 - India: `in.cclip.cc` → `api.in.cclip.cc` → India backend → Mumbai MongoDB cluster
-- United States: `us.cclip.cc` → `api.us.cclip.cc` → US backend → N. Virginia MongoDB cluster
+- United States: `us.cclip.cc` → `api-us.cclip.cc` → US backend → N. Virginia MongoDB cluster
 
 Each backend runs as a Docker container beside Redis. Redis backs distributed rate limiting and Socket.IO event delivery. Regional data stays in that region's MongoDB cluster; the clusters are intentionally independent rather than cross-region replicas.
 
