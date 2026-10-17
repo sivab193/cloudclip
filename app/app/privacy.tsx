@@ -7,8 +7,9 @@ import AmbientBackdrop from '@/components/AmbientBackdrop';
 import Reveal from '@/components/Reveal';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '@/hooks/useTheme';
+import SiteFooter from '@/components/SiteFooter';
 
-const UPDATED = 'September 7, 2026';
+const UPDATED = 'October 17, 2026';
 
 export default function PrivacyPolicy() {
   const styles = useThemedStyles(makeStyles);
@@ -32,8 +33,9 @@ export default function PrivacyPolicy() {
         <Text style={styles.body}>
           Your clipboard entries and shared texts are encrypted on your device
           with AES-256-GCM before upload. The sync server stores encrypted
-          content without its decryption key. Anyone you give a full share link
-          or code can read its text. Your encryption key is
+          content without its decryption key. Anyone you give a complete share
+          link can read its text; the four-character reference alone cannot.
+          Your encryption key is
           protected by your account password and a recovery code; if you lose
           both, your data cannot be recovered by anyone — including us.
         </Text>
@@ -92,6 +94,7 @@ export default function PrivacyPolicy() {
         </Text>
         </View>
         </Reveal>
+        <SiteFooter contained />
       </ScrollView>
     </SafeAreaView>
   );

@@ -4,11 +4,14 @@ import { TabBarIcon } from '@/components/navigation/TabBarIcon';
 import { useTheme } from '@/hooks/useTheme';
 import { Platform, useWindowDimensions } from 'react-native';
 import { useAuth } from '@/auth/AuthContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
   const t = useTheme();
   const { width } = useWindowDimensions();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+  const floating = Platform.OS === 'web' && width >= 720;
   const floatingWidth = Math.min(460, Math.max(280, width - 24));
 
   return (
@@ -20,23 +23,25 @@ export default function TabLayout() {
         tabBarInactiveTintColor: t.tabIconDefault,
         tabBarStyle: {
           display: user ? 'flex' : 'none',
-          position: 'absolute',
+          position: floating ? 'absolute' : 'relative',
           backgroundColor: t.glass,
-          height: 68, paddingBottom: 7, paddingTop: 5,
+          height: floating ? 68 : 64 + (Platform.OS === 'web' ? 0 : insets.bottom),
+          paddingBottom: floating ? 7 : Math.max(6, Platform.OS === 'web' ? 0 : insets.bottom),
+          paddingTop: 5,
           borderTopColor: t.borderSubtle,
           borderTopWidth: 1,
-          borderWidth: Platform.OS === 'web' ? 1 : 0,
+          borderWidth: floating ? 1 : 0,
           borderColor: t.border,
-          borderRadius: Platform.OS === 'web' ? 22 : 0,
-          width: Platform.OS === 'web' ? floatingWidth : '100%',
-          left: Platform.OS === 'web' ? '50%' : 0,
-          transform: Platform.OS === 'web' ? [{ translateX: -floatingWidth / 2 }] : undefined,
-          bottom: Platform.OS === 'web' ? 18 : 0,
+          borderRadius: floating ? 22 : 0,
+          width: floating ? floatingWidth : '100%',
+          left: floating ? '50%' : 0,
+          transform: floating ? [{ translateX: -floatingWidth / 2 }] : undefined,
+          bottom: floating ? 18 : 0,
           shadowColor: t.shadow,
-          shadowOpacity: 0.16,
-          shadowRadius: 28,
+          shadowOpacity: floating ? 0.16 : 0,
+          shadowRadius: floating ? 28 : 0,
           shadowOffset: { width: 0, height: 12 },
-          elevation: 12,
+          elevation: floating ? 12 : 0,
         },
         headerShown: false,
       }}>

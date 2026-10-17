@@ -36,6 +36,7 @@ export default function SharedLinks() {
 	const styles = useThemedStyles(makeStyles);
 	const { width } = useWindowDimensions();
 	const wide = width >= 820;
+	const compact = width < 600;
 	const [textToShare, setTextToShare] = useState('');
 	const [retrieveText, setRetrieveText] = useState('');
 	const [sharedLinks, setSharedLinks] = useState<DecoratedShared[]>([]);
@@ -257,74 +258,78 @@ export default function SharedLinks() {
 					<AmbientBackdrop />
 					<Header />
 					<Reveal>
-					<View style={styles.page}>
+					<View style={[styles.page, compact && styles.pageCompact]}>
 						<View style={styles.hero}>
 							<View style={styles.eyebrowRow}><View style={styles.liveDot} /><Text style={styles.eyebrow}>SECURE SHARING</Text></View>
-							<ThemedText style={styles.heroTitle}>Send a thought.{ '\n' }Let it disappear.</ThemedText>
+							<ThemedText style={[styles.heroTitle, compact && styles.heroTitleCompact]}>Send a thought.{ '\n' }Let it disappear.</ThemedText>
 							<ThemedText style={styles.heroSubtitle}>Create end-to-end encrypted links that expire automatically, or retrieve a clip someone sent you.</ThemedText>
 						</View>
 						<View style={[styles.actionGrid, !wide && styles.actionGridStack]}>
-					<ThemedView style={styles.containerLight}>
+					<ThemedView style={[styles.containerLight, compact && styles.containerCompact]}>
 						<View style={styles.cardIcon}><Ionicons name="paper-plane-outline" size={22} color={t.primary} /></View>
 						<ThemedText type="defaultSemiBold" style={styles.heading}>Create an expiring link</ThemedText>
 						<Text style={styles.cardHint}>Encrypted in your browser. Available for seven days.</Text>
 						<ThemedView style={[styles.inputContainer, !wide && styles.inputContainerStack]}>
 							<TextInput
-								style={[styles.inputLight, !wide && styles.inputCompact]}
+								accessibilityLabel="Text to share"
+								style={[styles.inputLight, !wide && styles.inputCompact, compact && styles.shareInputCompact]}
 								placeholder="Enter text to share"
 								placeholderTextColor={t.placeholder}
+								multiline={compact}
+								textAlignVertical="top"
 								value={textToShare}
 								onChangeText={setTextToShare}
 							/>
-							<TouchableOpacity style={styles.tertiaryButton} onPress={handleShare} disabled={!textToShare.trim()}>
-								<Ionicons name="share-social-outline" size={22} color={t.onPrimary} />
-								<ThemedText type="default" style={styles.tertiaryButtonText}>
+							<TouchableOpacity accessibilityRole="button" style={[styles.tertiaryButton, compact && styles.tertiaryButtonCompact, !textToShare.trim() && styles.buttonDisabled]} onPress={handleShare} disabled={!textToShare.trim()}>
+								<Ionicons name="share-social-outline" size={22} color={textToShare.trim() ? t.onPrimary : t.textDisabled} />
+								<ThemedText type="default" style={[styles.tertiaryButtonText, !textToShare.trim() && styles.buttonTextDisabled]}>
 									Create link
 								</ThemedText>
 							</TouchableOpacity>
 						</ThemedView>
 					</ThemedView>
-					<ThemedView style={[styles.containerLight]}>
+					<ThemedView style={[styles.containerLight, compact && styles.containerCompact]}>
 						<View style={styles.cardIcon}><Ionicons name="key-outline" size={22} color={t.primary} /></View>
 						<ThemedText type="defaultSemiBold" style={styles.heading}>Open a shared link</ThemedText>
 						<Text style={styles.cardHint}>Paste the complete private link. The 4-character reference alone cannot decrypt it.</Text>
 						<ThemedView style={[styles.inputContainer, !wide && styles.inputContainerStack]}>
 							<TextInput
+								accessibilityLabel="Complete shared link"
+								autoCapitalize="none"
+								autoCorrect={false}
 								style={[styles.inputLight2, !wide && styles.inputCompact]}
 								placeholder="Paste the complete shared link"
 								placeholderTextColor={t.placeholder}
 								value={retrieveText}
 								onChangeText={setRetrieveText}
 							/>
-							<TouchableOpacity style={styles.tertiaryButton} onPress={handleRetrieve}>
-								<Ionicons name="share-outline" size={22} color={t.onPrimary} />
-								<ThemedText type="default" style={styles.tertiaryButtonText}>Retrieve</ThemedText>
+							<TouchableOpacity accessibilityRole="button" style={[styles.tertiaryButton, compact && styles.tertiaryButtonCompact, !retrieveText.trim() && styles.buttonDisabled]} onPress={handleRetrieve} disabled={!retrieveText.trim()}>
+								<Ionicons name="share-outline" size={22} color={retrieveText.trim() ? t.onPrimary : t.textDisabled} />
+								<ThemedText type="default" style={[styles.tertiaryButtonText, !retrieveText.trim() && styles.buttonTextDisabled]}>Retrieve</ThemedText>
 							</TouchableOpacity>
 						</ThemedView>
 					</ThemedView>
 						</View>
 					{user && (
-						<ThemedView style={styles.containerLight}>
+						<ThemedView style={[styles.containerLight, compact && styles.containerCompact]}>
 							<ThemedView style={styles.headingContainer}>
 								<ThemedText type="defaultSemiBold">
 									Your active links
 								</ThemedText>
-								<TouchableOpacity onPress={() => setDeleteAllConfirmationVisible(true)} style={{ flexDirection: 'row', alignItems: 'center' }}>
+								<TouchableOpacity accessibilityRole="button" accessibilityLabel="Clear all active links" onPress={() => setDeleteAllConfirmationVisible(true)} disabled={!sharedLinks.length} style={styles.clearButton}>
 									<Ionicons name="trash-outline" size={24} color={t.icon} />
 									{Platform.OS === 'web' && (
-										<Text style={{ color: t.text, marginLeft: 5 }}>
+										<Text style={[styles.clearText, !sharedLinks.length && styles.clearTextDisabled]}>
 											Clear all
 										</Text>
 									)}
 								</TouchableOpacity>
 							</ThemedView>
 							<View style={styles.flatListContainer}>
-								<ScrollView
-									scrollEnabled={true}
-									nestedScrollEnabled={true}>
 									{sharedLinks.length > 0 ? (
 										<FlatList
 											data={sharedLinks}
+											nestedScrollEnabled
 											keyExtractor={(item) => sharedId(item.shared)}
 											renderItem={({ item }) => (
 												<TouchableOpacity onPress={() => item.token && router.push(`/shared#${item.token}`)}>
@@ -353,7 +358,6 @@ export default function SharedLinks() {
 									) : (
 										<NoItemsComponent />
 									)}
-								</ScrollView>
 							</View>
 						</ThemedView>
 					)}
@@ -373,19 +377,17 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 		position: 'relative',
 	},
 	page: { width: '100%', maxWidth: 1080, alignSelf: 'center', paddingHorizontal: 18, paddingTop: 48, paddingBottom: 100 },
+	pageCompact: { paddingTop: 28, paddingBottom: 36 },
 	hero: { paddingHorizontal: 4, marginBottom: 30 },
 	eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 13 },
 	liveDot: { width: 7, height: 7, borderRadius: 7, backgroundColor: t.accent },
 	eyebrow: { color: t.textMuted, fontSize: 10, fontWeight: '800', letterSpacing: 2 },
 	heroTitle: { color: t.text, fontSize: 44, lineHeight: 49, fontWeight: '800', letterSpacing: -2 },
+	heroTitleCompact: { fontSize: 34, lineHeight: 39, letterSpacing: -1.1 },
 	heroSubtitle: { color: t.textMuted, fontSize: 15, lineHeight: 24, maxWidth: 580, marginTop: 12 },
 	actionGrid: { flexDirection: 'row', gap: 18, alignItems: 'stretch' },
 	actionGridStack: { flexDirection: 'column' },
-	flatListContainer: {
-		height: 300,
-		paddingRight: 5,
-		marginBottom: 10,
-	},
+	flatListContainer: { minHeight: 200, maxHeight: 400, marginBottom: 10 },
 	containerLight: {
 		flex: 1,
 		width: '100%',
@@ -400,6 +402,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 		shadowRadius: 28,
 		shadowOffset: { width: 0, height: 12 },
 	},
+	containerCompact: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', padding: 18, marginBottom: 0, borderRadius: 16, shadowOpacity: 0 },
 	cardIcon: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: t.primarySoft, marginBottom: 18 },
 	cardHint: { color: t.textMuted, fontSize: 12, lineHeight: 19, marginTop: -5, marginBottom: 20 },
 	listContent: {
@@ -481,8 +484,9 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 		marginBottom: Platform.OS === 'web' ? 20 : 0,
 		backgroundColor: 'transparent'
 	},
-	inputContainerStack: { flexDirection: 'column' },
-	inputCompact: { marginRight: 0 },
+	inputContainerStack: { flexDirection: 'column', alignItems: 'stretch' },
+	inputCompact: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', marginRight: 0, paddingHorizontal: 14, fontSize: 16 },
+	shareInputCompact: { minHeight: 132, paddingTop: 14 },
 	inputLight: {
 		flex: 1,
 		height: 54,
@@ -510,4 +514,10 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 		shadowOpacity: 0.24,
 		shadowRadius: 14,
 	},
+	tertiaryButtonCompact: { width: '100%', borderRadius: 9, shadowOpacity: 0 },
+	buttonDisabled: { backgroundColor: t.surfaceDisabled },
+	buttonTextDisabled: { color: t.textDisabled },
+	clearButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6 },
+	clearText: { color: t.text, marginLeft: 5, fontSize: 14 },
+	clearTextDisabled: { color: t.textDisabled },
 });

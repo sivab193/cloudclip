@@ -56,6 +56,9 @@ const Header = () => {
         </View>
       ) : null}
       <View style={[styles.navActions, compact && styles.navActionsCompact]}>
+        {!compact ? <TouchableOpacity accessibilityRole="link" onPress={() => router.push('/about')}>
+          <Text style={styles.privacyLink}>About</Text>
+        </TouchableOpacity> : null}
         {!compact ? <TouchableOpacity accessibilityRole="link" onPress={() => router.push('/privacy')}>
           <Text style={styles.privacyLink}>Privacy</Text>
         </TouchableOpacity> : null}

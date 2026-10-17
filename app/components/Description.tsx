@@ -87,7 +87,6 @@ export default function Description() {
     </View>
 
     <View style={[styles.close, compact && styles.closeCompact]}><View><Text style={styles.closeTitle}>Your words. Your control.</Text><Text style={styles.closeText}>Self-hosting is on the roadmap for people who want to run CloudClip on their own infrastructure.</Text></View><Pressable accessibilityRole="link" onPress={() => go('/share')} style={styles.closeAction}><Text style={styles.closeActionText}>Create a private link</Text><Ionicons name="arrow-forward" size={17} color="#283449" /></Pressable></View>
-    <View style={styles.footer}><Text style={styles.footerText}>© CloudClip</Text><Pressable accessibilityRole="link" onPress={() => router.push('/privacy')}><Text style={styles.footerLink}>Privacy</Text></Pressable></View>
     <LoginPopup isVisible={login} onClose={() => setLogin(false)} onSuccess={() => setLogin(false)} />
     <RegionPicker visible={regionDestination !== null} destination={regionDestination ?? '/'} onClose={() => setRegionDestination(null)} />
   </View>;
@@ -151,5 +150,4 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   closeText: { color: '#dce3e6', fontSize: 14, lineHeight: 23, maxWidth: 590, marginTop: 10 },
   closeAction: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 16, borderRadius: 8, backgroundColor: '#f6f5f1' },
   closeActionText: { color: '#283449', fontSize: 13, fontWeight: '700' },
-  footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 95 }, footerText: { color: t.textMuted, fontSize: 12 }, footerLink: { color: t.text, fontSize: 12, fontWeight: '600' },
 });

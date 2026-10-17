@@ -9,6 +9,7 @@ import { useTheme } from '@/hooks/useTheme';
 import AmbientBackdrop from '@/components/AmbientBackdrop';
 import Reveal from '@/components/Reveal';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import SiteFooter from '@/components/SiteFooter';
 
 /**
  * Web-reachable account-deletion page (required by Google Play's data
@@ -37,15 +38,14 @@ export default function DeleteAccount() {
         <Text style={styles.kicker}>ACCOUNT CONTROL</Text>
         <Text style={styles.title}>Delete your CloudClip account</Text>
         <Text style={styles.body}>
-          Deleting your account permanently removes:
-          {'\n'}• Your account and profile
-          {'\n'}• All synced clipboard entries
-          {'\n'}• All shared links
-          {'\n'}• All registered devices
-          {'\n\n'}This takes effect immediately and cannot be undone.
+          Deleting your account removes your shared sign-in and the profile,
+          clipboard entries, shared links, and devices in this region.
+          {'\n\n'}If you also used the other region, its data is not deleted automatically.
+          Email sivaganesh1903@gmail.com to arrange removal there before
+          deleting your sign-in. This cannot be undone.
         </Text>
         {done ? (
-          <Text style={styles.success}>Your account and all data have been deleted.</Text>
+          <Text style={styles.success}>Your sign-in and this region’s data have been deleted.</Text>
         ) : user ? (
           <TouchableOpacity style={styles.deleteButton} onPress={() => setConfirmVisible(true)}>
             <Text style={styles.deleteButtonText}>Delete my account</Text>
@@ -59,6 +59,7 @@ export default function DeleteAccount() {
         )}
         </View>
         </Reveal>
+        <SiteFooter contained />
       </ScrollView>
     </SafeAreaView>
   );

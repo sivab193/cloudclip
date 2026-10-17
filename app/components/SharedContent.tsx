@@ -15,6 +15,7 @@ import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import AmbientBackdrop from './AmbientBackdrop';
 import Reveal from './Reveal';
+import SiteFooter from './SiteFooter';
 
 /**
  * Renders a shared clipboard entry.
@@ -113,6 +114,7 @@ const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
       <AmbientBackdrop />
       <Alert message={alertMessage} visible={alertVisible} />
       <Header />
+      <ScrollView contentContainerStyle={styles.pageScroll} keyboardShouldPersistTaps="handled">
       <Reveal style={styles.reveal}>
       <ThemedView style={styles.container}>
         <View style={styles.icon}><Ionicons name={error ? 'alert-circle-outline' : needsLink ? 'link-outline' : 'mail-open-outline'} size={24} color={error ? t.danger : t.primary} /></View>
@@ -166,6 +168,8 @@ const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
         )}
       </ThemedView>
       </Reveal>
+      <SiteFooter />
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -177,7 +181,8 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     paddingTop: Platform.OS === 'web' ? 0 : 30,
     position: 'relative',
   },
-  reveal: { flex: 1 },
+  pageScroll: { flexGrow: 1 },
+  reveal: { flexGrow: 1 },
   scrollContainer: {},
   container: {
     backgroundColor: t.glass,
@@ -188,7 +193,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     maxWidth: 820,
     alignSelf: 'center',
     marginTop: 58,
-    marginBottom: 110,
+    marginBottom: 60,
     borderWidth: 1,
     borderColor: t.border,
     shadowColor: t.shadow,
@@ -232,7 +237,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   },
   linkForm: { marginTop: 24, maxWidth: 650 },
   helperText: { color: t.textMuted, fontSize: 14, lineHeight: 22, marginBottom: 18 },
-  linkInput: { minHeight: 52, color: t.text, backgroundColor: t.surfaceAlt, borderWidth: 1, borderColor: t.border, borderRadius: 14, paddingHorizontal: 16, fontSize: 15 },
+  linkInput: { minHeight: 52, color: t.text, backgroundColor: t.surfaceAlt, borderWidth: 1, borderColor: t.border, borderRadius: 14, paddingHorizontal: 16, fontSize: 16 },
   linkInputError: { borderColor: t.danger },
   inputError: { color: t.danger, fontSize: 13, lineHeight: 19, marginTop: 8 },
   openButton: { minHeight: 48, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 16, paddingHorizontal: 18, borderRadius: 14, backgroundColor: t.primaryStrong },

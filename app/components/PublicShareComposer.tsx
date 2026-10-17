@@ -9,6 +9,7 @@ import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { createAnonymousShare, AnonymousShareResult } from '@/service/shareService';
 import { setClipboard } from '@/service/clipboardService';
+import SiteFooter from './SiteFooter';
 
 const MAX_LENGTH = 12_000;
 
@@ -93,6 +94,7 @@ export default function PublicShareComposer() {
           </>}
         </View>
       </Reveal>
+      <SiteFooter />
     </ScrollView>
   </SafeAreaView>;
 }

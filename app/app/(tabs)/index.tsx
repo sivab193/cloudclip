@@ -15,6 +15,7 @@ import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import AmbientBackdrop from '@/components/AmbientBackdrop';
 import Reveal from '@/components/Reveal';
+import SiteFooter from '@/components/SiteFooter';
 
 export default function Homepage() {
  const t = useTheme();
@@ -150,6 +151,7 @@ export default function Homepage() {
 							</Reveal>
 						)}
 					</ThemedView>
+					{!user && <SiteFooter />}
 				</SafeAreaView>
 			</ScrollView>
 		</>

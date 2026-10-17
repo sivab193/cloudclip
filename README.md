@@ -1,6 +1,8 @@
 # CloudClip
 
-CloudClip is a private clipboard cloud for syncing encrypted text and sharing it through expiring encrypted links. The web app is available now. iOS, Android, macOS, Windows and Linux apps are on the roadmap.
+CloudClip is a quiet place to keep useful text and share it through private, expiring links. The [web app](https://cclip.cc) is available now. iOS, Android, macOS, Windows and Linux apps are on the roadmap.
+
+The website has an [About page](https://cclip.cc/about), a [privacy policy](https://cclip.cc/privacy), and an account-free sharing flow. CloudClip is built in the open by [siv19.dev](https://siv19.dev/); the site footer also links to [GitHub](https://github.com/sivab193), [LinkedIn](https://www.linkedin.com/in/sivab193/), and [Instagram](https://www.instagram.com/siv19.dev/). The source repository is [sivab193/cloud-clip-ui](https://github.com/sivab193/cloud-clip-ui).
 
 Anyone can create a client-side encrypted, expiring text link without registering. Anonymous shares are rate-limited, expire after one or seven days, and are not attached to an account history.
 
@@ -18,6 +20,8 @@ The web interface supports light and dark appearance. It follows the device them
 - United States: `us.cclip.cc` → `api-us.cclip.cc` → US backend → N. Virginia MongoDB cluster
 
 Each backend runs as a Docker container beside Redis. Redis backs distributed rate limiting and Socket.IO event delivery. Regional data stays in that region's MongoDB cluster; the clusters are intentionally independent rather than cross-region replicas.
+
+The same Firebase sign-in works in both regions, but regional profiles, encryption keys, clips and shared links are separate. Deleting an account in one region currently removes the shared sign-in and only that region’s database records; contact support before deletion if you used both regions so the other records can also be removed. Cross-region deletion coordination is still pending.
 
 The public API hostnames are connected with Cloudflare Tunnel. A `cloudflared` container creates an outbound encrypted connection to Cloudflare, so the home server does not need an inbound port exposed on the router. Cloudflare terminates HTTPS for `api.<region>.cclip.cc` and forwards requests through that tunnel to `http://backend:3000` on the private Docker network.
 
