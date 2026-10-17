@@ -118,7 +118,7 @@ const SharedContent: React.FC<{ legacyToken?: string }> = ({ legacyToken }) => {
         <View style={styles.icon}><Ionicons name={error ? 'alert-circle-outline' : needsLink ? 'link-outline' : 'mail-open-outline'} size={24} color={error ? t.danger : t.primary} /></View>
         <View style={styles.headerWithButton}>
           <View><Text style={styles.eyebrow}>{needsLink ? 'OPEN A SHARED CLIP' : 'SHARED WITH YOU'}</Text><ThemedText style={styles.title}>{needsLink ? 'Paste the private link.' : 'A private clip'}</ThemedText></View>
-          {!error && !loading && (
+          {!needsLink && !error && !loading && (
             <TouchableOpacity style={[styles.copyButton, { marginLeft: 10 }]} onPress={() => handleCopy(data || '')}>
               <Ionicons name="copy-outline" size={18} color={t.onPrimary} />
               {Platform.OS === 'web' && (
