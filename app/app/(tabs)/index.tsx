@@ -108,19 +108,13 @@ export default function Homepage() {
 							<Reveal>
 							<View style={styles.workspace}>
 								<View style={styles.workspaceHero}>
-									<View style={styles.eyebrowRow}><View style={styles.liveDot} /><Text style={styles.eyebrow}>YOUR SECURE WORKSPACE</Text></View>
-									<ThemedText style={styles.workspaceTitle}>Good to see you.</ThemedText>
-									<ThemedText style={styles.workspaceSubtitle}>Move ideas between your devices without breaking your flow.</ThemedText>
-									<View style={styles.metrics}>
-										<View style={styles.metric}><Ionicons name="layers-outline" size={17} color={t.primary} /><Text style={styles.metricValue}>{clipboardEntries.length}</Text><Text style={styles.metricLabel}>clips</Text></View>
-										<View style={styles.metric}><Ionicons name="shield-checkmark-outline" size={17} color={t.accent} /><Text style={styles.metricLabel}>encrypted</Text></View>
-										<View style={styles.metric}><Ionicons name="flash-outline" size={17} color={t.primary} /><Text style={styles.metricLabel}>live sync</Text></View>
-									</View>
+									<ThemedText style={styles.workspaceTitle}>Your clipboard.</ThemedText>
+									<ThemedText style={styles.workspaceSubtitle}>A place for the text you want to keep close.</ThemedText>
 								</View>
 								<View style={[styles.workspaceGrid, !wide && styles.workspaceGridStack]}>
 								<ThemedView style={[styles.container, styles.composerCard]}>
 									<View style={styles.headerWithButton}>
-										<View><Text style={styles.cardEyebrow}>NEW CLIP</Text><ThemedText style={styles.cardTitle}>Capture a thought</ThemedText></View>
+										<View><ThemedText style={styles.cardTitle}>Add text</ThemedText></View>
 										<View style={styles.buttonContainer}>
 											<TouchableOpacity accessibilityRole="button" accessibilityLabel="Paste from clipboard" style={styles.iconAction} onPress={handlePaste}>
 												<Ionicons name="clipboard-outline" size={19} color={t.primary} /><Text style={styles.iconActionText}>Paste</Text>
@@ -134,18 +128,18 @@ export default function Homepage() {
 								</ThemedView>
 								<ThemedView style={[styles.container, styles.latestCard]}>
 									<View style={styles.headerWithButton}>
-										<View><Text style={styles.cardEyebrow}>MOST RECENT</Text><ThemedText style={styles.cardTitle}>Latest clip</ThemedText></View>
+										<View><ThemedText style={styles.cardTitle}>Latest clip</ThemedText></View>
 										<View style={styles.buttonContainer}>
 											<TouchableOpacity style={styles.roundAction} accessibilityLabel="Copy latest clip" disabled={!latestText} onPress={() => handleCopy(latestText || '')}><Ionicons name="copy-outline" size={19} color={t.primary} /></TouchableOpacity>
 										</View>
 									</View>
-									<View style={styles.latestBody}><View style={styles.quoteMark}><Ionicons name="sparkles" size={18} color={t.primary} /></View><ScrollView nestedScrollEnabled><Text style={[styles.latestText, !latestText && styles.latestPlaceholder]}>{latestText || 'Your newest clip will glow here the moment you save it.'}</Text></ScrollView></View>
+										<View style={styles.latestBody}><ScrollView nestedScrollEnabled><Text style={[styles.latestText, !latestText && styles.latestPlaceholder]}>{latestText || 'Your most recent clip will appear here.'}</Text></ScrollView></View>
 									<View style={styles.latestFooter}><View style={styles.securityTag}><Ionicons name="lock-closed" size={12} color={t.accent} /><Text style={styles.securityText}>Private & encrypted</Text></View><Text style={styles.characterCount}>{latestText?.length ?? 0} chars</Text></View>
 								</ThemedView>
 								</View>
 								<ThemedView style={[styles.container, styles.libraryCard]}>
 									<View style={styles.headerWithButton}>
-										<View><Text style={styles.cardEyebrow}>HISTORY</Text><ThemedText style={styles.cardTitle}>Your clip library</ThemedText></View>
+										<View><ThemedText style={styles.cardTitle}>Saved clips</ThemedText></View>
 										<TouchableOpacity style={styles.iconAction} onPress={() => setConfirmationVisible(true)} disabled={!clipboardEntries.length}>
 											<Ionicons name="trash-outline" size={17} color={t.textMuted} /><Text style={styles.iconActionText}>Clear all</Text>
 										</TouchableOpacity>
@@ -191,12 +185,12 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 		paddingTop: 2,
 		borderRadius: 16,
 	},
-	workspace: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingTop: 42, paddingBottom: 90 },
+	workspace: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingTop: 54, paddingBottom: 90 },
 	workspaceHero: { paddingHorizontal: 6, marginBottom: 30 },
 	eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
 	liveDot: { width: 7, height: 7, borderRadius: 8, backgroundColor: t.accent, shadowColor: t.accent, shadowOpacity: 0.5, shadowRadius: 7 },
 	eyebrow: { color: t.textMuted, fontSize: 10, fontWeight: '800', letterSpacing: 2 },
-	workspaceTitle: { color: t.text, fontSize: 42, lineHeight: 48, fontWeight: '800', letterSpacing: -1.8 },
+	workspaceTitle: { color: t.text, fontSize: 42, lineHeight: 48, fontWeight: '800', letterSpacing: -1.2 },
 	workspaceSubtitle: { color: t.textMuted, fontSize: 16, lineHeight: 25, marginTop: 7 },
 	metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 20 },
 	metric: { minHeight: 38, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, borderRadius: 99, backgroundColor: t.glass, borderWidth: 1, borderColor: t.borderSubtle },
@@ -211,24 +205,24 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 		borderRadius: 16,
 	},
 	container: {
-		borderWidth: 1, borderColor: t.borderSubtle,
-		backgroundColor: t.glass,
+		borderWidth: 1, borderColor: t.border,
+		backgroundColor: t.surface,
 		padding: 24,
-		borderRadius: 24,
+		borderRadius: 11,
 		overflow: 'hidden'
 	},
-	composerCard: { flex: 1.15, minHeight: 330, shadowColor: t.shadow, shadowOpacity: 0.07, shadowRadius: 30, shadowOffset: { width: 0, height: 14 }, elevation: 5 },
+	composerCard: { flex: 1.15, minHeight: 330 },
 	latestCard: { flex: 0.85, minHeight: 330, backgroundColor: t.surfaceAlt },
 	libraryCard: { width: '100%', marginTop: 18 },
 	cardEyebrow: { color: t.primary, fontSize: 9, lineHeight: 14, fontWeight: '800', letterSpacing: 1.8, marginBottom: 3 },
 	cardTitle: { color: t.text, fontSize: 20, lineHeight: 27, fontWeight: '700', letterSpacing: -0.6 },
-	composerBody: { flex: 1, marginTop: 20, borderRadius: 18, backgroundColor: t.surfaceAlt, borderWidth: 1, borderColor: t.borderSubtle, padding: 16 },
+	composerBody: { flex: 1, marginTop: 20, borderRadius: 9, backgroundColor: t.surfaceAlt, borderWidth: 1, borderColor: t.borderSubtle, padding: 16 },
 	composerInput: { flex: 1, minHeight: 165, color: t.text, fontSize: 16, lineHeight: 24, textAlignVertical: 'top', outlineStyle: 'none' } as any,
 	composerFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: t.borderSubtle },
 	characterCount: { color: t.textMuted, fontSize: 10, fontWeight: '600' },
-	saveButton: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, borderRadius: 13, backgroundColor: t.primaryStrong, shadowColor: t.primaryStrong, shadowOpacity: 0.28, shadowRadius: 14, shadowOffset: { width: 0, height: 7 } },
+	saveButton: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, borderRadius: 8, backgroundColor: t.primaryStrong },
 	saveButtonText: { color: t.onPrimary, fontSize: 12, fontWeight: '800' },
-	iconAction: { minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, borderRadius: 12, backgroundColor: t.primarySoft, borderWidth: 1, borderColor: t.borderSubtle },
+	iconAction: { minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, borderRadius: 8, backgroundColor: t.primarySoft },
 	iconActionText: { color: t.text, fontSize: 11, fontWeight: '700' },
 	roundAction: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: t.surface, borderWidth: 1, borderColor: t.borderSubtle },
 	latestBody: { flex: 1, minHeight: 180, marginTop: 22, flexDirection: 'row', gap: 12 },

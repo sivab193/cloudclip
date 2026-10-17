@@ -6,10 +6,12 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import 'react-native-reanimated';
 import { AuthProvider } from '@/auth/AuthContext';
 import UnlockModal from '@/components/UnlockModal';
 import React from 'react';
+import { restoreThemePreference, useThemeName } from '@/hooks/useTheme';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -18,7 +20,15 @@ SplashScreen.preventAutoHideAsync();
 // well is what stops expo-router's static render from emitting an EMPTY
 // <title> ahead of ours — the first <title> in the document is the one the
 // browser and most crawlers use.
-const SITE_TITLE = 'CloudClip — Your clipboard, on every device';
+const SITE_TITLE = 'CloudClip — A quieter way to move text';
+
+function ThemeDocumentSync() {
+  const theme = useThemeName();
+  useEffect(() => {
+    if (Platform.OS === 'web') document.documentElement.dataset.theme = theme;
+  }, [theme]);
+  return null;
+}
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -32,12 +42,15 @@ export default function RootLayout() {
     }
   }, [loaded, error]);
 
+  useEffect(() => { void restoreThemePreference(); }, []);
+
   if (!loaded && !error) {
     return null;
   }
 
   return (
     <AuthProvider>
+      <ThemeDocumentSync />
       <StatusBar style="auto" />
       <Head>
         <title>{SITE_TITLE}</title>

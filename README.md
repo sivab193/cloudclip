@@ -8,6 +8,8 @@ Every new share also has a four-character uppercase alphanumeric reference (for 
 
 Clipboard content is encrypted on the client. Automatic clipboard access is opt-in and runs only while the app is visible. Encrypted file transfer, a custom CloudClip keyboard, native apps and a user-friendly self-hosted edition are coming soon. Images, background clipboard monitoring and an offline write queue are not implemented today.
 
+The web interface supports light and dark appearance. It follows the device theme until a visitor uses the header toggle, then remembers that choice. The current logo, colors, and component guidance are documented in [DESIGN.md](DESIGN.md).
+
 ## How the regional deployment works
 
 `cclip.cc` is the public gateway. Before signing in or opening a shared clip, a visitor chooses an available region. The gateway then redirects to the matching regional web app:

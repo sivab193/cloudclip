@@ -1,13 +1,13 @@
 {
   "name": "CloudClip",
   "short_name": "CloudClip",
-  "description": "Your clipboard, on every device. End-to-end encrypted clipboard sync with real-time updates and expiring share links.",
+  "description": "Keep useful text close and share it with a private, expiring link.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#ffffff",
-  "theme_color": "#0A7EA4",
+  "background_color": "#f6f5f1",
+  "theme_color": "#283449",
   "categories": ["productivity", "utilities"],
   "icons": [
     {

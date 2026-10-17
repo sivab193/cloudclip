@@ -34,11 +34,11 @@ The web app is available now. Users choose an active geographic region before si
 
 ## Brand Commitments
 
-The product name is CloudClip. The supplied homepage concept establishes a dark, precise continuity-vault presentation built around violet, cyan, and green status cues, an interactive encrypted-orbit centerpiece, and concise privacy-focused language.
+The product name is CloudClip. Its visual direction is calm and trustworthy: warm off-white and deep ink surfaces, a restrained violet action color, plain-language copy, and a simplified cloud/clip mark. Light and dark themes receive equal design attention. Product examples must be clearly labeled as examples.
 
 ## Evidence on Hand
 
-The working application, regional deployment code, tests, product logo, and interactive Three.js orbit are present in this repository. There are no customer testimonials, public performance benchmarks, or third-party audit claims to present.
+The working application, regional deployment code, tests, and product logo are present in this repository. There are no customer testimonials, public performance benchmarks, or third-party audit claims to present.
 
 ## Product Principles
 

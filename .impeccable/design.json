@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-17T00:00:00Z",
+  "title": "Design System: CloudClip",
+  "extensions": {
+    "colorMeta": {
+      "violet": { "role": "primary", "displayName": "Deep violet", "canonical": "#3e327f" },
+      "paper": { "role": "neutral", "displayName": "Warm paper", "canonical": "#f6f5f1" },
+      "deep-ink": { "role": "neutral", "displayName": "Deep ink", "canonical": "#10151b" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "One proposition per page." },
+      "body": { "displayName": "Body", "purpose": "Useful explanation and instructions." }
+    },
+    "shadows": [
+      { "name": "dialog-diffuse", "value": "0 14px 28px rgba(0,0,0,0.14)", "purpose": "Separate dialogs from their scrim." }
+    ],
+    "motion": [
+      { "name": "state-transition", "value": "180ms ease", "purpose": "Quiet hover and focus changes; disabled for reduced motion." }
+    ],
+    "breakpoints": [
+      { "name": "stack-hero", "value": "860px" },
+      { "name": "compact-header", "value": "500px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main action in a section.",
+      "html": "<button class=\"ds-btn-primary\">Create private link</button>",
+      "css": ".ds-btn-primary{background:#3e327f;color:#fff;border:0;border-radius:9px;padding:0 20px;min-height:50px;font:700 14px system-ui;transition:filter .18s}.ds-btn-primary:hover{filter:brightness(.95)}.ds-btn-primary:focus-visible{outline:2px solid #7566cd;outline-offset:3px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "description": "A useful alternative to the main action.",
+      "html": "<button class=\"ds-btn-secondary\">Open my clipboard</button>",
+      "css": ".ds-btn-secondary{background:#fff;color:#1d2530;border:1px solid #cfd2d2;border-radius:9px;padding:0 19px;min-height:50px;font:700 14px system-ui}.ds-btn-secondary:hover{background:#f0efe9}.ds-btn-secondary:focus-visible{outline:2px solid #7566cd;outline-offset:3px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "description": "A neutral text entry surface.",
+      "html": "<input class=\"ds-input\" placeholder=\"Email\" />",
+      "css": ".ds-input{background:#fff;color:#1d2530;border:1px solid #cfd2d2;border-radius:9px;padding:0 16px;height:54px;font:400 15px system-ui}.ds-input:focus-visible{outline:2px solid #7566cd;outline-offset:3px}"
+    },
+    {
+      "name": "Clip Card",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "A content-bearing neutral panel.",
+      "html": "<div class=\"ds-card\">A quick note</div>",
+      "css": ".ds-card{background:#fff;color:#1d2530;border:1px solid #cfd2d2;border-radius:13px;padding:20px;font:600 15px system-ui}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Desk",
+    "overview": "CloudClip should feel like a useful workspace, not a technology spectacle. Clear language, a generous reading rhythm, and concrete examples explain the product before decoration.",
+    "keyCharacteristics": ["Editorial hierarchy", "Tonal layers instead of glow", "Plain state labels"],
+    "rules": [{ "name": "The One Accent Rule", "body": "Use violet sparingly to make the next useful action obvious; avoid decorative violet glows and gradients.", "section": "colors" }],
+    "dos": ["Do label samples as examples and future capabilities as coming soon.", "Do retain good contrast in both themes and visible keyboard focus.", "Do favor concise, factual privacy language."],
+    "donts": ["Don't add ornamental glows, glassmorphism, or animated orbit imagery to explain basic functionality.", "Don't imply the native apps or file transfer are shipping today.", "Don't use fake activity counts, uptime numbers, or testimonials."]
+  }
+}

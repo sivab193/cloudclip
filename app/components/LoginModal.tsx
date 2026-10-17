@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, Alert, TouchableOpacity, Text, Modal, TouchableWithoutFeedback, ActivityIndicator, Platform } from 'react-native';
+import { View, TextInput, StyleSheet, Alert, TouchableOpacity, Text, Modal, TouchableWithoutFeedback, ActivityIndicator, Platform, Image } from 'react-native';
 import { auth } from '../firebaseConfig';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -194,7 +194,7 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                 onPress={() => { onClose(); resetFields(); }}>
                 <Ionicons name="close" size={20} color={t.textMuted} />
               </TouchableOpacity>
-              <View style={styles.brandMark}><Ionicons name="cloud-done-outline" size={25} color={t.onPrimary} /></View>
+              <Image source={require('../assets/images/logo.png')} accessibilityLabel="CloudClip" style={styles.brandMark} />
               {isForgotPasswordMode ? (
                 <>
                   <Text style={styles.titleText}>Reset your password</Text>
@@ -224,13 +224,13 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                       style={[styles.toggleButton, !isSignUpMode && styles.activeButton]}
                       onPress={() => setIsSignUpMode(false)}
                     >
-                      <Text style={styles.secondarybuttonText}>Login</Text>
+                      <Text style={[styles.secondarybuttonText, !isSignUpMode && styles.activeToggleText]}>Log in</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.toggleButton, isSignUpMode && styles.activeButton]}
                       onPress={() => setIsSignUpMode(true)}
                     >
-                      <Text style={styles.secondarybuttonText}>Sign Up</Text>
+                      <Text style={[styles.secondarybuttonText, isSignUpMode && styles.activeToggleText]}>Sign up</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -269,7 +269,7 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                         onChangeText={setConfirmPassword}
                       />
                       <TouchableOpacity style={styles.button} onPress={handleSignUp} disabled={busy}>
-                        {busy ? <ActivityIndicator color={t.onPrimary} /> : <Text style={styles.buttonText}>Sign Up</Text>}
+                        {busy ? <ActivityIndicator color={t.onPrimary} /> : <Text style={styles.buttonText}>Create account</Text>}
                       </TouchableOpacity>
                     </>
                   ) : (
@@ -293,7 +293,7 @@ const LoginModal = ({ isVisible, onClose, onSuccess }: { isVisible: boolean; onC
                       />
 
                       <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={busy}>
-                        {busy ? <ActivityIndicator color={t.onPrimary} /> : <Text style={styles.buttonText}>Login</Text>}
+                        {busy ? <ActivityIndicator color={t.onPrimary} /> : <Text style={styles.buttonText}>Log in</Text>}
                       </TouchableOpacity>
                     </>
                   )}
@@ -328,67 +328,66 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     width: '100%',
     maxWidth: 460,
     backgroundColor: t.glass,
-    borderRadius: 28,
-    padding: 30,
+    borderRadius: 16,
+    padding: 28,
     borderWidth: 1,
     borderColor: t.border,
-    shadowColor: t.primaryStrong,
-    shadowOpacity: 0.2,
-    shadowRadius: 50,
-    shadowOffset: { width: 0, height: 22 },
+    shadowColor: t.shadow,
+    shadowOpacity: 0.14,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 14 },
   },
-  closeButton: { position: 'absolute', top: 16, right: 16, width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: t.surfaceAlt, zIndex: 2 },
-  brandMark: { width: 52, height: 52, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: t.primaryStrong, marginBottom: 20, shadowColor: t.primaryStrong, shadowOpacity: 0.3, shadowRadius: 18 },
+  closeButton: { position: 'absolute', top: 16, right: 16, width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: t.surfaceAlt, zIndex: 2 },
+  brandMark: { width: 46, height: 46, borderRadius: 10, marginBottom: 22 },
   input: {
     height: 54,
     borderColor: t.border,
     borderWidth: 1,
     marginBottom: 13,
     paddingHorizontal: 16,
-    borderRadius: 14,
+    borderRadius: 9,
     color: t.text,
-    backgroundColor: t.surfaceAlt,
+    backgroundColor: t.surface,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
     padding: 4,
-    borderRadius: 14,
+    borderRadius: 9,
     backgroundColor: t.surfaceAlt,
   },
   toggleButton: {
     flex: 1,
     alignItems: 'center',
     padding: 11,
-    borderRadius: 11,
+    borderRadius: 7,
     marginHorizontal: 2,
   },
   activeButton: {
-    borderRadius: 11,
+    borderRadius: 7,
     backgroundColor: t.surface,
     borderWidth: 1,
     borderColor: t.borderSubtle,
   },
   secondarybuttonText: {
-    color: t.text,
-    fontWeight: 'bold',
+    color: t.textMuted,
+    fontWeight: '700',
     textAlign: 'center'
   },
+  activeToggleText: { color: t.text },
   buttonText: {
     color: t.onPrimary,
-    textAlign: 'center'
+    textAlign: 'center',
+    fontWeight: '700',
   },
   button: {
     marginBottom: 12,
     backgroundColor: t.primaryStrong,
-    borderRadius: 14,
+    borderRadius: 9,
     minHeight: 52,
     padding: 14,
     justifyContent: 'center',
-    shadowColor: t.primaryStrong,
-    shadowOpacity: 0.26,
-    shadowRadius: 16,
   },
   busyText: {
     textAlign: 'center',

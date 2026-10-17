@@ -1,106 +1,155 @@
 import React, { useState, useSyncExternalStore } from 'react';
-import { StyleSheet, View, Text, Pressable, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { ThemeTokens } from '@/constants/Colors';
-import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import LoginPopup from './LoginModal';
-import OrbitScene from './OrbitScene';
-import Reveal from './Reveal';
-import AmbientBackdrop from './AmbientBackdrop';
 import RegionPicker from './RegionPicker';
 import { deploymentMode } from '@/config/regions';
+import { ThemeTokens } from '@/constants/Colors';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 const subscribe = () => () => {};
 const clientSnapshot = () => true;
 const serverSnapshot = () => false;
 
 const platforms = [
-  { name: 'Web', icon: 'globe-outline', status: 'Live', live: true },
-  { name: 'iOS', icon: 'logo-apple', status: 'Soon', live: false },
-  { name: 'Android', icon: 'logo-android', status: 'Soon', live: false },
-  { name: 'macOS', icon: 'desktop-outline', status: 'Soon', live: false },
-  { name: 'Windows', icon: 'logo-windows', status: 'Soon', live: false },
-  { name: 'Linux', icon: 'terminal-outline', status: 'Soon', live: false },
+  { name: 'Web', icon: 'globe-outline', live: true },
+  { name: 'iOS', icon: 'logo-apple', live: false },
+  { name: 'Android', icon: 'logo-android', live: false },
+  { name: 'macOS', icon: 'desktop-outline', live: false },
+  { name: 'Windows', icon: 'logo-windows', live: false },
+  { name: 'Linux', icon: 'terminal-outline', live: false },
 ] as const;
 
 export default function Description() {
   const styles = useThemedStyles(makeStyles);
   const t = useTheme();
+  const router = useRouter();
   const { width } = useWindowDimensions();
+  const hydrated = useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot);
+  const compact = !hydrated || width < 860;
   const [login, setLogin] = useState(false);
   const [regionDestination, setRegionDestination] = useState<'/' | '/shared' | '/share' | null>(null);
-  const router = useRouter();
-  const hydrated = useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot);
-  const compact = !hydrated || width < 820;
-  const chooseRegionOr = (destination: '/' | '/shared' | '/share', action: () => void) => {
+
+  const go = (destination: '/' | '/shared' | '/share') => {
     if (deploymentMode === 'gateway') setRegionDestination(destination);
-    else action();
+    else if (destination === '/') setLogin(true);
+    else router.push(destination);
   };
 
-  return <Reveal><View style={styles.stage}>
-    <AmbientBackdrop />
-    <View style={styles.page}>
-      <View style={[styles.hero, compact && styles.heroCompact]}>
-        <View style={styles.copy}>
-          <View style={styles.badge}><View style={styles.dot} /><Text style={styles.eyebrow}>YOUR PRIVATE CLIPBOARD CLOUD</Text></View>
-          <Text accessibilityRole="header" style={[styles.title, compact && styles.titleCompact]}>Ideas move.{ '\n' }<Text style={{ color: t.primary }}>You stay in flow.</Text></Text>
-          <Text style={styles.body}>A beautifully simple home for the text that matters now. Capture it once, find it in your private encrypted stream, and share expiring fragments without friction.</Text>
-          <View style={styles.actions}>
-            <Pressable accessibilityRole="button" onPress={() => chooseRegionOr('/', () => setLogin(true))} style={({ pressed }) => [styles.primary, pressed && styles.pressed]}><Text style={styles.primaryText}>Launch clipboard stream</Text><Ionicons name="sparkles-outline" size={19} color={t.onPrimary} /></Pressable>
-            <Pressable accessibilityRole="link" onPress={() => chooseRegionOr('/share', () => router.push('/share'))} style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}><Ionicons name="paper-plane-outline" size={17} color={t.primary} /><Text style={styles.secondaryText}>Share text — no login</Text><Ionicons name="arrow-forward" size={16} color={t.textMuted} /></Pressable>
-          </View>
-          <Pressable accessibilityRole="link" onPress={() => chooseRegionOr('/shared', () => router.push('/shared'))} style={styles.openLink}><Ionicons name="link-outline" size={16} color={t.textMuted} /><Text style={styles.openLinkText}>Already have a shared link?</Text></Pressable>
-          <View style={styles.trustRow}><View style={styles.trustItem}><Ionicons name="shield-checkmark-outline" size={16} color={t.accent} /><Text style={styles.small}>End-to-end encrypted</Text></View><View style={styles.trustItem}><Ionicons name="eye-off-outline" size={16} color={t.primary} /><Text style={styles.small}>Private by design</Text></View></View>
+  return <View style={styles.page}>
+    <View style={[styles.hero, compact && styles.heroCompact]}>
+      <View style={styles.heroCopy}>
+        <Text accessibilityRole="header" style={[styles.title, compact && styles.titleCompact]}>A quieter way to move text.</Text>
+        <Text style={styles.intro}>Keep useful snippets close, then send one as a private, expiring link when someone else needs it.</Text>
+        <View style={styles.actions}>
+          <Pressable accessibilityRole="link" onPress={() => go('/share')} style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
+            <Text style={styles.primaryText}>Share text without an account</Text>
+            <Ionicons name="arrow-forward" size={18} color={t.onPrimary} />
+          </Pressable>
+          <Pressable accessibilityRole="button" onPress={() => go('/')} style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
+            <Text style={styles.secondaryText}>Open my clipboard</Text>
+          </Pressable>
         </View>
-        <View style={[styles.art, compact && styles.artCompact]}>
-          <View style={styles.artHeader}><View style={styles.artLabel}><Ionicons name="planet-outline" size={17} color={t.primary} /><Text style={styles.artTitle}>CONTINUITY VAULT</Text></View><View style={styles.livePill}><View style={styles.pulseDot} /><Text style={styles.liveText}>LIVE SYNC</Text></View></View>
-          <View style={styles.orbit}><OrbitScene /></View>
-          <View style={styles.shard}><View style={styles.shardDot} /><Text style={styles.shardText}>Encrypted clip · in orbit</Text></View>
-          <View style={styles.artFooter}><Text style={styles.artCaption}>ONE THOUGHT · INSTANT CONTINUITY</Text><Text style={styles.artHint}>Move your pointer to inspect</Text></View>
+        <Pressable accessibilityRole="link" onPress={() => go('/shared')} style={styles.existingLink}>
+          <Text style={styles.existingText}>Have a shared link? Open it</Text>
+          <Ionicons name="arrow-forward" size={15} color={t.primary} />
+        </Pressable>
+      </View>
+
+      <View accessibilityLabel="Example of a text clip becoming a private share link" style={[styles.demo, compact && styles.demoCompact]}>
+        <View style={styles.demoTop}><Text style={styles.demoLabel}>A CLIP, FROM THOUGHT TO LINK</Text><Text style={styles.exampleLabel}>EXAMPLE</Text></View>
+        <View style={styles.note}>
+          <View style={styles.noteMeta}><View style={styles.noteDot} /><Text style={styles.noteMetaText}>A quick note</Text><Text style={styles.noteTime}>10:42</Text></View>
+          <Text style={styles.noteText}>The little things you need later should be easy to find now.</Text>
+          <View style={styles.noteFooter}><Ionicons name="lock-closed-outline" size={15} color={t.accent} /><Text style={styles.noteFooterText}>Encrypted before it leaves your browser</Text></View>
         </View>
+        <View style={styles.transfer}><View style={styles.transferLine} /><View style={styles.transferIcon}><Ionicons name="arrow-down" size={17} color={t.primary} /></View><View style={styles.transferLine} /></View>
+        <View style={styles.linkPreview}><View style={styles.linkSymbol}><Ionicons name="link-outline" size={19} color={t.primary} /></View><View style={styles.linkCopy}><Text style={styles.linkTitle}>Private link ready</Text><Text style={styles.linkDetail}>Only the complete link opens the clip</Text></View><Ionicons name="arrow-forward" size={18} color={t.textMuted} /></View>
+        <View style={styles.demoBottom}><Text style={styles.demoBottomText}>Nothing to install. No account needed to share.</Text></View>
       </View>
-
-      <View style={styles.sectionLead}><Text style={styles.sectionTitle}>One small action. Instant momentum.</Text><Text style={styles.sectionBody}>CloudClip disappears into your workflow instead of becoming another workspace to manage.</Text></View>
-      <View style={[styles.features, compact && styles.stack]}>
-        {([
-          ['copy-outline', 'A little copy. A big leap.', 'Save a note, terminal command, link, or spark of inspiration. Your active stream stays lightweight and close.'],
-          ['lock-closed-outline', 'Private by design.', 'Your text is encrypted locally before upload. CloudClip cannot read the contents of your encrypted stream.'],
-          ['flame-outline', 'Share it. Then let it go.', 'Send an expiring encrypted link. Anyone with the complete link can open it—no account required.'],
-        ] as const).map(([icon, title, body]) => <View key={title} style={styles.feature}><View style={styles.icon}><Ionicons name={icon} size={23} color={t.primary} /></View><Text style={styles.featureTitle}>{title}</Text><Text style={styles.featureBody}>{body}</Text></View>)}
-      </View>
-
-      <View style={[styles.roadmap, compact && styles.stack]}>
-        <View style={styles.roadmapCopy}><Text style={styles.roadmapTitle}>The clipboard, everywhere.</Text><Text style={styles.roadmapBody}>The web app is ready today. Native CloudClip apps are next, bringing the same private stream to every screen you use.</Text><View style={styles.fileNotice}><View style={styles.fileIcon}><Ionicons name="document-attach-outline" size={22} color={t.primary} /></View><View style={styles.fileCopy}><View style={styles.soonRow}><Text style={styles.fileTitle}>Encrypted file transfer</Text><Text style={styles.soonBadge}>COMING SOON</Text></View><Text style={styles.featureBody}>Move files with the same simple, expiring, encrypted flow.</Text></View></View></View>
-        <View style={styles.platformList}>{platforms.map((platform) => <View key={platform.name} style={[styles.platform, !platform.live && styles.platformMuted]}><View style={styles.platformName}><Ionicons name={platform.icon} size={20} color={platform.live ? t.accent : t.textDisabled} /><Text style={[styles.platformText, !platform.live && styles.mutedText]}>{platform.name}</Text></View><View style={[styles.status, platform.live ? styles.statusLive : styles.statusSoon]}><Text style={[styles.statusText, { color: platform.live ? t.accent : t.textDisabled }]}>{platform.status}</Text></View></View>)}</View>
-      </View>
-
-      <View style={[styles.future, compact && styles.stack]}>
-        <View style={styles.futureIntro}><Text style={styles.futureTitle}>Your cloud. Or yours alone.</Text><Text style={styles.futureBody}>CloudClip will soon be self-hostable for people and teams who want the highest level of clipboard privacy and complete control over where encrypted data lives.</Text></View>
-        <View style={styles.keyboard}><View style={styles.keyboardTop}><Ionicons name="keypad-outline" size={24} color={t.primary} /><Text style={styles.soonBadge}>COMING SOON</Text></View><Text style={styles.keyboardTitle}>A keyboard with CloudClip built in.</Text><Text style={styles.featureBody}>Open your encrypted stream from a custom keyboard and paste the right clip without leaving the app you are using.</Text><View style={styles.keyRow}>{['⌘', 'CloudClip', 'Paste'].map(label => <View key={label} style={[styles.key, label === 'CloudClip' && styles.keyActive]}><Text style={[styles.keyText, label === 'CloudClip' && { color: t.onPrimary }]}>{label}</Text></View>)}</View></View>
-      </View>
-
-      <View style={[styles.finalCta, compact && styles.finalCtaCompact]}><View><Text style={styles.finalTitle}>Keep the thought. Lose the friction.</Text><Text style={styles.finalBody}>Start on the web today. Choose the region closest to you.</Text></View><Pressable accessibilityRole="button" onPress={() => chooseRegionOr('/', () => setLogin(true))} style={({ pressed }) => [styles.primary, pressed && styles.pressed]}><Text style={styles.primaryText}>Enter CloudClip</Text><Ionicons name="arrow-forward" size={19} color={t.onPrimary} /></Pressable></View>
-      <View style={styles.footer}><Text style={styles.small}>© CloudClip · Built for private continuity.</Text><Pressable accessibilityRole="link" onPress={() => router.push('/privacy')}><Text style={styles.footerLink}>Privacy ↗</Text></Pressable></View>
     </View>
+
+    <View style={styles.hairline} />
+    <View style={[styles.story, compact && styles.storyCompact]}>
+      <View style={styles.storyIntro}><Text style={styles.sectionTitle}>A clipboard that stays out of your way.</Text><Text style={styles.sectionIntro}>Save the text you use across contexts. Your personal stream stays available when you sign in to the same region.</Text></View>
+      <View style={styles.storyPoints}>
+        <View style={styles.storyPoint}><Text style={styles.pointNumber}>01</Text><View style={styles.pointBody}><Text style={styles.pointTitle}>Capture what matters</Text><Text style={styles.pointText}>A link, command, note, or idea. Add it to your encrypted stream.</Text></View></View>
+        <View style={styles.storyPoint}><Text style={styles.pointNumber}>02</Text><View style={styles.pointBody}><Text style={styles.pointTitle}>Pick up where you left off</Text><Text style={styles.pointText}>Find and copy your text from the web on another device.</Text></View></View>
+        <View style={styles.storyPoint}><Text style={styles.pointNumber}>03</Text><View style={styles.pointBody}><Text style={styles.pointTitle}>Share, then let go</Text><Text style={styles.pointText}>Send an encrypted text link that expires after a day or a week.</Text></View></View>
+      </View>
+    </View>
+
+    <View style={styles.platformSection}>
+      <View style={styles.sectionHeading}><Text style={styles.sectionTitle}>Available today. More on the way.</Text><Text style={styles.sectionIntro}>CloudClip works on the web now. Native apps and file transfer are planned.</Text></View>
+      <View style={styles.platforms}>{platforms.map(platform => <View key={platform.name} style={[styles.platform, !platform.live && styles.platformSoon]}><Ionicons name={platform.icon} size={21} color={platform.live ? t.primary : t.textDisabled} /><Text style={[styles.platformName, !platform.live && styles.platformNameSoon]}>{platform.name}</Text><Text style={[styles.platformState, platform.live ? styles.platformLive : styles.platformStateSoon]}>{platform.live ? 'Live' : 'Coming soon'}</Text></View>)}</View>
+      <View style={[styles.upNext, compact && styles.upNextCompact]}><View style={styles.nextItem}><Ionicons name="document-attach-outline" size={21} color={t.primary} /><Text style={styles.nextText}>Encrypted file transfer <Text style={styles.nextSoon}>— coming soon</Text></Text></View><View style={styles.nextItem}><Ionicons name="keypad-outline" size={21} color={t.primary} /><Text style={styles.nextText}>CloudClip keyboard <Text style={styles.nextSoon}>— coming soon</Text></Text></View></View>
+    </View>
+
+    <View style={[styles.close, compact && styles.closeCompact]}><View><Text style={styles.closeTitle}>Your words. Your control.</Text><Text style={styles.closeText}>Self-hosting is on the roadmap for people who want to run CloudClip on their own infrastructure.</Text></View><Pressable accessibilityRole="link" onPress={() => go('/share')} style={styles.closeAction}><Text style={styles.closeActionText}>Create a private link</Text><Ionicons name="arrow-forward" size={17} color="#283449" /></Pressable></View>
+    <View style={styles.footer}><Text style={styles.footerText}>© CloudClip</Text><Pressable accessibilityRole="link" onPress={() => router.push('/privacy')}><Text style={styles.footerLink}>Privacy</Text></Pressable></View>
     <LoginPopup isVisible={login} onClose={() => setLogin(false)} onSuccess={() => setLogin(false)} />
     <RegionPicker visible={regionDestination !== null} destination={regionDestination ?? '/'} onClose={() => setRegionDestination(null)} />
-  </View></Reveal>;
+  </View>;
 }
 
 const makeStyles = (t: ThemeTokens) => StyleSheet.create({
-  stage: { width: '100%', position: 'relative', overflow: 'hidden' },
   page: { width: '100%', maxWidth: 1240, alignSelf: 'center', paddingHorizontal: 22 },
-  hero: { flexDirection: 'row', alignItems: 'center', paddingTop: 66, paddingBottom: 92, gap: 42, minHeight: 660 },
-  heroCompact: { flexDirection: 'column', alignItems: 'stretch', paddingTop: 42, paddingBottom: 70 }, copy: { flex: 1, width: '100%' },
-  badge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 24, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 99, backgroundColor: t.primarySoft, borderWidth: 1, borderColor: t.borderSubtle }, dot: { width: 7, height: 7, borderRadius: 5, backgroundColor: t.accent }, eyebrow: { fontSize: 10, letterSpacing: 1.7, fontWeight: '800', color: t.primary },
-  title: { fontSize: 76, lineHeight: 78, letterSpacing: -3, fontWeight: '800', color: t.text, maxWidth: 610 }, titleCompact: { fontSize: 48, lineHeight: 52, letterSpacing: -1.8 }, body: { fontSize: 17, lineHeight: 28, color: t.textMuted, maxWidth: 530, marginTop: 24 },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14, marginTop: 32 }, primary: { minHeight: 52, backgroundColor: t.primaryStrong, paddingVertical: 15, paddingHorizontal: 22, borderRadius: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, shadowColor: t.primaryStrong, shadowOpacity: 0.3, shadowRadius: 24, shadowOffset: { width: 0, height: 10 }, elevation: 7 }, primaryText: { color: t.onPrimary, fontSize: 14, fontWeight: '800' }, secondary: { minHeight: 52, flexDirection: 'row', gap: 9, alignItems: 'center', paddingVertical: 14, paddingHorizontal: 18, borderRadius: 15, backgroundColor: t.surface, borderWidth: 1, borderColor: t.borderSubtle }, secondaryText: { color: t.text, fontSize: 13, fontWeight: '700' }, pressed: { opacity: 0.76, transform: [{ scale: 0.985 }] }, openLink: { minHeight: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 8 }, openLinkText: { color: t.textMuted, fontSize: 12, fontWeight: '600', textDecorationLine: 'underline' },
-  trustRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, marginTop: 23 }, trustItem: { flexDirection: 'row', alignItems: 'center', gap: 7 }, small: { color: t.textMuted, fontSize: 12, lineHeight: 20 },
-  art: { width: '51%', minHeight: 500, backgroundColor: t.glass, borderRadius: 28, overflow: 'hidden', shadowColor: t.primaryStrong, shadowOpacity: 0.16, shadowRadius: 60, shadowOffset: { width: 0, height: 30 }, elevation: 10 }, artCompact: { width: '100%', minHeight: 430 }, orbit: { position: 'absolute', inset: 0 }, artHeader: { zIndex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 18, paddingVertical: 16, borderBottomWidth: 1, borderColor: t.borderSubtle }, artLabel: { flexDirection: 'row', alignItems: 'center', gap: 8 }, artTitle: { color: t.text, fontSize: 10, fontWeight: '800', letterSpacing: 1.5 }, livePill: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 99, backgroundColor: t.accentSoft }, pulseDot: { width: 6, height: 6, borderRadius: 6, backgroundColor: t.accent }, liveText: { color: t.accent, fontSize: 9, fontWeight: '800', letterSpacing: 1.1 }, shard: { zIndex: 2, position: 'absolute', left: 18, top: 82, flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 12, backgroundColor: t.surface, borderWidth: 1, borderColor: t.borderSubtle }, shardDot: { width: 7, height: 7, borderRadius: 7, backgroundColor: t.primary }, shardText: { color: t.textMuted, fontSize: 10, fontWeight: '600' }, artFooter: { zIndex: 2, position: 'absolute', left: 18, right: 18, bottom: 0, paddingVertical: 16, borderTopWidth: 1, borderColor: t.borderSubtle, flexDirection: 'row', justifyContent: 'space-between', gap: 10 }, artCaption: { color: t.text, fontSize: 9, fontWeight: '700', letterSpacing: 1.8 }, artHint: { color: t.textMuted, fontSize: 9 },
-  sectionLead: { borderTopWidth: 1, borderColor: t.borderSubtle, paddingTop: 58, paddingBottom: 30 }, sectionTitle: { color: t.text, fontSize: 34, lineHeight: 40, fontWeight: '800', letterSpacing: -1.1 }, sectionBody: { color: t.textMuted, fontSize: 15, lineHeight: 24, maxWidth: 560, marginTop: 12 }, features: { flexDirection: 'row', gap: 18 }, stack: { flexDirection: 'column' }, feature: { flex: 1, paddingVertical: 28, paddingRight: 24, borderTopWidth: 1, borderColor: t.border }, icon: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', backgroundColor: t.primarySoft, borderRadius: 14, marginBottom: 25 }, featureTitle: { color: t.text, fontSize: 19, fontWeight: '700', letterSpacing: -0.3, marginBottom: 11 }, featureBody: { color: t.textMuted, fontSize: 14, lineHeight: 23 },
-  roadmap: { marginTop: 92, paddingVertical: 44, borderTopWidth: 1, borderBottomWidth: 1, borderColor: t.borderSubtle, flexDirection: 'row', gap: 60 }, roadmapCopy: { flex: 1 }, roadmapTitle: { color: t.text, fontSize: 38, lineHeight: 43, fontWeight: '800', letterSpacing: -1.2 }, roadmapBody: { color: t.textMuted, fontSize: 15, lineHeight: 25, marginTop: 15, maxWidth: 520 }, fileNotice: { flexDirection: 'row', gap: 15, alignItems: 'flex-start', marginTop: 30, paddingTop: 26, borderTopWidth: 1, borderColor: t.borderSubtle }, fileIcon: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: t.primarySoft }, fileCopy: { flex: 1 }, fileTitle: { color: t.text, fontSize: 15, fontWeight: '700' }, soonRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 6 }, soonBadge: { color: t.primary, fontSize: 9, fontWeight: '900', letterSpacing: 1.2, paddingVertical: 5, paddingHorizontal: 8, borderRadius: 99, backgroundColor: t.primarySoft, overflow: 'hidden' },
-  platformList: { flex: 1, gap: 1, backgroundColor: t.borderSubtle, borderRadius: 16, overflow: 'hidden' }, platform: { minHeight: 58, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18, backgroundColor: t.surface }, platformMuted: { backgroundColor: t.surfaceDisabled, opacity: 0.72 }, platformName: { flexDirection: 'row', alignItems: 'center', gap: 12 }, platformText: { color: t.text, fontSize: 14, fontWeight: '700' }, mutedText: { color: t.textDisabled }, status: { minWidth: 48, alignItems: 'center', paddingVertical: 6, paddingHorizontal: 9, borderRadius: 99 }, statusLive: { backgroundColor: t.accentSoft }, statusSoon: { backgroundColor: t.background }, statusText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
-  future: { marginTop: 22, flexDirection: 'row', gap: 22 }, futureIntro: { flex: 1, minHeight: 330, justifyContent: 'flex-end', padding: 34, borderRadius: 16, backgroundColor: t.primaryStrong }, futureTitle: { color: t.onPrimary, fontSize: 34, lineHeight: 39, fontWeight: '800', letterSpacing: -1 }, futureBody: { color: t.onPrimary, opacity: 0.82, fontSize: 15, lineHeight: 24, marginTop: 14, maxWidth: 480 }, keyboard: { flex: 1, minHeight: 330, padding: 30, borderRadius: 16, backgroundColor: t.surface, borderWidth: 1, borderColor: t.borderSubtle }, keyboardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 48 }, keyboardTitle: { color: t.text, fontSize: 25, lineHeight: 31, fontWeight: '800', letterSpacing: -0.7, marginBottom: 10 }, keyRow: { flexDirection: 'row', gap: 8, marginTop: 28 }, key: { flex: 1, minHeight: 47, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: t.surfaceAlt, borderWidth: 1, borderColor: t.borderSubtle }, keyActive: { flex: 1.8, backgroundColor: t.primaryStrong, borderColor: t.primaryStrong }, keyText: { color: t.textMuted, fontSize: 11, fontWeight: '700' },
-  finalCta: { marginTop: 92, paddingVertical: 42, borderTopWidth: 1, borderBottomWidth: 1, borderColor: t.borderSubtle, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 26 }, finalCtaCompact: { flexDirection: 'column', alignItems: 'stretch' }, finalTitle: { color: t.text, fontSize: 31, lineHeight: 37, fontWeight: '800', letterSpacing: -0.9 }, finalBody: { color: t.textMuted, fontSize: 14, marginTop: 8 }, footer: { paddingVertical: 34, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 }, footerLink: { color: t.text, fontSize: 12, fontWeight: '700', paddingVertical: 4 },
+  hero: { minHeight: 620, flexDirection: 'row', alignItems: 'center', gap: 70, paddingVertical: 86 },
+  heroCompact: { flexDirection: 'column', alignItems: 'stretch', gap: 44, minHeight: 0, paddingTop: 58, paddingBottom: 70 },
+  heroCopy: { flex: 1 },
+  title: { color: t.text, fontSize: 68, lineHeight: 72, letterSpacing: -2.2, fontWeight: '800', maxWidth: 600 },
+  titleCompact: { fontSize: 44, lineHeight: 49, letterSpacing: -1.4 },
+  intro: { color: t.textMuted, fontSize: 18, lineHeight: 29, maxWidth: 490, marginTop: 25 },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 11, marginTop: 32 },
+  primary: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 20, borderRadius: 9, backgroundColor: t.primaryStrong },
+  primaryText: { color: t.onPrimary, fontSize: 14, fontWeight: '700' },
+  secondary: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 19, borderRadius: 9, borderWidth: 1, borderColor: t.border, backgroundColor: t.surface },
+  secondaryText: { color: t.text, fontSize: 14, fontWeight: '700' },
+  pressed: { opacity: .76 },
+  existingLink: { alignSelf: 'flex-start', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 11 },
+  existingText: { color: t.primary, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
+  demo: { width: '46%', maxWidth: 500, padding: 20, borderRadius: 13, borderWidth: 1, borderColor: t.border, backgroundColor: t.surface },
+  demoCompact: { width: '100%', maxWidth: 600, alignSelf: 'center' },
+  demoTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingBottom: 20 },
+  demoLabel: { color: t.textMuted, fontSize: 11, fontWeight: '800', letterSpacing: .7 },
+  exampleLabel: { color: t.textMuted, fontSize: 11, fontWeight: '800', letterSpacing: .7 },
+  note: { padding: 25, borderRadius: 9, backgroundColor: t.surfaceAlt },
+  noteMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  noteDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: t.accent },
+  noteMetaText: { color: t.textMuted, fontSize: 12, fontWeight: '700' },
+  noteTime: { color: t.textMuted, fontSize: 12, marginLeft: 'auto' },
+  noteText: { color: t.text, fontSize: 22, lineHeight: 31, fontWeight: '600', letterSpacing: -.4, marginTop: 28, marginBottom: 35 },
+  noteFooter: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  noteFooterText: { color: t.textMuted, fontSize: 12 },
+  transfer: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
+  transferLine: { flex: 1, height: 1, backgroundColor: t.borderSubtle },
+  transferIcon: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  linkPreview: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 17, borderRadius: 9, borderWidth: 1, borderColor: t.border },
+  linkSymbol: { width: 38, height: 38, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: t.primarySoft },
+  linkCopy: { flex: 1 },
+  linkTitle: { color: t.text, fontSize: 14, fontWeight: '700' },
+  linkDetail: { color: t.textMuted, fontSize: 12, marginTop: 4 },
+  demoBottom: { paddingTop: 18 }, demoBottomText: { color: t.textMuted, fontSize: 12 },
+  hairline: { height: 1, backgroundColor: t.borderSubtle },
+  story: { flexDirection: 'row', gap: 85, paddingVertical: 95 }, storyCompact: { flexDirection: 'column', gap: 38, paddingVertical: 70 },
+  storyIntro: { flex: 1 }, sectionTitle: { color: t.text, fontSize: 36, lineHeight: 43, fontWeight: '800', letterSpacing: -.9, maxWidth: 500 },
+  sectionIntro: { color: t.textMuted, fontSize: 15, lineHeight: 25, maxWidth: 510, marginTop: 16 },
+  storyPoints: { flex: 1.1 }, storyPoint: { flexDirection: 'row', gap: 25, paddingVertical: 22, borderTopWidth: 1, borderColor: t.borderSubtle },
+  pointNumber: { color: t.primary, fontSize: 12, fontWeight: '800', fontVariant: ['tabular-nums'], paddingTop: 2 }, pointBody: { flex: 1 },
+  pointTitle: { color: t.text, fontSize: 17, fontWeight: '700' }, pointText: { color: t.textMuted, fontSize: 14, lineHeight: 22, marginTop: 7 },
+  platformSection: { paddingTop: 75, paddingBottom: 85, borderTopWidth: 1, borderColor: t.borderSubtle }, sectionHeading: { marginBottom: 35 },
+  platforms: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  platform: { minWidth: 160, flexGrow: 1, flexBasis: 165, minHeight: 105, padding: 16, borderRadius: 10, borderWidth: 1, borderColor: t.border, backgroundColor: t.surface },
+  platformSoon: { backgroundColor: t.surfaceAlt, borderColor: t.borderSubtle },
+  platformName: { color: t.text, fontSize: 14, fontWeight: '700', marginTop: 12 }, platformNameSoon: { color: t.textMuted },
+  platformState: { position: 'absolute', top: 16, right: 16, fontSize: 10, fontWeight: '700' }, platformLive: { color: t.accent }, platformStateSoon: { color: t.textMuted },
+  upNext: { flexDirection: 'row', gap: 45, paddingTop: 32 }, upNextCompact: { flexDirection: 'column', gap: 18 },
+  nextItem: { flexDirection: 'row', alignItems: 'center', gap: 10 }, nextText: { color: t.text, fontSize: 14, fontWeight: '600' }, nextSoon: { color: t.textMuted, fontWeight: '400' },
+  close: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 35, padding: 44, borderRadius: 12, backgroundColor: '#283449' },
+  closeCompact: { flexDirection: 'column', alignItems: 'stretch', padding: 28 }, closeTitle: { color: '#f6f5f1', fontSize: 32, lineHeight: 38, fontWeight: '800', letterSpacing: -.7 },
+  closeText: { color: '#dce3e6', fontSize: 14, lineHeight: 23, maxWidth: 590, marginTop: 10 },
+  closeAction: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 16, borderRadius: 8, backgroundColor: '#f6f5f1' },
+  closeActionText: { color: '#283449', fontSize: 13, fontWeight: '700' },
+  footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 95 }, footerText: { color: t.textMuted, fontSize: 12 }, footerLink: { color: t.text, fontSize: 12, fontWeight: '600' },
 });

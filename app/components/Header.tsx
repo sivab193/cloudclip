@@ -4,7 +4,7 @@ import { StyleSheet, View, Text, TouchableOpacity, Image, useWindowDimensions, P
 import { useAuth } from '@/auth/AuthContext'; // Import AuthContext
 import { useRouter } from 'expo-router';
 import { ThemeTokens } from '@/constants/Colors';
-import { useTheme, useThemedStyles } from '@/hooks/useTheme';
+import { setThemePreference, useTheme, useThemeName, useThemedStyles } from '@/hooks/useTheme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import RegionPicker from './RegionPicker';
 import { deploymentMode } from '@/config/regions';
@@ -20,6 +20,7 @@ const Header = () => {
   const [isRegionVisible, setRegionVisible] = useState(false);
   const styles = useThemedStyles(makeStyles);
   const t = useTheme();
+  const themeName = useThemeName();
   const { user } = useAuth()
 
   const openModal = () => deploymentMode === 'gateway' ? setRegionVisible(true) : setModalVisible(true);
@@ -38,7 +39,7 @@ const Header = () => {
   return (
     <View style={styles.headerWrap}>
     <View style={[styles.header, compact && { paddingHorizontal: 14, gap: 8 }]}>
-      <TouchableOpacity style={styles.logoContainer} onPress={navigateToHome} activeOpacity={0.7}>
+      <TouchableOpacity accessibilityRole="link" accessibilityLabel="CloudClip home" style={styles.logoContainer} onPress={navigateToHome} activeOpacity={0.7}>
         <Image
           source={require('@/assets/images/logo.png')}
           style={styles.logo}
@@ -57,8 +58,12 @@ const Header = () => {
         {!compact ? <TouchableOpacity accessibilityRole="link" onPress={() => router.push('/privacy')}>
           <Text style={styles.privacyLink}>Privacy</Text>
         </TouchableOpacity> : null}
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Switch to ${themeName === 'dark' ? 'light' : 'dark'} mode`} onPress={() => setThemePreference(themeName === 'dark' ? 'light' : 'dark')} style={styles.themeButton}>
+          <Ionicons name={themeName === 'dark' ? 'sunny-outline' : 'moon-outline'} size={19} color={t.text} />
+          {!compact ? <Text style={styles.themeLabel}>{themeName === 'dark' ? 'Light' : 'Dark'}</Text> : null}
+        </TouchableOpacity>
       {!user ? (
-        <TouchableOpacity style={styles.loginButton} onPress={openModal}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Get started" style={styles.loginButton} onPress={openModal}>
           <Text style={styles.loginButtonText}>{compact ? 'Enter' : 'Get started'}</Text>
           <Ionicons name="arrow-forward" size={16} color={t.onPrimary} />
         </TouchableOpacity>
@@ -78,24 +83,18 @@ const Header = () => {
 const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   headerWrap: {
     width: '100%',
-    paddingHorizontal: Platform.OS === 'web' ? 18 : 10,
-    paddingTop: Platform.OS === 'web' ? 14 : 6,
+    paddingHorizontal: Platform.OS === 'web' ? 22 : 10,
+    borderBottomWidth: 1,
+    borderColor: t.borderSubtle,
+    backgroundColor: t.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingHorizontal: 0,
+    paddingVertical: 16,
     width: '100%', maxWidth: 1240, alignSelf: 'center',
-    borderWidth: 1, borderColor: t.borderSubtle,
-    borderRadius: 20,
-    backgroundColor: t.glass,
-    shadowColor: t.shadow,
-    shadowOpacity: 0.08,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 4,
   },
   logoContainer: {
     flexDirection: 'row',
@@ -104,22 +103,22 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   logo: {
     // Square now that the logo is the app mark rather than a wide cloud —
     // the old 65x40 box would squash it.
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    marginRight: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    marginRight: 9,
   },
   headerTitle: {
-    fontSize: 20,
-    letterSpacing: -0.7,
-    fontWeight: 'bold',
+    fontSize: 19,
+    letterSpacing: -0.5,
+    fontWeight: '800',
     color: t.text,
   },
   loginButton: {
     minHeight: 42,
     paddingVertical: 11, paddingHorizontal: 17,
     backgroundColor: t.primaryStrong,
-    borderRadius: 13,
+    borderRadius: 9,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
@@ -135,6 +134,8 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     fontWeight: 'bold',
   },
   navActions: { flexDirection: 'row', alignItems: 'center', gap: 20 },
+  themeButton: { minWidth: 44, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 8, borderRadius: 8 },
+  themeLabel: { color: t.text, fontSize: 13, fontWeight: '600' },
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 99, backgroundColor: t.accentSoft, borderWidth: 1, borderColor: t.borderSubtle },
   statusDot: { width: 7, height: 7, borderRadius: 9, backgroundColor: t.accent },
   statusText: { fontSize: 11, fontWeight: '600', color: t.textMuted, letterSpacing: 0.2 },

@@ -58,34 +58,34 @@ export interface ThemeTokens {
   tabIconSelected: string;
 }
 
-const tintColorLight = '#6850d8';
-const tintColorDark = '#b9a8ff';
+const tintColorLight = '#5142a0';
+const tintColorDark = '#b8adff';
 
 const light: ThemeTokens = {
-  background: '#f5f5fb',
+  background: '#f6f5f1',
   surface: '#ffffff',
-  surfaceAlt: '#efedf9',
-  surfaceDisabled: '#e6e8ea',
+  surfaceAlt: '#f0efe9',
+  surfaceDisabled: '#e6e5df',
 
-  text: '#202039',
-  textMuted: '#6a6a80',
-  textDisabled: '#4a5568',
-  placeholder: '#77778c',
+  text: '#1d2530',
+  textMuted: '#56616d',
+  textDisabled: '#6c757c',
+  placeholder: '#67717a',
 
-  border: '#d8d8e7',
-  borderSubtle: '#e6e5ef',
+  border: '#cfd2d2',
+  borderSubtle: '#e3e4df',
 
-  primary: '#6850d8',
-  primaryStrong: '#5038c6',
-  primarySoft: 'rgba(104, 80, 216, 0.13)',
+  primary: '#5142a0',
+  primaryStrong: '#3e327f',
+  primarySoft: '#ede9fb',
   onPrimary: '#ffffff',
   danger: '#b00020',
   onDanger: '#ffffff',
-  accent: '#1a7f37',
-  accentSoft: 'rgba(16, 185, 129, 0.11)',
-  glass: 'rgba(255, 255, 255, 0.88)',
+  accent: '#216b54',
+  accentSoft: '#e5f3eb',
+  glass: '#ffffff',
 
-  icon: '#57516e',
+  icon: '#495463',
   overlay: 'rgba(0, 0, 0, 0.5)',
   shadow: '#000000',
 
@@ -95,32 +95,32 @@ const light: ThemeTokens = {
 };
 
 const dark: ThemeTokens = {
-  background: '#09090f',
-  surface: '#14131f',
-  surfaceAlt: '#201d31',
-  surfaceDisabled: '#2b2f31',
+  background: '#10151b',
+  surface: '#1b222b',
+  surfaceAlt: '#242d36',
+  surfaceDisabled: '#303942',
 
-  text: '#ECEDEE',
-  textMuted: '#9BA1A6',
-  textDisabled: '#8a9296',
-  placeholder: '#6b7175',
+  text: '#f0f2ef',
+  textMuted: '#bac4ca',
+  textDisabled: '#a6b0b6',
+  placeholder: '#a4afb5',
 
-  border: '#45405d',
-  borderSubtle: '#302d44',
+  border: '#48525c',
+  borderSubtle: '#36414b',
 
   // Inverted: a light fill with dark text reads as "primary" on a dark page.
-  primary: '#b9a8ff',
-  primaryStrong: '#8e75ff',
-  primarySoft: 'rgba(142, 117, 255, 0.16)',
-  onPrimary: '#19132f',
+  primary: '#b8adff',
+  primaryStrong: '#b8adff',
+  primarySoft: '#302d49',
+  onPrimary: '#171b27',
   // #b00020 fails contrast on a dark surface; this is the lightened pair.
   danger: '#ff6b6b',
   onDanger: '#151718',
-  accent: '#3fb950',
-  accentSoft: 'rgba(45, 212, 191, 0.12)',
-  glass: 'rgba(20, 19, 31, 0.90)',
+  accent: '#8bdbb2',
+  accentSoft: '#20392f',
+  glass: '#1b222b',
 
-  icon: '#ECEDEE',
+  icon: '#d4dadc',
   overlay: 'rgba(0, 0, 0, 0.7)',
   shadow: '#000000',
 
