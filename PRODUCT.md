@@ -24,7 +24,7 @@ The web app is available now. Users choose an active geographic region before si
 
 ## Capabilities and Constraints
 
-- Text clips are supported today.
+- Text clips are supported today, including account-free encrypted sharing.
 - Clipboard content is encrypted on the client before upload.
 - Expiring encrypted links can be opened without an account when the complete URL is available.
 - India and US deployments use independent regional application and database infrastructure.

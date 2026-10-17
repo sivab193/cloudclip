@@ -271,6 +271,25 @@ describe('REST routes', () => {
       await create(asB, 'AbCdEfGh').expect(409);
     });
 
+    it('creates an encrypted anonymous share without an account identity', async () => {
+      const res = await request(bundle.app)
+        .post('/api/shared/anonymous')
+        .send({ content: 'encrypted-envelope', code: 'AnonLink', ttlDays: 1 })
+        .expect(201);
+      expect(res.body.code).toBe('AnonLink');
+      expect(res.body.userId).toBeUndefined();
+      const stored = await Shared.findOne({ code: 'AnonLink' });
+      expect(stored?.content).toBe('encrypted-envelope');
+      expect(stored?.userId).toBeUndefined();
+    });
+
+    it('rejects oversized expiry for anonymous shares', async () => {
+      await request(bundle.app)
+        .post('/api/shared/anonymous')
+        .send({ content: 'encrypted-envelope', code: 'AnonWeek', ttlDays: 30 })
+        .expect(400);
+    });
+
     it('rejects malformed codes', async () => {
       await create(asA, 'short').expect(400);
       await create(asA, 'has 0 l!').expect(400);

@@ -6,7 +6,7 @@ export interface IShared extends Document {
   // share token. The server only ever stores the 8-char lookup code, which by
   // itself cannot decrypt the content.
   content: string;
-  userId: string;
+  userId?: string;
   code: string;
   // Share-link key wrapped with the owner's master key, so the owner's own
   // devices can re-display the link/token later.
@@ -22,7 +22,7 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const SharedSchema: Schema = new Schema({
   clipboardId: { type: String, maxlength: 64 },
   content: { type: String, required: true, maxlength: 200_000 },
-  userId: { type: String, required: true },
+  userId: { type: String },
   code: { type: String, required: true, unique: true, maxlength: 32 },
   ownerWrappedKey: { type: String, maxlength: 512 },
   ownerWrapNonce: { type: String, maxlength: 64 },

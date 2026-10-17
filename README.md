@@ -2,6 +2,8 @@
 
 CloudClip is a private clipboard cloud for syncing encrypted text and sharing it through expiring encrypted links. The web app is available now. iOS, Android, macOS, Windows and Linux apps are on the roadmap.
 
+Anyone can create a client-side encrypted, expiring text link without registering. Anonymous shares are rate-limited, expire after one or seven days, and are not attached to an account history.
+
 Clipboard content is encrypted on the client. Automatic clipboard access is opt-in and runs only while the app is visible. Encrypted file transfer, a custom CloudClip keyboard, native apps and a user-friendly self-hosted edition are coming soon. Images, background clipboard monitoring and an offline write queue are not implemented today.
 
 ## How the regional deployment works

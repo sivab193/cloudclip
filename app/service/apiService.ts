@@ -184,6 +184,16 @@ class ApiService {
     return res.json();
   }
 
+  async createAnonymousSharedLink(params: { content: string; code: string; ttlDays: 1 | 7 }): Promise<Pick<Shared, 'code' | 'createdAt' | 'expiryAt'>> {
+    const res = await fetch(`${BACKEND_URL}/shared/anonymous`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    await ensureOk(res, 'Could not create the shared link');
+    return res.json();
+  }
+
   async getSharedLinkByCode(code: string): Promise<PublicShared> {
     // Public route, no auth headers needed
     const res = await fetch(`${BACKEND_URL}/shared/${encodeURIComponent(code)}`);

@@ -46,6 +46,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="shared/index" options={{ headerShown: false }} />
         <Stack.Screen name="shared/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="share" options={{ headerShown: false }} />
         <Stack.Screen name="privacy" options={{ headerShown: false }} />
         <Stack.Screen name="delete-account" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />

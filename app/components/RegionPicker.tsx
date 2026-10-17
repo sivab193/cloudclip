@@ -9,7 +9,7 @@ type RegionState = 'checking' | 'available' | 'unavailable';
 
 interface Props {
   visible: boolean;
-  destination?: '/' | '/shared';
+  destination?: '/' | '/shared' | '/share';
   onClose: () => void;
 }
 

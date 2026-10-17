@@ -38,6 +38,39 @@ const createSchema = z.object({
   keyId: z.uuid().nullable().optional(),
 });
 
+const anonymousCreateSchema = createSchema.pick({ content: true, code: true }).extend({
+  ttlDays: z.number().int().min(1).max(7).default(1),
+});
+
+const anonymousCreateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Create an account-free encrypted share. The server receives only ciphertext
+// and the public lookup prefix; the full decryption token stays in the URL hash.
+router.post('/anonymous', anonymousCreateLimiter, validate(anonymousCreateSchema), async (req, res, next) => {
+  try {
+    const { content, code, ttlDays } = req.body;
+    const shared = new Shared({
+      content,
+      code,
+      expiryAt: new Date(Date.now() + ttlDays * DAY_MS),
+    });
+    await shared.save();
+    res.status(201).json({
+      code: shared.code,
+      createdAt: shared.createdAt,
+      expiryAt: shared.expiryAt,
+    });
+  } catch (error: any) {
+    if (error?.code === 11000) return res.status(409).json({ error: 'Code already in use' });
+    next(error);
+  }
+});
+
 // Create a new shared link
 router.post('/', verifyFirebaseToken, validate(createSchema), mutation(async (req, res, next) => {
   try {

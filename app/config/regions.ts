@@ -31,7 +31,7 @@ export const regions: CloudClipRegion[] = [
   },
 ];
 
-export async function openRegion(region: CloudClipRegion, path = '/'): Promise<void> {
+export async function openRegion(region: CloudClipRegion, path: '/' | '/shared' | '/share' = '/'): Promise<void> {
   const suffix = path.startsWith('/') ? path : `/${path}`;
   const fragment = Platform.OS === 'web' && typeof window !== 'undefined' && suffix === '/shared'
     ? window.location.hash

@@ -32,6 +32,13 @@ export interface ShareResult {
     shared: Shared;
 }
 
+export interface AnonymousShareResult {
+    token: string;
+    url: string;
+    displayCode: string;
+    expiryAt?: string;
+}
+
 /**
  * The token is the decryption key, so it goes in the URL *fragment*: browsers
  * never send fragments to the server, keeping it out of hosting/CDN access
@@ -90,6 +97,31 @@ export const createShare = async (
         }
     }
     throw new Error('Failed to create shared link, please try again');
+};
+
+/** Create an E2E-encrypted share without an account or owner metadata. */
+export const createAnonymousShare = async (plaintext: string, ttlDays: 1 | 7 = 1): Promise<AnonymousShareResult> => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+        const token = generateShareToken();
+        const content = encryptEntry(deriveShareKey(token), plaintext);
+        try {
+            const shared = await apiService.createAnonymousSharedLink({
+                content,
+                code: shareCodeFromToken(token),
+                ttlDays,
+            });
+            return {
+                token,
+                url: getSharedLinkURL(token),
+                displayCode: formatShareToken(token),
+                expiryAt: shared.expiryAt,
+            };
+        } catch (error) {
+            if (error instanceof ApiError && error.status === 409) continue;
+            throw error;
+        }
+    }
+    throw new Error('Could not create a unique shared link; try again');
 };
 
 /** Recover the full share token for a link the current user owns. */
