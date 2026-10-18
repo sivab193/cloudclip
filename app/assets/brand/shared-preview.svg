@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#F6F5F1"/>
+  <rect x="0" y="0" width="1200" height="12" fill="#5142A0"/>
+  <rect x="76" y="72" width="68" height="68" rx="15" fill="#283449"/>
+  <g transform="translate(76 72) scale(.06640625)">
+    <path d="M686 286H414c-126 0-228 102-228 228s102 228 228 228h272" fill="none" stroke="#F6F5F1" stroke-width="100" stroke-linecap="round"/>
+    <path d="M679 237v98M679 693v98" fill="none" stroke="#A99BF4" stroke-width="100" stroke-linecap="round"/>
+  </g>
+  <g font-family="Helvetica Neue, Arial, sans-serif">
+    <text x="164" y="117" font-size="32" font-weight="700" fill="#1D2530">CloudClip</text>
+    <text x="76" y="270" font-size="68" font-weight="700" letter-spacing="-1.5" fill="#1D2530">A private clip</text>
+    <text x="76" y="350" font-size="68" font-weight="700" letter-spacing="-1.5" fill="#1D2530">is waiting.</text>
+    <text x="80" y="426" font-size="27" fill="#56616D">Open encrypted text. No account needed.</text>
+    <text x="80" y="553" font-size="21" font-weight="700" fill="#5142A0">PRIVATE • EXPIRING • EASY TO COPY</text>
+  </g>
+  <rect x="800" y="88" width="314" height="454" rx="18" fill="#283449"/>
+  <rect x="852" y="150" width="48" height="48" rx="12" fill="#3E327F"/>
+  <path d="M866 171v-7a10 10 0 0 1 20 0v7m-23 0h26v21h-26z" fill="none" stroke="#F6F5F1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="852" y="243" width="194" height="14" rx="7" fill="#F6F5F1" opacity=".96"/>
+  <rect x="852" y="283" width="210" height="11" rx="5.5" fill="#DCE3E6" opacity=".68"/>
+  <rect x="852" y="315" width="176" height="11" rx="5.5" fill="#DCE3E6" opacity=".68"/>
+  <rect x="852" y="347" width="222" height="11" rx="5.5" fill="#DCE3E6" opacity=".68"/>
+  <rect x="852" y="417" width="134" height="48" rx="9" fill="#B8ADFF"/>
+  <text x="886" y="448" font-family="Helvetica Neue, Arial, sans-serif" font-size="17" font-weight="700" fill="#171B27">Open clip</text>
+</svg>

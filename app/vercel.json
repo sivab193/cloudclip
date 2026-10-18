@@ -4,6 +4,11 @@
     "devCommand": "npx expo start",
     "cleanUrls": true,
     "framework": null,
+    "functions": {
+        "api/share-preview.js": {
+            "includeFiles": "dist/index.html"
+        }
+    },
     "headers": [
         {
             "source": "/.well-known/apple-app-site-association",
@@ -26,6 +31,10 @@
         }
     ],
     "rewrites": [
+        {
+            "source": "/s/:code",
+            "destination": "/api/share-preview?code=:code"
+        },
         {
             "source": "/:path*",
             "destination": "/"
