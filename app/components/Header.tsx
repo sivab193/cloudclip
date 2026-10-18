@@ -62,13 +62,19 @@ const Header = () => {
         {!compact ? <TouchableOpacity accessibilityRole="link" onPress={() => router.push('/privacy')}>
           <Text style={styles.privacyLink}>Privacy</Text>
         </TouchableOpacity> : null}
+        {deploymentMode === 'regional' ? (
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Change data region" onPress={() => setRegionVisible(true)} style={styles.themeButton}>
+            <Ionicons name="globe-outline" size={19} color={t.text} />
+            {!compact ? <Text style={styles.themeLabel}>Region</Text> : null}
+          </TouchableOpacity>
+        ) : null}
         <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Switch to ${themeName === 'dark' ? 'light' : 'dark'} mode`} onPress={() => setThemePreference(themeName === 'dark' ? 'light' : 'dark')} style={styles.themeButton}>
           <Ionicons name={themeName === 'dark' ? 'sunny-outline' : 'moon-outline'} size={19} color={t.text} />
           {!compact ? <Text style={styles.themeLabel}>{themeName === 'dark' ? 'Light' : 'Dark'}</Text> : null}
         </TouchableOpacity>
       {!user ? (
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Get started" style={[styles.loginButton, compact && styles.loginButtonCompact]} onPress={openModal}>
-          <Text style={styles.loginButtonText}>{compact ? 'Enter' : 'Get started'}</Text>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Log in or sign up" style={[styles.loginButton, compact && styles.loginButtonCompact]} onPress={openModal}>
+          <Text style={styles.loginButtonText}>{compact ? 'Log in' : 'Log in / Sign up'}</Text>
           {!tiny && <Ionicons name="arrow-forward" size={16} color={t.onPrimary} />}
         </TouchableOpacity>
       ) : null}
@@ -128,7 +134,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
     alignItems: 'center',
     gap: 9,
   },
-  loginButtonCompact: { paddingHorizontal: 11, gap: 6 },
+  loginButtonCompact: { paddingHorizontal: 10, gap: 5 },
   privacyLink: {
     fontSize: 14,
     color: t.textMuted,

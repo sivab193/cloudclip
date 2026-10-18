@@ -12,6 +12,7 @@ import { AuthProvider } from '@/auth/AuthContext';
 import UnlockModal from '@/components/UnlockModal';
 import React from 'react';
 import { restoreThemePreference, useThemeName } from '@/hooks/useTheme';
+import { rememberCurrentRegion } from '@/config/regions';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -43,6 +44,7 @@ export default function RootLayout() {
   }, [loaded, error]);
 
   useEffect(() => { void restoreThemePreference(); }, []);
+  useEffect(() => { rememberCurrentRegion(); }, []);
 
   if (!loaded && !error) {
     return null;

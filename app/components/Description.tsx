@@ -48,7 +48,7 @@ export default function Description() {
             <Ionicons name="arrow-forward" size={18} color={t.onPrimary} />
           </Pressable>
           <Pressable accessibilityRole="button" onPress={() => go('/')} style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
-            <Text style={styles.secondaryText}>Open my clipboard</Text>
+            <Text style={styles.secondaryText}>Log in / Sign up</Text>
           </Pressable>
         </View>
         <Pressable accessibilityRole="link" onPress={() => go('/shared')} style={styles.existingLink}>

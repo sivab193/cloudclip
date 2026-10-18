@@ -12,7 +12,7 @@ export default function SharePage() {
       if (Platform.OS === 'web' && typeof window !== 'undefined') window.location.assign('/');
       else router.replace('/');
     };
-    return <View style={{ flex: 1 }}><RegionPicker visible destination="/share" onClose={close} /></View>;
+    return <View style={{ flex: 1 }}><RegionPicker visible destination="/share" redirectRemembered onClose={close} /></View>;
   }
   return <PublicShareComposer />;
 }

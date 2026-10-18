@@ -31,7 +31,7 @@ export default function About() {
 
         <View style={styles.section}>
           <Text style={styles.heading}>Your region, your data</Text>
-          <Text style={styles.body}>Choose India or the United States before signing in. The same login works in both, but each region keeps its own encrypted clips, keys, and shared links. Switching regions does not move your data.</Text>
+          <Text style={styles.body}>CloudClip recommends the nearest available region before you sign in. The United States region is live now; India is coming soon. Your browser remembers your choice, and you can switch regions whenever you need to.</Text>
         </View>
 
         <View style={styles.section}>

@@ -16,6 +16,7 @@ import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import AmbientBackdrop from '@/components/AmbientBackdrop';
 import Reveal from '@/components/Reveal';
 import SiteFooter from '@/components/SiteFooter';
+import GatewayRegionRedirect from '@/components/GatewayRegionRedirect';
 
 export default function Homepage() {
  const t = useTheme();
@@ -73,6 +74,7 @@ export default function Homepage() {
  };
 	return (
 		<>
+			<GatewayRegionRedirect />
 			<Alert message={alertMessage} visible={alertVisible} />
 			<Confirmation
 				message="Delete all clipboard entries?"

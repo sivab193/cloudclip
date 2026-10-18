@@ -5,7 +5,7 @@ CloudClip runs two independent data regions behind one public gateway.
 | Surface | URL | Backend | Database |
 | --- | --- | --- | --- |
 | Gateway | `https://cclip.cc` | Health checks only | None |
-| India | `https://in.cclip.cc` | `https://api.in.cclip.cc` | India MongoDB cluster |
+| India (coming soon) | `https://in.cclip.cc` | `https://api.in.cclip.cc` | India MongoDB cluster |
 | United States | `https://us.cclip.cc` | `https://api-us.cclip.cc` | US MongoDB cluster |
 
 The regions do not replicate. Users must select the same region on every device they want to sync. Shared links use the originating regional web hostname.
@@ -19,7 +19,7 @@ Store the US MongoDB URL and Firebase Admin credentials in `backend/.env` on the
 Vercel receives only public `EXPO_PUBLIC_*` values. Create three projects from the `app` root:
 
 - Gateway: `EXPO_PUBLIC_DEPLOYMENT_MODE=gateway`, `EXPO_PUBLIC_WEB_URL=https://cclip.cc`.
-- India: `EXPO_PUBLIC_DEPLOYMENT_MODE=regional`, `EXPO_PUBLIC_API_URL=https://api.in.cclip.cc`, `EXPO_PUBLIC_WEB_URL=https://in.cclip.cc`.
+- India (coming soon): `EXPO_PUBLIC_DEPLOYMENT_MODE=regional`, `EXPO_PUBLIC_API_URL=https://api.in.cclip.cc`, `EXPO_PUBLIC_WEB_URL=https://in.cclip.cc`.
 - US: `EXPO_PUBLIC_DEPLOYMENT_MODE=regional`, `EXPO_PUBLIC_API_URL=https://api-us.cclip.cc`, `EXPO_PUBLIC_WEB_URL=https://us.cclip.cc`.
 
 All three projects use the same public Firebase web configuration. Add `cclip.cc`, `in.cclip.cc`, and `us.cclip.cc` to Firebase Authentication's authorized domains.

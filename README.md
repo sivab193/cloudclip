@@ -14,9 +14,9 @@ The web interface supports light and dark appearance. It follows the device them
 
 ## How the regional deployment works
 
-`cclip.cc` is the public gateway. Before signing in or opening a shared clip, a visitor chooses an available region. The gateway then redirects to the matching regional web app:
+`cclip.cc` is the public gateway. It remembers a visitor's last selected region and returns them there on later visits. For a new visitor, the region selector uses Vercel's approximate IP-location headers to recommend the nearest region that is currently available; the visitor can choose another live region before continuing.
 
-- India: `in.cclip.cc` → `api.in.cclip.cc` → India backend → Mumbai MongoDB cluster
+- India: Mumbai deployment — coming soon and not currently selectable
 - United States: `us.cclip.cc` → `api-us.cclip.cc` → US backend → N. Virginia MongoDB cluster
 
 Each backend runs as a Docker container beside Redis. Redis backs distributed rate limiting and Socket.IO event delivery. Regional data stays in that region's MongoDB cluster; the clusters are intentionally independent rather than cross-region replicas.

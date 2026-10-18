@@ -4,7 +4,7 @@ The release architecture is one independent Node + Redis + MongoDB stack per dat
 
 ## Current verification
 
-The Vercel gateway, India, and US builds have been created. Public custom domains and both API health checks must succeed before treating the service as live. This repository cannot prove that production credentials have been rotated.
+The Vercel gateway and US build are live. The India deployment is prepared but remains a coming-soon region and is not selectable. Public custom domains and API health checks must succeed before treating any region as live. This repository cannot prove that production credentials have been rotated.
 
 ## Configure
 

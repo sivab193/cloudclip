@@ -29,7 +29,7 @@ The web app is available now. Users choose an active geographic region before si
 - Text clips are supported today, including account-free encrypted sharing.
 - Clipboard content is encrypted on the client before upload.
 - Expiring encrypted links can be opened without an account when the complete URL is available.
-- India and US deployments use independent regional application and database infrastructure.
+- The US region is available today. The independent India deployment is coming soon.
 - Files, background clipboard monitoring, native platform releases, custom keyboard integration, and end-user self-hosting are not yet available and must be labeled as coming soon.
 
 ## Brand Commitments

@@ -19,7 +19,7 @@ export default function Page() {
     router.replace('/');
   };
   if (deploymentMode === 'gateway') {
-    return <View style={{ flex: 1 }}><RegionPicker visible destination="/shared" onClose={returnToGateway} /></View>;
+    return <View style={{ flex: 1 }}><RegionPicker visible destination="/shared" redirectRemembered onClose={returnToGateway} /></View>;
   }
   return <SharedContent />;
 }
