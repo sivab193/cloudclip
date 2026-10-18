@@ -1,4 +1,4 @@
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
@@ -21,7 +21,7 @@ const platforms = [
   { name: 'Linux', icon: 'terminal-outline', live: false },
 ] as const;
 
-export default function Description() {
+export default function Description({ openLoginInitially = false }: { openLoginInitially?: boolean }) {
   const styles = useThemedStyles(makeStyles);
   const t = useTheme();
   const router = useRouter();
@@ -30,6 +30,10 @@ export default function Description() {
   const compact = !hydrated || width < 860;
   const [login, setLogin] = useState(false);
   const [regionDestination, setRegionDestination] = useState<'/' | '/shared' | '/share' | null>(null);
+
+  useEffect(() => {
+    if (openLoginInitially) setLogin(true);
+  }, [openLoginInitially]);
 
   const go = (destination: '/' | '/shared' | '/share') => {
     if (deploymentMode === 'gateway') setRegionDestination(destination);

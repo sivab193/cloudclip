@@ -24,8 +24,10 @@ import Reveal from '@/components/Reveal';
 import PasswordField from '@/components/PasswordField';
 import PasswordStrength from '@/components/PasswordStrength';
 import { passwordAssessment } from '@/utils/passwordStrength';
+import { useRouter } from 'expo-router';
 
 export default function Account() {
+    const router = useRouter();
     const t = useTheme();
     const styles = useThemedStyles(makeStyles);
     const [name, setName] = useState('');
@@ -35,7 +37,7 @@ export default function Account() {
     const [formDeviceName, setFormDeviceName] = useState('');
     const [isWideScreen, setIsWideScreen] = useState(Dimensions.get('window').width >= 768);
 
-    const { user, logout, encryptionReady } = useAuth();
+    const { user, authReady, logout, encryptionReady } = useAuth();
     const email = user?.email || '';
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
@@ -87,6 +89,12 @@ export default function Account() {
 
         return () => { active = false; subscription.remove(); };
     }, [user, deviceId]);
+
+    useEffect(() => {
+        if (authReady && !user) {
+            router.replace({ pathname: '/', params: { login: '1' } });
+        }
+    }, [authReady, router, user]);
 
     const handleSaveName = async () => {
         if (!user) return;
@@ -222,6 +230,10 @@ export default function Account() {
             </View>
         );
     };
+
+    // Authentication is still restoring, or this route is on its way back to
+    // the homepage login flow. Do not render a dead-end guest account screen.
+    if (!authReady || !user) return null;
 
     return (
         <>
@@ -414,14 +426,7 @@ export default function Account() {
                                     <Text style={styles.logoutButtonText}>Sign out</Text>
                                 </TouchableOpacity>
                             </View>
-                        ) : (
-                            <ThemedView style={styles.containerCenter}>
-                                <Ionicons name="hand-left-outline" size={24} color={t.icon} />
-                                <ThemedText type="subtitle" style={styles.text}>Hi there! {'\n'}</ThemedText>
-                                <ThemedText type="subtitle" style={styles.text}>Welcome! Please log in to access your account and enjoy personalized features.
-                                </ThemedText>
-                            </ThemedView>
-                        )}
+                        ) : null}
                     </ThemedView >
                     </Reveal>
                 </SafeAreaView >

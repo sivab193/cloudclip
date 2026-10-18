@@ -17,8 +17,10 @@ import AmbientBackdrop from '@/components/AmbientBackdrop';
 import Reveal from '@/components/Reveal';
 import SiteFooter from '@/components/SiteFooter';
 import GatewayRegionRedirect from '@/components/GatewayRegionRedirect';
+import { useLocalSearchParams } from 'expo-router';
 
 export default function Homepage() {
+ const { login } = useLocalSearchParams<{ login?: string }>();
  const t = useTheme();
  const styles = useThemedStyles(makeStyles);
  const [saveTextData, setSaveTextData] = useState('');
@@ -106,7 +108,7 @@ export default function Homepage() {
 					<Header />
 					<ThemedView style={styles.centerContainer}>
 						{!user ? (
-							<Description />
+							<Description openLoginInitially={login === '1'} />
 						) : (
 							<Reveal>
 							<View style={styles.workspace}>

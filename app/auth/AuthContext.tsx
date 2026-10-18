@@ -7,6 +7,8 @@ import { socketService } from '@/service/socketService';
 
 interface AuthContextProps {
   user: User | null;
+  /** True after Firebase has resolved the persisted sign-in state. */
+  authReady: boolean;
   authenticating: boolean;
   setAuthenticating: React.Dispatch<React.SetStateAction<boolean>>;
   logout: () => Promise<void>;
@@ -28,6 +30,7 @@ export const useAuth = () => {
 
 const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [encryptionReady, setEncryptionReady] = useState(false);
   const [authenticating, setAuthenticating] = useState(false);
   const generation = useRef(0);
@@ -48,6 +51,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       const current = ++generation.current;
       socketService.disconnect();
       setUser(nextUser);
+      setAuthReady(true);
       setEncryptionReady(false);
       try {
         if (nextUser) {
@@ -75,7 +79,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, authenticating, setAuthenticating, logout, encryptionReady, refreshEncryptionReady }}>
+    <AuthContext.Provider value={{ user, authReady, authenticating, setAuthenticating, logout, encryptionReady, refreshEncryptionReady }}>
       {children}
     </AuthContext.Provider>
   );
