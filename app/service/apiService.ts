@@ -173,7 +173,8 @@ class ApiService {
     ownerWrappedKey?: string;
     ownerWrapNonce?: string;
     clipboardId?: string;
-    ttlDays?: number;
+    token: string;
+    ttlMinutes?: number;
   }): Promise<Shared> {
     const res = await fetch(`${BACKEND_URL}/shared`, {
       method: 'POST',
@@ -184,7 +185,7 @@ class ApiService {
     return res.json();
   }
 
-  async createAnonymousSharedLink(params: { content: string; code: string; ttlDays: 1 | 7 }): Promise<Pick<Shared, 'code' | 'createdAt' | 'expiryAt'>> {
+  async createAnonymousSharedLink(params: { content: string; code: string; token: string; ttlMinutes: number }): Promise<Pick<Shared, 'code' | 'createdAt' | 'expiryAt'>> {
     const res = await fetch(`${BACKEND_URL}/shared/anonymous`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -208,6 +209,16 @@ class ApiService {
       headers: await this.getHeaders()
     });
     await ensureOk(res, 'Failed to delete shared link');
+  }
+
+  async updateSharedLinkExpiry(id: string, ttlMinutes: number): Promise<Shared> {
+    const res = await fetch(`${BACKEND_URL}/shared/${encodeURIComponent(id)}/expiry`, {
+      method: 'PATCH',
+      headers: await this.getHeaders(),
+      body: JSON.stringify({ ttlMinutes }),
+    });
+    await ensureOk(res, 'Failed to update shared link expiry');
+    return res.json();
   }
 
   async deleteAllSharedLinks(): Promise<void> {

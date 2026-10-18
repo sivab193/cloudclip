@@ -15,7 +15,7 @@ This is a historical release-candidate snapshot, not a current production status
 | Web static export | Pass |
 | Android JavaScript/Hermes export | Pass; not a native APK/AAB build |
 | Android native prebuild | Pass; generated project is ignored, not committed |
-| Browser smoke | Home, privacy, deletion and invalid-link pages at widths 1280, 390 and 320; sign-in opening/closing; encrypted share retrieval through bare/keyed fragments and internal navigation; no runtime errors |
+| Browser smoke | Home, privacy, deletion and invalid-link pages at widths 1280, 390 and 320; sign-in opening/closing; encrypted share retrieval through four-character codes, short URLs, legacy fragments and internal navigation; no runtime errors |
 | Store feature graphic | Rendered and visually inspected, 1024×500 PNG |
 
 Browser sharing used a synthetic encrypted response, not production accounts. It checked that only the eight-character public lookup prefix reaches the API. This is not proof that production authentication or synchronization works.
@@ -27,7 +27,7 @@ Browser sharing used a synthetic encrypted response, not production accounts. It
 - Key storage is account-scoped and ordered; recovery preserves independent KDF parameters. Recovery only unlocks after a successful key write.
 - Key updates use compare-and-set. Destructive reset/deletion reauthenticate the user, serialize mutations, and check token revocation.
 - Device ownership, malformed IDs, name preservation, socket expiry/rate limiting, cache boundaries and foreground clipboard consent are handled explicitly.
-- Web share fragments, static icon-font loading and dark-theme hydration are corrected. Sign-in has an explicit close action, and confirmation dialogs have safe back/dismiss handlers.
+- Short code-only links, legacy web share fragments, static icon-font loading and dark-theme hydration are supported. Sign-in has an explicit close action, and confirmation dialogs have safe back/dismiss handlers.
 - Removed unused helpers, duplicate screen/sync/deletion logic, unused `nanoid` dependencies and the unconfigured development-client build profile. Consolidating icons eliminates about 1.5 MB of raw font assets from the three single-icon fonts alone.
 - Replaced obsolete Redis/file-transfer/provider assumptions with [accepted architecture decisions](ARCHITECTURE.md), an [API contract](API.md), and deployment/rollback instructions. Dependency folders and generated build output are not source-code size.
 - CI validates both packages on relevant pushes. The former manual SSH backend deployment workflow was retired in October 2026; regional backends are deployed from their respective hosts.

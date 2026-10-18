@@ -65,7 +65,7 @@ export default function Description() {
           <View style={styles.noteFooter}><Ionicons name="lock-closed-outline" size={15} color={t.accent} /><Text style={styles.noteFooterText}>Encrypted before it leaves your browser</Text></View>
         </View>
         <View style={styles.transfer}><View style={styles.transferLine} /><View style={styles.transferIcon}><Ionicons name="arrow-down" size={17} color={t.primary} /></View><View style={styles.transferLine} /></View>
-        <View style={styles.linkPreview}><View style={styles.linkSymbol}><Ionicons name="link-outline" size={19} color={t.primary} /></View><View style={styles.linkCopy}><Text style={styles.linkTitle}>Private link ready</Text><Text style={styles.linkDetail}>Only the complete link opens the clip</Text></View><Ionicons name="arrow-forward" size={18} color={t.textMuted} /></View>
+        <View style={styles.linkPreview}><View style={styles.linkSymbol}><Ionicons name="link-outline" size={19} color={t.primary} /></View><View style={styles.linkCopy}><Text style={styles.linkTitle}>Private link ready</Text><Text style={styles.linkDetail}>Share the short link or 4-character code</Text></View><Ionicons name="arrow-forward" size={18} color={t.textMuted} /></View>
         <View style={styles.demoBottom}><Text style={styles.demoBottomText}>Nothing to install. No account needed to share.</Text></View>
       </View>
     </View>
@@ -76,7 +76,7 @@ export default function Description() {
       <View style={styles.storyPoints}>
         <View style={styles.storyPoint}><Text style={styles.pointNumber}>01</Text><View style={styles.pointBody}><Text style={styles.pointTitle}>Capture what matters</Text><Text style={styles.pointText}>A link, command, note, or idea. Add it to your encrypted stream.</Text></View></View>
         <View style={styles.storyPoint}><Text style={styles.pointNumber}>02</Text><View style={styles.pointBody}><Text style={styles.pointTitle}>Pick up where you left off</Text><Text style={styles.pointText}>Find and copy your text from the web on another device.</Text></View></View>
-        <View style={styles.storyPoint}><Text style={styles.pointNumber}>03</Text><View style={styles.pointBody}><Text style={styles.pointTitle}>Share, then let go</Text><Text style={styles.pointText}>Send an encrypted text link that expires after a day or a week.</Text></View></View>
+        <View style={styles.storyPoint}><Text style={styles.pointNumber}>03</Text><View style={styles.pointBody}><Text style={styles.pointTitle}>Share, then let go</Text><Text style={styles.pointText}>Send a short link or code that expires when you choose.</Text></View></View>
       </View>
     </View>
 

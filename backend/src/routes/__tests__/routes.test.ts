@@ -7,6 +7,8 @@ import Device from '../../models/Device';
 import Clipboard from '../../models/Clipboard';
 import Shared from '../../models/Shared';
 
+process.env.SHARE_TOKEN_ENCRYPTION_KEY = 'cloudclip-test-share-token-key';
+
 const deleteUserMock = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('firebase-admin/app', () => ({ getApps: () => [{}] }));
@@ -190,7 +192,7 @@ describe('REST routes', () => {
       await request(bundle.app).put('/api/users/me/keys').set(asA).send({ ...VALID_KEYS, keyId: newId }).expect(200);
       await request(bundle.app).post('/api/clipboards').set(asA).send(clip).expect(412);
       await request(bundle.app).post('/api/shared').set(asA)
-        .send({ code: 'AAAA', content: 'ciphertext', keyId: oldId }).expect(412);
+        .send({ code: 'AAAA', token: `AAAA0${'1'.repeat(27)}`, content: 'ciphertext', keyId: oldId }).expect(412);
       expect(await Clipboard.countDocuments()).toBe(0);
       expect(await Shared.countDocuments()).toBe(0);
       await request(bundle.app).post('/api/clipboards').set(asA).send({ ...clip, keyId: newId }).expect(201);
@@ -260,11 +262,12 @@ describe('REST routes', () => {
   });
 
   describe('shared links', () => {
+    const tokenFor = (code: string) => `${code}0${'1'.repeat(27)}`;
     const create = (headers: Record<string, string>, code: string, extra: object = {}) =>
       request(bundle.app)
         .post('/api/shared')
         .set(headers)
-        .send({ content: 'ciphertext-blob', code, ...extra });
+        .send({ content: 'ciphertext-blob', code, token: tokenFor(code), ...extra });
 
     it('stores the client-supplied code and 409s on collisions', async () => {
       await create(asA, 'AB12').expect(201);
@@ -274,7 +277,7 @@ describe('REST routes', () => {
     it('creates an encrypted anonymous share without an account identity', async () => {
       const res = await request(bundle.app)
         .post('/api/shared/anonymous')
-        .send({ content: 'encrypted-envelope', code: 'A7K2', ttlDays: 1 })
+        .send({ content: 'encrypted-envelope', code: 'A7K2', token: tokenFor('A7K2'), ttlMinutes: 60 })
         .expect(201);
       expect(res.body.code).toBe('A7K2');
       expect(res.body.userId).toBeUndefined();
@@ -286,7 +289,7 @@ describe('REST routes', () => {
     it('rejects oversized expiry for anonymous shares', async () => {
       await request(bundle.app)
         .post('/api/shared/anonymous')
-        .send({ content: 'encrypted-envelope', code: 'W7K2', ttlDays: 30 })
+        .send({ content: 'encrypted-envelope', code: 'W7K2', token: tokenFor('W7K2'), ttlMinutes: 43_200 })
         .expect(400);
     });
 
@@ -296,13 +299,24 @@ describe('REST routes', () => {
       await create(asA, 'AB-2').expect(400);
     });
 
-    it('public lookup returns only content/dates — never userId', async () => {
+    it('public lookup returns the recovered token but never owner identity', async () => {
       await create(asA, 'AB12').expect(201);
       const res = await request(bundle.app).get('/api/shared/AB12').expect(200);
       expect(res.body.content).toBe('ciphertext-blob');
+      expect(res.body.token).toBe(tokenFor('AB12'));
       expect(res.body.userId).toBeUndefined();
       expect(res.body._id).toBeUndefined();
       expect(res.body.expiryAt).toBeDefined();
+    });
+
+    it('lets only the signed-in owner change an active link expiry', async () => {
+      const created = await create(asA, 'CD34', { ttlMinutes: 10 }).expect(201);
+      const id = created.body._id;
+      await request(bundle.app).patch(`/api/shared/${id}/expiry`).set(asB).send({ ttlMinutes: 60 }).expect(404);
+      const updated = await request(bundle.app).patch(`/api/shared/${id}/expiry`).set(asA).send({ ttlMinutes: 60 }).expect(200);
+      const remaining = new Date(updated.body.expiryAt).getTime() - Date.now();
+      expect(remaining).toBeGreaterThan(59 * 60 * 1000);
+      await request(bundle.app).patch(`/api/shared/${id}/expiry`).send({ ttlMinutes: 60 }).expect(401);
     });
 
     it('continues resolving legacy 8-character references', async () => {

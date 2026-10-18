@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, FlatList, View, Text, TouchableOpacity, SafeAreaView, TextInput, Platform, ScrollView, useWindowDimensions } from 'react-native';
+import { StyleSheet, FlatList, View, Text, TouchableOpacity, SafeAreaView, TextInput, Platform, ScrollView, useWindowDimensions, Modal, ActivityIndicator } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -10,8 +10,8 @@ import { truncateContent } from '@/service/util';
 import { Shared } from '@/service/models';
 import { apiService } from '@/service/apiService';
 import { getMasterKey } from '@/service/keyService';
-import { isEnvelope, normalizeShareToken, shareCodeFromToken, isValidShareToken } from '@/service/cryptoService';
-import { createShare, tokenFromShared, decryptSharedContent, getSharedLinkURL, tokenFromFragment } from '@/service/shareService';
+import { isEnvelope, shareCodeFromToken } from '@/service/cryptoService';
+import { ACCOUNT_SHARE_EXPIRY_OPTIONS, createShare, tokenFromShared, decryptSharedContent, expiryLabel, getSharedLinkURL, isShareCode, shareCredentialFromInput } from '@/service/shareService';
 import NoItemsComponent from '@/components/NoItems';
 import Alert from '@/components/Alert';
 import Confirmation from '@/components/Confirmation';
@@ -48,6 +48,9 @@ export default function SharedLinks() {
 	const [sharedLink, setSharedLink] = useState<string | null>(null);
 	const [sharedCode, setSharedCode] = useState<string | null>(null);
 	const [deleteAllConfirmationVisible, setDeleteAllConfirmationVisible] = useState(false);
+	const [ttlMinutes, setTtlMinutes] = useState(24 * 60);
+	const [expiryItemId, setExpiryItemId] = useState('');
+	const [updatingExpiry, setUpdatingExpiry] = useState(false);
 
 	const { user, encryptionReady } = useAuth();
 	const { capture } = useAccountGuard();
@@ -105,6 +108,7 @@ export default function SharedLinks() {
 		setShareDialogVisible(false);
 		setConfirmationVisible(false);
 		setDeleteAllConfirmationVisible(false);
+		setExpiryItemId('');
 	}, [user?.uid, encryptionReady]);
 
 	const calculateTimeLeft = (expiryAt: string | null): string => {
@@ -130,7 +134,7 @@ export default function SharedLinks() {
 		try {
 			const mk = await getMasterKey(true);
 			if (!mk || !valid()) throw new Error('Log in and unlock your data to share text.');
-			const result = await createShare(content, mk);
+			const result = await createShare(content, mk, ttlMinutes);
 			if (!valid()) return;
 			revision.current++;
 			setSharedLink(result.url);
@@ -141,6 +145,25 @@ export default function SharedLinks() {
 		} catch (error) {
 			if (valid()) showAlert(error instanceof Error ? error.message : 'Failed to create shared link.');
 		} finally { if (sharing.current === valid) sharing.current = null; }
+	};
+
+	const handleUpdateExpiry = async (minutes: number) => {
+		const valid = capture();
+		if (!valid() || !expiryItemId || updatingExpiry) return;
+		setUpdatingExpiry(true);
+		try {
+			const updated = await apiService.updateSharedLinkExpiry(expiryItemId, minutes);
+			if (!valid()) return;
+			setSharedLinks(items => items.map(item => sharedId(item.shared) === expiryItemId
+				? { ...item, shared: { ...item.shared, expiryAt: updated.expiryAt } }
+				: item));
+			setExpiryItemId('');
+			showAlert(`Expiry changed to ${expiryLabel(minutes)} from now.`);
+		} catch (error) {
+			showAlert(error instanceof Error ? error.message : 'Could not update expiry.');
+		} finally {
+			setUpdatingExpiry(false);
+		}
 	};
 
 	// Re-share an existing link: rebuild link/code from the stored token.
@@ -155,12 +178,12 @@ export default function SharedLinks() {
 	};
 
 	const handleRetrieve = () => {
-		const token = normalizeShareToken(tokenFromFragment(retrieveText) || retrieveText);
-		if (!isValidShareToken(token)) {
-			showAlert('Please enter the complete shared link. A reference alone cannot decrypt it.');
+		const credential = shareCredentialFromInput(retrieveText);
+		if (!credential) {
+			showAlert('Enter a four-character code or paste a CloudClip link.');
 			return;
 		}
-		router.push(`/shared#${token}`);
+		router.push(isShareCode(credential) ? `/s/${credential}` : `/shared#${credential}`);
 		setRetrieveText('');
 	};
 
@@ -179,7 +202,7 @@ export default function SharedLinks() {
 			try {
 				await Clipboard.setStringAsync(sharedCode);
 				setShareDialogVisible(false);
-				showAlert('Reference copied to clipboard.');
+				showAlert('Share code copied to clipboard.');
 			} catch { showAlert('Could not copy to clipboard.'); }
 		}
 	};
@@ -229,16 +252,32 @@ export default function SharedLinks() {
 				]}
 			/>
 			<Confirmation
-				message={`Share this encrypted link — it expires in 7 days.\n`}
-				subtitle={`Link: ${sharedLink || ''}\nReference: ${sharedCode || ''}`}
+				message={`Share this encrypted link — it expires in ${expiryLabel(ttlMinutes)}.\n`}
+				subtitle={`Link: ${sharedLink || ''}\nCode: ${sharedCode || ''}`}
 				visible={shareDialogVisible}
 				onDismiss={() => setShareDialogVisible(false)}
 				buttons={[
 					{ label: 'Copy Link', onPress: handleCopyLink },
-					{ label: 'Copy Reference', onPress: handleCopyCode },
+					{ label: 'Copy Code', onPress: handleCopyCode },
 					{ label: 'Close', onPress: () => setShareDialogVisible(false), variant: 'danger' },
 				]}
 			/>
+			<Modal transparent visible={Boolean(expiryItemId)} animationType="fade" onRequestClose={() => !updatingExpiry && setExpiryItemId('')}>
+				<View style={styles.expiryOverlay}>
+					<View style={styles.expiryModal}>
+						<View style={styles.cardIcon}><Ionicons name="timer-outline" size={22} color={t.primary} /></View>
+						<Text style={styles.expiryTitle}>Change link expiry</Text>
+						<Text style={styles.expirySubtitle}>Choose how long the link should remain active from now.</Text>
+						<View style={styles.expiryOptions}>{ACCOUNT_SHARE_EXPIRY_OPTIONS.map(option => (
+							<TouchableOpacity key={option.minutes} disabled={updatingExpiry} onPress={() => void handleUpdateExpiry(option.minutes)} style={styles.expiryOption}>
+								<Text style={styles.expiryOptionText}>{option.label}</Text>
+							</TouchableOpacity>
+						))}</View>
+						{updatingExpiry ? <ActivityIndicator color={t.primary} style={styles.expiryProgress} /> : null}
+						<TouchableOpacity disabled={updatingExpiry} onPress={() => setExpiryItemId('')} style={styles.expiryCancel}><Text style={styles.expiryCancelText}>Cancel</Text></TouchableOpacity>
+					</View>
+				</View>
+			</Modal>
 			<Confirmation
 				message="Are you sure you want to delete all shared links?"
 				subtitle=''
@@ -262,13 +301,18 @@ export default function SharedLinks() {
 						<View style={styles.hero}>
 							<View style={styles.eyebrowRow}><View style={styles.liveDot} /><Text style={styles.eyebrow}>SECURE SHARING</Text></View>
 							<ThemedText style={[styles.heroTitle, compact && styles.heroTitleCompact]}>Send a thought.{ '\n' }Let it disappear.</ThemedText>
-							<ThemedText style={styles.heroSubtitle}>Create end-to-end encrypted links that expire automatically, or retrieve a clip someone sent you.</ThemedText>
+							<ThemedText style={styles.heroSubtitle}>Create client-encrypted links that expire automatically, or open a clip with its short code.</ThemedText>
 						</View>
 						<View style={[styles.actionGrid, !wide && styles.actionGridStack]}>
 					<ThemedView style={[styles.containerLight, compact && styles.containerCompact]}>
 						<View style={styles.cardIcon}><Ionicons name="paper-plane-outline" size={22} color={t.primary} /></View>
 						<ThemedText type="defaultSemiBold" style={styles.heading}>Create an expiring link</ThemedText>
-						<Text style={styles.cardHint}>Encrypted in your browser. Available for seven days.</Text>
+						<Text style={styles.cardHint}>Encrypted in your browser. Choose when it disappears.</Text>
+						<View accessibilityRole="radiogroup" style={styles.createExpiryOptions}>{ACCOUNT_SHARE_EXPIRY_OPTIONS.map(option => (
+							<TouchableOpacity key={option.minutes} accessibilityRole="radio" accessibilityState={{ checked: ttlMinutes === option.minutes }} onPress={() => setTtlMinutes(option.minutes)} style={[styles.createExpiryOption, ttlMinutes === option.minutes && styles.createExpiryOptionActive]}>
+								<Text style={[styles.createExpiryText, ttlMinutes === option.minutes && styles.createExpiryTextActive]}>{option.label}</Text>
+							</TouchableOpacity>
+						))}</View>
 						<ThemedView style={[styles.inputContainer, !wide && styles.inputContainerStack]}>
 							<TextInput
 								accessibilityLabel="Text to share"
@@ -291,14 +335,14 @@ export default function SharedLinks() {
 					<ThemedView style={[styles.containerLight, compact && styles.containerCompact]}>
 						<View style={styles.cardIcon}><Ionicons name="key-outline" size={22} color={t.primary} /></View>
 						<ThemedText type="defaultSemiBold" style={styles.heading}>Open a shared link</ThemedText>
-						<Text style={styles.cardHint}>Paste the complete private link. The 4-character reference alone cannot decrypt it.</Text>
+						<Text style={styles.cardHint}>Enter the four-character code, or paste a CloudClip link.</Text>
 						<ThemedView style={[styles.inputContainer, !wide && styles.inputContainerStack]}>
 							<TextInput
-								accessibilityLabel="Complete shared link"
+								accessibilityLabel="Shared code or link"
 								autoCapitalize="none"
 								autoCorrect={false}
 								style={[styles.inputLight2, !wide && styles.inputCompact]}
-								placeholder="Paste the complete shared link"
+								placeholder="A7K2 or a CloudClip link"
 								placeholderTextColor={t.placeholder}
 								value={retrieveText}
 								onChangeText={setRetrieveText}
@@ -332,7 +376,7 @@ export default function SharedLinks() {
 											nestedScrollEnabled
 											keyExtractor={(item) => sharedId(item.shared)}
 											renderItem={({ item }) => (
-												<TouchableOpacity onPress={() => item.token && router.push(`/shared#${item.token}`)}>
+											<TouchableOpacity onPress={() => router.push(`/s/${item.shared.code}`)}>
 													<View style={styles.itemContainerLight}>
 														<View style={styles.textContainer}>
 															<Text style={styles.itemTitle}>
@@ -343,10 +387,13 @@ export default function SharedLinks() {
 															</Text>
 														</View>
 														<View style={styles.buttonContainer}>
-															<TouchableOpacity style={styles.button} onPress={() => { setItemToRemoveId(sharedId(item.shared)); setConfirmationVisible(true); }}>
+														<TouchableOpacity accessibilityLabel="Change link expiry" style={styles.button} onPress={(event) => { event.stopPropagation(); setExpiryItemId(sharedId(item.shared)); }}>
+															<Ionicons name="timer-outline" size={24} color={t.icon} />
+														</TouchableOpacity>
+														<TouchableOpacity style={styles.button} onPress={(event) => { event.stopPropagation(); setItemToRemoveId(sharedId(item.shared)); setConfirmationVisible(true); }}>
 																<Ionicons name="trash-outline" size={24} color={t.icon} />
 															</TouchableOpacity>
-															<TouchableOpacity style={styles.button} onPress={() => handleShareExisting(item)}>
+														<TouchableOpacity style={styles.button} onPress={(event) => { event.stopPropagation(); handleShareExisting(item); }}>
 																<Ionicons name="share-social-outline" size={24} color={t.icon} />
 															</TouchableOpacity>
 														</View>
@@ -405,6 +452,11 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 	containerCompact: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', padding: 18, marginBottom: 0, borderRadius: 16, shadowOpacity: 0 },
 	cardIcon: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: t.primarySoft, marginBottom: 18 },
 	cardHint: { color: t.textMuted, fontSize: 12, lineHeight: 19, marginTop: -5, marginBottom: 20 },
+	createExpiryOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: -7, marginBottom: 18 },
+	createExpiryOption: { minHeight: 38, justifyContent: 'center', paddingHorizontal: 11, borderRadius: 10, borderWidth: 1, borderColor: t.border, backgroundColor: t.surfaceAlt },
+	createExpiryOptionActive: { borderColor: t.primary, backgroundColor: t.primarySoft },
+	createExpiryText: { color: t.textMuted, fontSize: 11, fontWeight: '700' },
+	createExpiryTextActive: { color: t.primary },
 	listContent: {
 		paddingBottom: 16,
 	},
@@ -520,4 +572,14 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 	clearButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6 },
 	clearText: { color: t.text, marginLeft: 5, fontSize: 14 },
 	clearTextDisabled: { color: t.textDisabled },
+	expiryOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 18, backgroundColor: t.overlay },
+	expiryModal: { width: '100%', maxWidth: 440, padding: 26, borderRadius: 24, borderWidth: 1, borderColor: t.border, backgroundColor: t.glass, shadowColor: t.shadow, shadowOpacity: 0.18, shadowRadius: 30, shadowOffset: { width: 0, height: 15 } },
+	expiryTitle: { color: t.text, fontSize: 22, lineHeight: 28, fontWeight: '800', letterSpacing: -0.5 },
+	expirySubtitle: { color: t.textMuted, fontSize: 13, lineHeight: 20, marginTop: 7, marginBottom: 20 },
+	expiryOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
+	expiryOption: { width: '48%', minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: t.border, backgroundColor: t.surfaceAlt },
+	expiryOptionText: { color: t.text, fontSize: 13, fontWeight: '700' },
+	expiryProgress: { marginTop: 16 },
+	expiryCancel: { minHeight: 46, alignItems: 'center', justifyContent: 'center', marginTop: 18, borderRadius: 12, backgroundColor: t.surfaceDisabled },
+	expiryCancelText: { color: t.textMuted, fontSize: 13, fontWeight: '700' },
 });

@@ -6,8 +6,7 @@ import { Platform, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 /**
- * Current share-link route: `/shared#<token>`. The token rides in the URL
- * fragment so it never reaches the web host's access logs.
+ * Manual share opener and compatibility route for older `/shared#<token>` links.
  */
 export default function Page() {
   const router = useRouter();

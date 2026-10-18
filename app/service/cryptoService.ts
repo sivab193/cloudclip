@@ -19,7 +19,8 @@ import { base64 } from '@scure/base';
  *   KEK derived from a one-time recovery code.
  * - New share links use a 32-char token: the first 4 chars are an uppercase
  *   alphanumeric server reference; the decryption key is HKDF-derived from the
- *   FULL token, which never reaches the server.
+ *   full token. For current short-code shares, the server stores that token in
+ *   an authenticated encrypted envelope so code-only retrieval can recover it.
  */
 
 export interface KdfParams {

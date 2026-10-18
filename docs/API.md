@@ -18,12 +18,14 @@ Regional bases are `https://api.in.cclip.cc/api` and `https://api-us.cclip.cc/ap
 | DELETE | /clipboards/:id | Owner-scoped deletion |
 | DELETE | /clipboards | Delete all user's clipboard entries |
 | GET | /shared | User's nonexpired links |
-| POST | /shared | Encrypted content, eight-character base58 code, optional owner-wrapped token, ttlDays 1–30 (default 7) |
-| GET | /shared/:code | Public ciphertext and dates only; no owner metadata |
+| POST | /shared | Client-encrypted content, 4-character code, share token, optional owner-wrapped token, ttlMinutes 10–43200 |
+| POST | /shared/anonymous | Account-free encrypted share, ttlMinutes 10–10080 |
+| PATCH | /shared/:id/expiry | Signed-in owner resets an active link expiry, ttlMinutes 10–43200 |
+| GET | /shared/:code | Public ciphertext, recovered share token, and dates; no owner metadata |
 | DELETE | /shared/:id | Owner-scoped link deletion |
 | DELETE | /shared | Remove all user's links |
 
-JSON requests are capped at 256 KB; content at 200,000 characters. Invalid MongoDB IDs return 400, missing owner-scoped records return 404. HTTP throttling is 300 requests/15 minutes/IP; public lookup additionally allows 20/15 minutes/IP. Limits are process-local.
+JSON requests are capped at 256 KB; content at 200,000 characters. Invalid MongoDB IDs return 400, missing owner-scoped records return 404. HTTP throttling is 300 requests/15 minutes/IP; public lookup additionally allows 10/15 minutes/IP. The global limiter uses Redis when configured; the tighter route-specific limits are process-local.
 
 Clipboard/share creation accepts `keyId`: the UUID of the unlocked account key, or explicit null for a legacy key without an ID. A mismatched or removed key returns 412; unlock again instead of retrying old ciphertext. Omission is accepted only for backward compatibility with installed clients. UUID `requestId` provides clipboard-create retry deduplication per owner.
 

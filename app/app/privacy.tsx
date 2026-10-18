@@ -29,15 +29,17 @@ export default function PrivacyPolicy() {
           devices, and share text with others through expiring links.
         </Text>
 
-        <Text style={styles.heading}>End-to-end encryption</Text>
+        <Text style={styles.heading}>How encryption works</Text>
         <Text style={styles.body}>
-          Your clipboard entries and shared texts are encrypted on your device
-          with AES-256-GCM before upload. The sync server stores encrypted
-          content without its decryption key. Anyone you give a complete share
-          link can read its text; the four-character reference alone cannot.
-          Your encryption key is
-          protected by your account password and a recovery code; if you lose
-          both, your data cannot be recovered by anyone — including us.
+          Your personal clipboard entries are end-to-end encrypted on your
+          device with AES-256-GCM before upload. Their encryption key is
+          protected by your account password and recovery code; if you lose
+          both, your clipboard data cannot be recovered by anyone — including
+          us. Shared texts are also encrypted in the client. To let a recipient
+          open one using only its four-character code, CloudClip stores that
+          share's recovery token encrypted at rest on the backend and returns
+          it through a tightly rate-limited lookup. Anyone with the code or
+          short link can read that shared text until it expires.
         </Text>
 
         <Text style={styles.heading}>Clipboard access</Text>
@@ -55,8 +57,9 @@ export default function PrivacyPolicy() {
           (authentication is provided by Google Firebase Authentication).{'\n'}
           • App-generated device identifiers and device names — so you can see
           and manage which of your devices are connected.{'\n'}
-          • Encrypted clipboard entries and encrypted shared texts — to provide
-          the sync and sharing features. These are unreadable to us.{'\n'}
+          • End-to-end encrypted clipboard entries and client-encrypted shared
+          texts — to provide sync and sharing. Share recovery tokens are
+          protected with backend encryption at rest so short codes can work.{'\n'}
           • Basic technical logs (IP address, request timestamps) — kept
           briefly for security and abuse prevention.
         </Text>

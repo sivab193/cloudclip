@@ -7,7 +7,7 @@ import Reveal from './Reveal';
 import Alert from './Alert';
 import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
-import { createAnonymousShare, AnonymousShareResult } from '@/service/shareService';
+import { createAnonymousShare, AnonymousShareResult, expiryLabel, SHARE_EXPIRY_OPTIONS } from '@/service/shareService';
 import { setClipboard } from '@/service/clipboardService';
 import SiteFooter from './SiteFooter';
 
@@ -19,7 +19,7 @@ export default function PublicShareComposer() {
   const { width } = useWindowDimensions();
   const compact = width < 600;
   const [text, setText] = useState('');
-  const [ttlDays, setTtlDays] = useState<1 | 7>(1);
+  const [ttlMinutes, setTtlMinutes] = useState(24 * 60);
   const [result, setResult] = useState<AnonymousShareResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -38,7 +38,7 @@ export default function PublicShareComposer() {
     setLoading(true);
     setError('');
     try {
-      setResult(await createAnonymousShare(value, ttlDays));
+      setResult(await createAnonymousShare(value, ttlMinutes));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not create the link. Try again.');
     } finally {
@@ -47,7 +47,7 @@ export default function PublicShareComposer() {
   };
 
   const copy = (value: string, message: string) => void setClipboard(value, showAlert, message);
-  const reset = () => { setText(''); setResult(null); setError(''); setTtlDays(1); };
+  const reset = () => { setText(''); setResult(null); setError(''); setTtlMinutes(24 * 60); };
 
   return <SafeAreaView style={styles.safeArea}>
     <AmbientBackdrop />
@@ -57,17 +57,17 @@ export default function PublicShareComposer() {
       <Reveal style={styles.reveal}>
         <View style={[styles.shell, compact && styles.shellCompact]}>
           <Text accessibilityRole="header" style={[styles.title, compact && styles.titleCompact]}>{result ? 'Your private link is ready.' : 'Share text. Skip the account.'}</Text>
-          <Text style={styles.subtitle}>{result ? 'The decryption key lives after the # and never reaches CloudClip. Send the complete link.' : 'Type or paste text below. It is encrypted in this browser before it is uploaded, and expires automatically.'}</Text>
+          <Text style={styles.subtitle}>{result ? 'Send the short link or just the four-character code. Both open the same expiring clip.' : 'Type or paste text below. It is encrypted in this browser before it is uploaded, and expires automatically.'}</Text>
 
           {result ? <View style={styles.result}>
-            <Text style={styles.label}>PRIVATE LINK</Text>
+            <Text style={styles.label}>SHORT LINK</Text>
             <View style={styles.linkRow}><Text selectable numberOfLines={2} style={styles.linkText}>{result.url}</Text><Pressable accessibilityRole="button" accessibilityLabel="Copy shared link" onPress={() => copy(result.url, 'Shared link copied')} style={styles.iconButton}><Ionicons name="copy-outline" size={20} color={t.onPrimary} /></Pressable></View>
             <View style={styles.referenceBlock}>
-              <View><Text style={styles.label}>REFERENCE</Text><Text selectable style={styles.referenceText}>{result.displayCode}</Text></View>
-              <Text style={styles.referenceHint}>Identifies this share. The complete link is still required to decrypt it.</Text>
-              <Pressable accessibilityRole="button" accessibilityLabel="Copy share reference" onPress={() => copy(result.displayCode, 'Reference copied')} style={styles.referenceButton}><Ionicons name="copy-outline" size={17} color={t.primary} /><Text style={styles.referenceButtonText}>Copy reference</Text></Pressable>
+              <View><Text style={styles.label}>SHARE CODE</Text><Text selectable style={styles.referenceText}>{result.displayCode}</Text></View>
+              <Text style={styles.referenceHint}>The recipient can enter this code instead of the link.</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Copy share code" onPress={() => copy(result.displayCode, 'Share code copied')} style={styles.referenceButton}><Ionicons name="copy-outline" size={17} color={t.primary} /><Text style={styles.referenceButtonText}>Copy code</Text></Pressable>
             </View>
-            <View style={styles.resultMeta}><View style={styles.metaItem}><Ionicons name="timer-outline" size={16} color={t.textMuted} /><Text style={styles.metaText}>Expires in {ttlDays === 1 ? '24 hours' : '7 days'}</Text></View><View style={styles.metaItem}><Ionicons name="lock-closed-outline" size={16} color={t.accent} /><Text style={styles.metaText}>End-to-end encrypted</Text></View></View>
+            <View style={styles.resultMeta}><View style={styles.metaItem}><Ionicons name="timer-outline" size={16} color={t.textMuted} /><Text style={styles.metaText}>Expires in {expiryLabel(ttlMinutes)}</Text></View><View style={styles.metaItem}><Ionicons name="lock-closed-outline" size={16} color={t.accent} /><Text style={styles.metaText}>Encrypted before upload</Text></View></View>
             <Pressable accessibilityRole="button" onPress={reset} style={styles.secondaryButton}><Ionicons name="add" size={18} color={t.text} /><Text style={styles.secondaryButtonText}>Share another text</Text></Pressable>
           </View> : <>
             <View style={[styles.editor, compact && styles.editorCompact]}>
@@ -86,11 +86,11 @@ export default function PublicShareComposer() {
               <Text style={styles.count}>{text.length.toLocaleString()} / {MAX_LENGTH.toLocaleString()}</Text>
             </View>
             <View style={styles.controls}>
-              <View><Text style={styles.label}>LINK EXPIRES</Text><View accessibilityRole="radiogroup" style={styles.ttlGroup}>{([1, 7] as const).map(days => <Pressable key={days} accessibilityRole="radio" accessibilityState={{ checked: ttlDays === days }} onPress={() => setTtlDays(days)} style={[styles.ttl, ttlDays === days && styles.ttlActive]}><Text style={[styles.ttlText, ttlDays === days && styles.ttlTextActive]}>{days === 1 ? '24 hours' : '7 days'}</Text></Pressable>)}</View></View>
+              <View><Text style={styles.label}>LINK EXPIRES</Text><View accessibilityRole="radiogroup" style={styles.ttlGroup}>{SHARE_EXPIRY_OPTIONS.map(option => <Pressable key={option.minutes} accessibilityRole="radio" accessibilityState={{ checked: ttlMinutes === option.minutes }} onPress={() => setTtlMinutes(option.minutes)} style={[styles.ttl, ttlMinutes === option.minutes && styles.ttlActive]}><Text style={[styles.ttlText, ttlMinutes === option.minutes && styles.ttlTextActive]}>{option.label}</Text></Pressable>)}</View></View>
               <Pressable accessibilityRole="button" disabled={!text.trim() || loading} onPress={createLink} style={[styles.primaryButton, compact && styles.primaryButtonCompact, (!text.trim() || loading) && styles.primaryDisabled]}>{loading ? <ActivityIndicator color={t.onPrimary} /> : <><Text style={[styles.primaryText, !text.trim() && styles.primaryTextDisabled]}>Create private link</Text><Ionicons name="arrow-forward" size={19} color={!text.trim() ? t.textMuted : t.onPrimary} /></>}</Pressable>
             </View>
             {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-            <View style={styles.privacyLine}><Ionicons name="shield-checkmark-outline" size={17} color={t.accent} /><Text style={styles.privacyText}>No login · No plaintext on the server · Rate-limited to prevent abuse</Text></View>
+            <View style={styles.privacyLine}><Ionicons name="shield-checkmark-outline" size={17} color={t.accent} /><Text style={styles.privacyText}>No login · Content is encrypted before upload · Code lookup is rate-limited</Text></View>
           </>}
         </View>
       </Reveal>
@@ -114,7 +114,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   count: { position: 'absolute', right: 16, bottom: 13, color: t.textMuted, fontSize: 11 },
   controls: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, marginTop: 22 },
   label: { color: t.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: .8, marginBottom: 9 },
-  ttlGroup: { flexDirection: 'row', gap: 8 }, ttl: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 15, borderRadius: 8, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border }, ttlActive: { backgroundColor: t.primarySoft, borderColor: t.primary }, ttlText: { color: t.textMuted, fontSize: 13, fontWeight: '700' }, ttlTextActive: { color: t.primary },
+  ttlGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, ttl: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 15, borderRadius: 8, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border }, ttlActive: { backgroundColor: t.primarySoft, borderColor: t.primary }, ttlText: { color: t.textMuted, fontSize: 13, fontWeight: '700' }, ttlTextActive: { color: t.primary },
   primaryButton: { minHeight: 50, minWidth: 190, paddingHorizontal: 20, borderRadius: 9, backgroundColor: t.primaryStrong, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 }, primaryDisabled: { backgroundColor: t.surfaceDisabled }, primaryText: { color: t.onPrimary, fontSize: 14, fontWeight: '700' }, primaryTextDisabled: { color: t.textMuted },
   primaryButtonCompact: { width: '100%' },
   error: { color: t.danger, fontSize: 13, lineHeight: 20, marginTop: 14 },

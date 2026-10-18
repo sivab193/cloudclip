@@ -1,4 +1,4 @@
-import { getSharedLinkURL, tokenFromFragment } from '../shareService';
+import { getSharedLinkURL, shareCredentialFromInput, tokenFromFragment } from '../shareService';
 jest.mock('../keyService', () => ({ getMasterKeyId: () => null }));
 
 // shareService pulls in apiService (and through it Firebase) at import time;
@@ -13,13 +13,23 @@ jest.mock('../util', () => ({
 }));
 
 describe('getSharedLinkURL', () => {
-    it('puts the token in the fragment, not the path', () => {
-        const url = getSharedLinkURL('abc123XYZ456def789J');
-        expect(url).toBe('https://us.cclip.cc/shared#abc123XYZ456def789J');
-        // The part sent to the server must not contain the token.
-        const [beforeHash] = url.split('#');
-        expect(beforeHash).toBe('https://us.cclip.cc/shared');
-        expect(beforeHash).not.toContain('abc123XYZ456def789J');
+    it('creates a short URL containing only the four-character code', () => {
+        const token = `A7K20${'1'.repeat(27)}`;
+        const url = getSharedLinkURL(token);
+        expect(url).toBe('https://us.cclip.cc/s/A7K2');
+        expect(url).not.toContain(token);
+    });
+});
+
+describe('shareCredentialFromInput', () => {
+    it('accepts a code or short URL', () => {
+        expect(shareCredentialFromInput('a7k2')).toBe('A7K2');
+        expect(shareCredentialFromInput('https://us.cclip.cc/s/a7k2')).toBe('A7K2');
+    });
+
+    it('keeps a valid legacy token', () => {
+        const token = `A7K20${'1'.repeat(27)}`;
+        expect(shareCredentialFromInput(`https://us.cclip.cc/shared#${token}`)).toBe(token);
     });
 });
 

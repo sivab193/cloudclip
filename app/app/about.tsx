@@ -26,7 +26,7 @@ export default function About() {
 
         <View style={styles.section}>
           <Text style={styles.heading}>What works today</Text>
-          <Text style={styles.body}>The web app can save encrypted text clips to a personal stream. Anyone can also create an encrypted, expiring text link without an account. The full link carries the decryption secret; its four-character reference alone cannot open the clip.</Text>
+          <Text style={styles.body}>The web app can save end-to-end encrypted text clips to a personal stream. Anyone can also create a client-encrypted, expiring text link without an account, then share its short URL or four-character code.</Text>
         </View>
 
         <View style={styles.section}>

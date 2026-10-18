@@ -49,6 +49,16 @@
               "scheme": "https",
               "host": "us.cclip.cc",
               "pathPrefix": "/shared"
+            },
+            {
+              "scheme": "https",
+              "host": "in.cclip.cc",
+              "pathPrefix": "/s"
+            },
+            {
+              "scheme": "https",
+              "host": "us.cclip.cc",
+              "pathPrefix": "/s"
             }
           ],
           "category": [

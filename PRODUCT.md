@@ -10,7 +10,7 @@ adaptive
 
 People who move short-lived text—links, commands, notes, credentials, and ideas—between devices or share it with another person without wanting a heavyweight workspace.
 
-Shared clips use a four-character uppercase alphanumeric reference for lookup while retaining a separate high-entropy decryption secret in the complete URL. The reference alone cannot reveal or decrypt a clip.
+Shared clips use a four-character uppercase alphanumeric code. The code or its short URL opens the clip; the client encrypts the text and the backend protects the recovery token with server-side encryption at rest.
 
 ## Product Purpose
 
@@ -28,7 +28,8 @@ The web app is available now. Users choose an active geographic region before si
 
 - Text clips are supported today, including account-free encrypted sharing.
 - Clipboard content is encrypted on the client before upload.
-- Expiring encrypted links can be opened without an account when the complete URL is available.
+- Expiring encrypted links can be opened without an account using a short link or four-character code.
+- Expiry choices range from 10 minutes to 7 days anonymously and 30 days for signed-in users; signed-in owners can change an active link's expiry.
 - The US region is available today. The independent India deployment is coming soon.
 - Files, background clipboard monitoring, native platform releases, custom keyboard integration, and end-user self-hosting are not yet available and must be labeled as coming soon.
 

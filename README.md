@@ -4,9 +4,9 @@ CloudClip is a quiet place to keep useful text and share it through private, exp
 
 The website has an [About page](https://cclip.cc/about), a [privacy policy](https://cclip.cc/privacy), and an account-free sharing flow. CloudClip is built in the open by [siv19.dev](https://siv19.dev/); the site footer also links to [GitHub](https://github.com/sivab193), [LinkedIn](https://www.linkedin.com/in/sivab193/), and [Instagram](https://www.instagram.com/siv19.dev/). The source repository is [sivab193/cloudclip](https://github.com/sivab193/cloudclip).
 
-Anyone can create a client-side encrypted, expiring text link without registering. Anonymous shares are rate-limited, expire after one or seven days, and are not attached to an account history.
+Anyone can create a client-side encrypted, expiring text link without registering. Anonymous shares are rate-limited, can expire after 10 minutes, 1 hour, 24 hours, or 7 days, and are not attached to an account history. Signed-in owners can also choose 30 days and change an active link's expiry later.
 
-Every new share also has a four-character uppercase alphanumeric reference (for example, `A7K2`). The reference is only used to locate encrypted data; the complete link remains required because its URL fragment contains the high-entropy decryption secret that is never sent to CloudClip.
+Every new share has a four-character uppercase alphanumeric code (for example, `A7K2`) and a short URL such as `https://us.cclip.cc/s/A7K2`. Either is enough to open the clip. The text is encrypted in the client; the backend stores the decryption token encrypted at rest so it can recover it for tightly rate-limited code lookups. Personal clipboard sync uses a separate end-to-end encryption design whose key is not held by the backend.
 
 Clipboard content is encrypted on the client. Automatic clipboard access is opt-in and runs only while the app is visible. Encrypted file transfer, a custom CloudClip keyboard, native apps and a user-friendly self-hosted edition are coming soon. Images, background clipboard monitoring and an offline write queue are not implemented today.
 
@@ -25,7 +25,7 @@ The same Firebase sign-in works in both regions, but regional profiles, encrypti
 
 The public API hostnames are connected with Cloudflare Tunnel. A `cloudflared` container creates an outbound encrypted connection to Cloudflare, so the home server does not need an inbound port exposed on the router. Cloudflare terminates HTTPS for `api.<region>.cclip.cc` and forwards requests through that tunnel to `http://backend:3000` on the private Docker network.
 
-MongoDB URLs and tunnel tokens belong only in the ignored `backend/.env` file on the corresponding server. They must never be committed, embedded into an image, or added to the frontend/Vercel environment.
+MongoDB URLs, tunnel tokens, and `SHARE_TOKEN_ENCRYPTION_KEY` belong only in the ignored `backend/.env` file on the corresponding server. They must never be committed, embedded into an image, or added to the frontend/Vercel environment. Keep the share-token key stable within a region while links are active.
 
 ## Run locally
 

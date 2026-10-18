@@ -2,9 +2,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IShared extends Document {
   clipboardId?: string;
-  // Opaque E2E-encrypted envelope, encrypted with a key derived from the full
-  // share token. The server only ever stores the 4-char reference, which by
-  // itself cannot decrypt the content.
+  // Opaque client-encrypted envelope, encrypted with a key derived from the full
+  // share token.
   content: string;
   userId?: string;
   code: string;
@@ -12,6 +11,9 @@ export interface IShared extends Document {
   // devices can re-display the link/token later.
   ownerWrappedKey?: string;
   ownerWrapNonce?: string;
+  // Full share token encrypted with a server-side key. This enables short-code
+  // retrieval without storing the token in plaintext.
+  serverWrappedToken?: string;
   expiryAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -26,6 +28,7 @@ const SharedSchema: Schema = new Schema({
   code: { type: String, required: true, unique: true, maxlength: 32 },
   ownerWrappedKey: { type: String, maxlength: 512 },
   ownerWrapNonce: { type: String, maxlength: 64 },
+  serverWrappedToken: { type: String, maxlength: 512, select: false },
   expiryAt: { type: Date, required: true, default: () => new Date(Date.now() + SEVEN_DAYS_MS) },
 }, {
   timestamps: true

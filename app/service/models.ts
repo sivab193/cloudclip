@@ -70,6 +70,8 @@ export interface Shared {
 // Public shape returned by GET /api/shared/:code
 export interface PublicShared {
     content: string;
+    // Present for code-only shares. Legacy shares still require their original token.
+    token?: string;
     createdAt?: string;
     expiryAt?: string;
 }

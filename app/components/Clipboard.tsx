@@ -109,7 +109,7 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
             try {
                 await Clipboard.setStringAsync(sharedCode);
                 setShareConfirmationVisible(false);
-                showAlert('Reference copied to clipboard!');
+                showAlert('Share code copied to clipboard!');
             } catch { showAlert('Could not copy to clipboard.'); }
         }
     };
@@ -128,12 +128,12 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
                 subtitle={''} />
             <Confirmation
                 message={`Share link created — anyone with it can read this text for 7 days.\n`}
-                subtitle={`Link: ${sharedLink || ''}\nReference: ${sharedCode || ''}`}
+                subtitle={`Link: ${sharedLink || ''}\nCode: ${sharedCode || ''}`}
                 visible={shareConfirmationVisible}
                 onDismiss={handleShareCancel}
                 buttons={[
                     { label: 'Copy Link', onPress: handleCopyLink },
-                    { label: 'Copy Reference', onPress: handleCopyCode },
+                    { label: 'Copy Code', onPress: handleCopyCode },
                     { label: 'Cancel', onPress: handleShareCancel, variant: 'danger' },
                 ]}
             />

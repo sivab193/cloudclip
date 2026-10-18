@@ -19,7 +19,7 @@ Full description:
 > Paste and save text manually, or enable automatic clipboard sync while CloudClip is open. Automatic access is off by default.
 >
 > EXPIRING SHARE LINKS
-> Share text using an encrypted link or code. Anyone with the complete link or code can read it. Links expire after seven days by default and can be deleted earlier.
+> Share text using an encrypted short link or four-character code. Anyone with either can read it. Choose an expiry from 10 minutes to 30 days; signed-in owners can change or delete active links.
 >
 > MANAGE YOUR DATA
 > Delete individual entries, clear your history, or delete your account and associated data.
