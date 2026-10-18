@@ -6,6 +6,12 @@
   "build": {
     "preview": {
       "distribution": "internal",
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api-us.cclip.cc",
+        "EXPO_PUBLIC_WEB_URL": "https://us.cclip.cc",
+        "EXPO_PUBLIC_DEPLOYMENT_MODE": "regional"
+      },
       "android": {
         "buildType": "apk"
       }

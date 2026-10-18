@@ -1,18 +1,19 @@
 import React from 'react';
-import { Image, Linking, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Linking, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { ThemeTokens } from '@/constants/Colors';
-import { useThemedStyles } from '@/hooks/useTheme';
+import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 
 const creatorLinks = [
-  { label: 'siv19.dev', url: 'https://siv19.dev/' },
-  { label: 'GitHub', url: 'https://github.com/sivab193' },
-  { label: 'LinkedIn', url: 'https://www.linkedin.com/in/sivab193/' },
-  { label: 'Instagram', url: 'https://www.instagram.com/siv19.dev/' },
+  { label: 'GitHub', url: 'https://github.com/sivab193', icon: 'logo-github' },
+  { label: 'LinkedIn', url: 'https://www.linkedin.com/in/sivab193/', icon: 'logo-linkedin' },
+  { label: 'Instagram', url: 'https://www.instagram.com/siv19.dev/', icon: 'logo-instagram' },
 ] as const;
 
 export default function SiteFooter({ contained = false }: { contained?: boolean }) {
   const styles = useThemedStyles(makeStyles);
+  const t = useTheme();
   const { width } = useWindowDimensions();
   const compact = width < 680;
   const router = useRouter();
@@ -27,39 +28,35 @@ export default function SiteFooter({ contained = false }: { contained?: boolean 
 
   return <View style={[styles.footer, contained && styles.contained]}>
     <View style={[styles.inner, compact && styles.innerCompact]}>
-      <View style={styles.identity}>
-        <View style={styles.brandRow}>
-          <Image source={require('../assets/images/logo.png')} accessibilityLabel="CloudClip" style={styles.mark} />
-          <Text style={styles.brand}>CloudClip</Text>
-        </View>
-        <Text style={styles.motto}>Build • Automate • Open Source</Text>
-      </View>
-      <View style={styles.links}>
+      <Text style={styles.motto}>Build • Automate • Open Source</Text>
+      <View style={[styles.links, compact && styles.linksCompact]}>
         <Pressable accessibilityRole="link" onPress={() => router.push('/about')} style={styles.linkHit}><Text style={styles.link}>About</Text></Pressable>
         <Pressable accessibilityRole="link" onPress={() => router.push('/privacy')} style={styles.linkHit}><Text style={styles.link}>Privacy</Text></Pressable>
-        {creatorLinks.map(({ label, url }) =>
-          <Pressable key={label} accessibilityRole="link" accessibilityLabel={`${label} (opens in a new tab)`} onPress={() => openExternal(url)} style={styles.linkHit}>
-            <Text style={styles.link}>{label}</Text>
+        <Pressable accessibilityRole="link" accessibilityLabel="siv19.dev (opens in a new tab)" onPress={() => openExternal('https://siv19.dev/')} style={styles.linkHit}>
+          <Text style={styles.link}>siv19.dev</Text>
+        </Pressable>
+        <View style={styles.socials}>
+        {creatorLinks.map(({ label, url, icon }) =>
+          <Pressable key={label} accessibilityRole="link" accessibilityLabel={`${label} (opens in a new tab)`} onPress={() => openExternal(url)} style={styles.iconHit}>
+            <Ionicons name={icon} size={17} color={t.textMuted} />
           </Pressable>
         )}
+        </View>
       </View>
     </View>
-    <Text style={styles.copyright}>© {new Date().getFullYear()} CloudClip</Text>
   </View>;
 }
 
 const makeStyles = (t: ThemeTokens) => StyleSheet.create({
-  footer: { width: '100%', borderTopWidth: 1, borderTopColor: t.borderSubtle, backgroundColor: t.background, paddingHorizontal: 22, paddingTop: 30, paddingBottom: 28 },
+  footer: { width: '100%', borderTopWidth: 1, borderTopColor: t.borderSubtle, backgroundColor: t.surface, paddingHorizontal: 22, paddingVertical: 14 },
   contained: { paddingHorizontal: 0 },
-  inner: { width: '100%', maxWidth: 1240, alignSelf: 'center', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 28 },
-  innerCompact: { flexDirection: 'column', gap: 15 },
-  identity: { gap: 8 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  mark: { width: 28, height: 28, borderRadius: 7 },
-  brand: { color: t.text, fontSize: 17, fontWeight: '800', letterSpacing: -0.4 },
-  motto: { color: t.textMuted, fontSize: 12, lineHeight: 18 },
-  links: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 7, maxWidth: 650 },
+  inner: { width: '100%', maxWidth: 1240, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 22 },
+  innerCompact: { flexDirection: 'column', gap: 2 },
+  motto: { color: t.textMuted, fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  links: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 2 },
+  linksCompact: { maxWidth: 340 },
   linkHit: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
-  link: { color: t.textMuted, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
-  copyright: { width: '100%', maxWidth: 1240, alignSelf: 'center', color: t.textMuted, fontSize: 11, marginTop: 15 },
+  link: { color: t.textMuted, fontSize: 12, fontWeight: '600' },
+  socials: { flexDirection: 'row', alignItems: 'center' },
+  iconHit: { width: 40, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
 });

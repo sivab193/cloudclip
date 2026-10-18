@@ -66,6 +66,17 @@ npm run check:release
 npm run build:web
 ```
 
+## Build an installable Android APK
+
+The `preview` EAS profile produces an internally distributed APK connected to the US region. Firebase public configuration is read from the EAS `preview` environment.
+
+```sh
+cd app
+eas build --platform android --profile preview
+```
+
+When the build finishes, EAS provides an install link that can be shared directly with testers. The `production` profile creates an Android App Bundle (`.aab`) for Google Play instead of an APK.
+
 ## Architecture and release
 
 - [Verified release status and remaining blockers](docs/RELEASE-READINESS.md)
