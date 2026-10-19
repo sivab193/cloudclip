@@ -15,12 +15,12 @@ import { ACCOUNT_SHARE_EXPIRY_OPTIONS, createShare, tokenFromShared, decryptShar
 import NoItemsComponent from '@/components/NoItems';
 import Alert from '@/components/Alert';
 import Confirmation from '@/components/Confirmation';
-import * as Clipboard from 'expo-clipboard';
 import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import useAccountGuard from '@/hooks/useAccountGuard';
 import AmbientBackdrop from '@/components/AmbientBackdrop';
 import Reveal from '@/components/Reveal';
+import ShareResultModal from '@/components/ShareResultModal';
 
 // A shared link decorated with its decrypted preview and recovered token.
 interface DecoratedShared {
@@ -47,6 +47,7 @@ export default function SharedLinks() {
 	const [shareDialogVisible, setShareDialogVisible] = useState(false);
 	const [sharedLink, setSharedLink] = useState<string | null>(null);
 	const [sharedCode, setSharedCode] = useState<string | null>(null);
+	const [shareDialogExpiry, setShareDialogExpiry] = useState('');
 	const [deleteAllConfirmationVisible, setDeleteAllConfirmationVisible] = useState(false);
 	const [ttlMinutes, setTtlMinutes] = useState(24 * 60);
 	const [expiryItemId, setExpiryItemId] = useState('');
@@ -105,6 +106,7 @@ export default function SharedLinks() {
 		setTextToShare('');
 		setSharedLink(null);
 		setSharedCode(null);
+		setShareDialogExpiry('');
 		setShareDialogVisible(false);
 		setConfirmationVisible(false);
 		setDeleteAllConfirmationVisible(false);
@@ -139,6 +141,7 @@ export default function SharedLinks() {
 			revision.current++;
 			setSharedLink(result.url);
 			setSharedCode(result.displayCode);
+			setShareDialogExpiry(`Expires in ${expiryLabel(ttlMinutes)}`);
 			setShareDialogVisible(true);
 			setTextToShare('');
 			setSharedLinks(prev => [{ shared: result.shared, preview: content, token: result.token }, ...prev]);
@@ -174,6 +177,7 @@ export default function SharedLinks() {
 		}
 		setSharedLink(getSharedLinkURL(item.token));
 		setSharedCode(shareCodeFromToken(item.token));
+		setShareDialogExpiry(`Expires in ${calculateTimeLeft(item.shared.expiryAt || null)}`);
 		setShareDialogVisible(true);
 	};
 
@@ -185,26 +189,6 @@ export default function SharedLinks() {
 		}
 		router.push(isShareCode(credential) ? `/s/${credential}` : `/shared#${credential}`);
 		setRetrieveText('');
-	};
-
-	const handleCopyLink = async () => {
-		if (sharedLink) {
-			try {
-				await Clipboard.setStringAsync(sharedLink);
-				setShareDialogVisible(false);
-				showAlert('Link copied to clipboard.');
-			} catch { showAlert('Could not copy to clipboard.'); }
-		}
-	};
-
-	const handleCopyCode = async () => {
-		if (sharedCode) {
-			try {
-				await Clipboard.setStringAsync(sharedCode);
-				setShareDialogVisible(false);
-				showAlert('Share code copied to clipboard.');
-			} catch { showAlert('Could not copy to clipboard.'); }
-		}
 	};
 
 	const handleRemove = async () => {
@@ -251,17 +235,7 @@ export default function SharedLinks() {
 					{ label: 'Yes', onPress: handleRemove },
 				]}
 			/>
-			<Confirmation
-				message={`Share this encrypted link — it expires in ${expiryLabel(ttlMinutes)}.\n`}
-				subtitle={`Link: ${sharedLink || ''}\nCode: ${sharedCode || ''}`}
-				visible={shareDialogVisible}
-				onDismiss={() => setShareDialogVisible(false)}
-				buttons={[
-					{ label: 'Copy Link', onPress: handleCopyLink },
-					{ label: 'Copy Code', onPress: handleCopyCode },
-					{ label: 'Close', onPress: () => setShareDialogVisible(false), variant: 'danger' },
-				]}
-			/>
+			<ShareResultModal visible={shareDialogVisible} url={sharedLink || ''} code={sharedCode || ''} expiryText={shareDialogExpiry} onClose={() => setShareDialogVisible(false)} onNotify={showAlert} />
 			<Modal transparent visible={Boolean(expiryItemId)} animationType="fade" onRequestClose={() => !updatingExpiry && setExpiryItemId('')}>
 				<View style={styles.expiryOverlay}>
 					<View style={styles.expiryModal}>

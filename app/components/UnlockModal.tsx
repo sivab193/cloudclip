@@ -13,6 +13,7 @@ import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import { usePathname } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import PasswordField from './PasswordField';
+import { isVaultFreeRoute } from '@/utils/publicRoutes';
 
 type Mode = 'password' | 'recovery' | 'reset';
 
@@ -35,7 +36,7 @@ const UnlockModal: React.FC = () => {
   const styles = useThemedStyles(makeStyles);
 
   // Public links, privacy and account deletion never require decryption keys.
-  const publicPage = pathname === '/privacy' || pathname === '/delete-account' || pathname.startsWith('/shared');
+  const publicPage = isVaultFreeRoute(pathname);
   const visible = !!user && !encryptionReady && !authenticating && !publicPage;
   if (!visible && !newRecoveryCode) return null;
 

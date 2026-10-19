@@ -6,13 +6,15 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { DisplayClip } from '@/hooks/useClipboardSync';
 import { truncateContent } from '@/service/util';
 import { getMasterKey } from '@/service/keyService';
-import { createShare } from '@/service/shareService';
+import { createShare, expiryLabel } from '@/service/shareService';
 import NoItemsComponent from './NoItems';
 import Confirmation from './Confirmation';
 import * as Clipboard from 'expo-clipboard';
 import { ThemeTokens } from '@/constants/Colors';
 import { useTheme, useThemedStyles } from '@/hooks/useTheme';
 import useAccountGuard from '@/hooks/useAccountGuard';
+import ShareExpiryModal from './ShareExpiryModal';
+import ShareResultModal from './ShareResultModal';
 
 
 interface ClipboardScreenProps {
@@ -26,17 +28,17 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
     const styles = useThemedStyles(makeStyles);
 
     const [confirmationVisible, setConfirmationVisible] = useState(false);
-    const [shareConfirmationVisible, setShareConfirmationVisible] = useState(false);
     const [itemToRemove, setItemToRemove] = useState('');
-    const [sharedLink, setSharedLink] = useState<string | null>(null);
-    const [sharedCode, setSharedCode] = useState<string | null>(null);
+    const [pendingShareContent, setPendingShareContent] = useState('');
+    const [creatingShare, setCreatingShare] = useState(false);
+    const [shareResult, setShareResult] = useState<{ url: string; code: string; expiryText: string } | null>(null);
     const { capture } = useAccountGuard();
     const sharing = useRef<(() => boolean) | null>(null);
     useEffect(() => {
-        setSharedLink(null);
-        setSharedCode(null);
+        setPendingShareContent('');
+        setShareResult(null);
+        setCreatingShare(false);
         setConfirmationVisible(false);
-        setShareConfirmationVisible(false);
     }, [capture]);
 
     const handleDelete = async (id: string) => {
@@ -67,50 +69,33 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
         setConfirmationVisible(false);
     };
 
-    const handleShareCancel = () => {
-        setShareConfirmationVisible(false);
-    };
-
     const handleRemove = () => {
         setConfirmationVisible(false);
         handleDelete(itemToRemove);
     };
 
-    // Creates the shared link ONCE, then the dialog buttons only copy.
-    const handleShareConfirmation = async (content: string) => {
+    const requestShare = (content: string) => {
+        setPendingShareContent(content);
+    };
+
+    // A history item is not shared until the user explicitly picks a duration.
+    const createHistoryShare = async (ttlMinutes: number) => {
         const valid = capture();
         if (sharing.current?.()) return;
         sharing.current = valid;
+        setCreatingShare(true);
         try {
             const mk = await getMasterKey(true);
             if (!mk || !valid()) throw new Error('Unlock your data first');
-            const result = await createShare(content, mk);
+            const result = await createShare(pendingShareContent, mk, ttlMinutes);
             if (!valid()) return;
-            setSharedLink(result.url);
-            setSharedCode(result.displayCode);
-            setShareConfirmationVisible(true);
+            setPendingShareContent('');
+            setShareResult({ url: result.url, code: result.displayCode, expiryText: `Expires in ${expiryLabel(ttlMinutes)}` });
         } catch (error) {
             if (valid()) showAlert(error instanceof Error ? error.message : 'Failed to create shared link.');
-        } finally { if (sharing.current === valid) sharing.current = null; }
-    };
-
-    const handleCopyLink = async () => {
-        if (sharedLink) {
-            try {
-                await Clipboard.setStringAsync(sharedLink);
-                setShareConfirmationVisible(false);
-                showAlert('Link copied to clipboard!');
-            } catch { showAlert('Could not copy to clipboard.'); }
-        }
-    };
-
-    const handleCopyCode = async () => {
-        if (sharedCode) {
-            try {
-                await Clipboard.setStringAsync(sharedCode);
-                setShareConfirmationVisible(false);
-                showAlert('Share code copied to clipboard!');
-            } catch { showAlert('Could not copy to clipboard.'); }
+        } finally {
+            if (sharing.current === valid) sharing.current = null;
+            setCreatingShare(false);
         }
     };
 
@@ -126,17 +111,8 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
                     { label: 'Yes', onPress: handleRemove },
                 ]}
                 subtitle={''} />
-            <Confirmation
-                message={`Share link created — anyone with it can read this text for 7 days.\n`}
-                subtitle={`Link: ${sharedLink || ''}\nCode: ${sharedCode || ''}`}
-                visible={shareConfirmationVisible}
-                onDismiss={handleShareCancel}
-                buttons={[
-                    { label: 'Copy Link', onPress: handleCopyLink },
-                    { label: 'Copy Code', onPress: handleCopyCode },
-                    { label: 'Cancel', onPress: handleShareCancel, variant: 'danger' },
-                ]}
-            />
+            <ShareExpiryModal visible={Boolean(pendingShareContent)} busy={creatingShare} onSelect={(minutes) => void createHistoryShare(minutes)} onClose={() => setPendingShareContent('')} />
+            <ShareResultModal visible={Boolean(shareResult)} url={shareResult?.url || ''} code={shareResult?.code || ''} expiryText={shareResult?.expiryText || ''} onClose={() => setShareResult(null)} onNotify={showAlert} />
 
             <ThemedView style={styles.container}>
                 {clipboardEntries.length > 0 ? (
@@ -163,15 +139,19 @@ const ClipboardScreen: React.FC<ClipboardScreenProps> = ({ clipboardEntries, sho
                                     </View>
                                     <View style={styles.iconContainer}>
                                         <TouchableOpacity
+                                            accessibilityRole="button"
+                                            accessibilityLabel="Delete clipboard entry"
                                             style={styles.iconButton}
-                                            onPress={() => showConfirmation(entry._id || entry.id || '')}
+                                            onPress={(event) => { event.stopPropagation(); showConfirmation(entry._id || entry.id || ''); }}
                                         >
                                             <Ionicons name="trash-outline" size={17} color={t.textMuted} />
                                         </TouchableOpacity>
                                         <TouchableOpacity
+                                            accessibilityRole="button"
+                                            accessibilityLabel="Share clipboard entry"
                                             disabled={entry.unreadable}
                                             style={styles.iconButton}
-                                            onPress={() => handleShareConfirmation(entry.content)}
+                                            onPress={(event) => { event.stopPropagation(); requestShare(entry.content); }}
                                         >
                                             <Ionicons name="share-social-outline" size={17} color={t.primary} />
                                         </TouchableOpacity>
