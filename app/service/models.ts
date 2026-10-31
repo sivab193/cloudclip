@@ -75,3 +75,57 @@ export interface PublicShared {
     createdAt?: string;
     expiryAt?: string;
 }
+
+// ── Hosted Sites ─────────────────────────────────────────────────────────────
+
+export type SiteVisibility = 'public' | 'password';
+export type SiteStatus = 'active' | 'processing' | 'failed' | 'deleted';
+
+// Public shape returned by the owner site routes (never includes secrets).
+export interface PublishedSite {
+    id: string;
+    slug: string;
+    displayName: string;
+    visibility: SiteVisibility;
+    region: string;
+    status: SiteStatus;
+    activeDeploymentId: string | null;
+    url: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+// Returned by publish / redeploy.
+export interface PublishResult {
+    siteId: string;
+    slug: string;
+    url: string;
+    deploymentId: string;
+    status: 'ready';
+    visibility: SiteVisibility;
+}
+
+export interface SiteDeploymentSummary {
+    _id: string;
+    siteId: string;
+    version: number;
+    sourceFilename: string;
+    sourceType: 'html' | 'zip';
+    sourceBytes: number;
+    extractedBytes: number;
+    fileCount: number;
+    status: 'processing' | 'ready' | 'failed';
+    errorMessage?: string | null;
+    createdAt?: string;
+}
+
+// A publisher key as listed (raw key is only present right after creation).
+export interface PublisherKey {
+    id: string;
+    label: string;
+    keyPrefix: string;
+    scopes: string[];
+    lastUsedAt?: string | null;
+    createdAt?: string;
+    key?: string; // present exactly once, on creation
+}

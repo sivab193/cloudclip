@@ -69,7 +69,7 @@ const SharedContent: React.FC<{ legacyToken?: string; shareCode?: string }> = ({
     setManualCredential(candidate);
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const code = isShareCode(candidate) ? candidate : shareCodeFromToken(candidate);
-      window.history.replaceState(null, '', `/s/${code}`);
+      window.history.replaceState(null, '', `/t/${code}`);
     }
   };
 
@@ -146,7 +146,7 @@ const SharedContent: React.FC<{ legacyToken?: string; shareCode?: string }> = ({
               autoCorrect={false}
               onChangeText={(value) => { setLinkInput(value); if (inputError) setInputError(''); }}
               onSubmitEditing={handleOpenLink}
-              placeholder="A7K2 or https://us.cclip.cc/s/A7K2"
+              placeholder="A7K2 or https://us.cclip.cc/t/A7K2"
               placeholderTextColor={t.placeholder}
               selectionColor={t.primary}
               style={[styles.linkInput, inputError ? styles.linkInputError : null]}

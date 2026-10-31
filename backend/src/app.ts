@@ -15,6 +15,8 @@ import userRoutes from './routes/users';
 import deviceRoutes from './routes/devices';
 import clipboardRoutes from './routes/clipboards';
 import sharedRoutes from './routes/shared';
+import sitesRoutes from './routes/sites';
+import siteServeRoutes from './routes/siteServe';
 import { EncryptionChangedError } from './services/encryption';
 import { RedisConnections } from './config/redis';
 
@@ -44,7 +46,14 @@ export const createApp = (redis: RedisConnections | null = null): AppBundle => {
   };
 
   app.set('trust proxy', 1); // behind Caddy
-  app.use(helmet());
+  // Helmet hardens the app/API. Hosted sites under /s serve arbitrary
+  // user HTML and set their own headers in siteServe, so helmet's defaults
+  // (notably a restrictive CSP) must not apply there.
+  const helmetMiddleware = helmet();
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/s/') || req.path === '/s') return next();
+    return helmetMiddleware(req, res, next);
+  });
   if (process.env.NODE_ENV !== 'test') {
     app.use(morgan('tiny'));
   }
@@ -71,6 +80,13 @@ export const createApp = (redis: RedisConnections | null = null): AppBundle => {
   app.use('/api/devices', deviceRoutes);
   app.use('/api/clipboards', clipboardRoutes);
   app.use('/api/shared', sharedRoutes);
+  app.use('/api/sites', sitesRoutes);
+
+  // Public hosted-site serving. This lives OUTSIDE /api (no no-store header, no
+  // API rate limiter) and serves user-provided static files from /s/<slug>.
+  // User HTML must never run on the CloudClip app origin with app cookies; this
+  // route sets no CloudClip credentials and sends nosniff on every response.
+  app.use('/s', siteServeRoutes);
 
   // Health check
   app.get('/health', (req, res) => {

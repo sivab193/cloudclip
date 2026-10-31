@@ -187,7 +187,7 @@ export default function SharedLinks() {
 			showAlert('Enter a four-character code or paste a CloudClip link.');
 			return;
 		}
-		router.push(isShareCode(credential) ? `/s/${credential}` : `/shared#${credential}`);
+		router.push(isShareCode(credential) ? `/t/${credential}` : `/shared#${credential}`);
 		setRetrieveText('');
 	};
 
@@ -350,7 +350,7 @@ export default function SharedLinks() {
 											nestedScrollEnabled
 											keyExtractor={(item) => sharedId(item.shared)}
 											renderItem={({ item }) => (
-											<TouchableOpacity onPress={() => router.push(`/s/${item.shared.code}`)}>
+											<TouchableOpacity onPress={() => router.push(`/t/${item.shared.code}`)}>
 													<View style={styles.itemContainerLight}>
 														<View style={styles.textContainer}>
 															<Text style={styles.itemTitle}>

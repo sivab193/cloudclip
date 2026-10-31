@@ -1,54 +1,55 @@
-# Graph Report - .  (2026-10-31)
+# Graph Report - cloudclip  (2026-10-31)
 
 ## Corpus Check
-- cluster-only mode — file stats not available
+- 145 files · ~81,018 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 737 nodes · 1747 edges · 53 communities (24 shown, 29 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 41 edges (avg confidence: 0.57)
+- 1006 nodes · 2248 edges · 82 communities (44 shown, 38 thin omitted)
+- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 46 edges (avg confidence: 0.58)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `31846633`
+- Built from commit: `f7c31a00`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - useTheme
-- shared.ts
-- sharedLinks.tsx
+- app.ts
+- keyService.ts
 - ApiService
 - expo
-- backend/package.json
+- dependencies
 - devDependencies
-- useClipboardSync.ts
-- keyService.ts
+- useDeviceDetails.ts
+- isVaultFreeRoute
 - RegionPicker.tsx
 - app/package.json
 - compilerOptions
 - compilerOptions
 - manifest.json
 - vercel.json
-- dependencies
+- expo
 - check-release.mjs
 - region.js
 - share-preview.js
 - metro.config.js
-- react-native-qrcode-svg
-- @zxcvbn-ts/language-common
+- react-native-svg
+- @zxcvbn-ts/language-en
 - sw.js
 - fix-html-head.mjs
 - declarations.d.ts
-- expo-constants
+- dependencies
 - expo-crypto
-- expo-device
+- CloudClip Hosted Sites — Build Plan
 - expo-font
 - expo-linking
 - expo-splash-screen
 - expo-status-bar
 - expo-system-ui
 - firebase
-- @noble/ciphers
+- sitePublisher.ts
 - @noble/hashes
 - react
 - react-dom
@@ -63,79 +64,104 @@
 - @scure/base
 - three
 - @zxcvbn-ts/core
+- sitesService.ts
+- Design System: CloudClip
+- README.md
+- routes/sites.ts
+- services/sites.ts
+- android
+- siteStorage.ts
+- siteServe.ts
+- deployment.md
+- Product
+- publisherAuth.ts
+- High-level view
+- SocketService
+- Architecture decisions
+- ios
+- Google Play release checklist
+- CloudClip
+- extra
+- platforms
+- web
+- Release readiness — 2026-09-08 snapshot
+- Do's and Don'ts
+- expo-clipboard
+- expo-document-picker
+- expo-router
+- @expo/vector-icons
+- react-native-qrcode-svg
+- socket.io-client
+- @zxcvbn-ts/language-common
 
 ## God Nodes (most connected - your core abstractions)
-1. `useTheme()` - 61 edges
-2. `useThemedStyles()` - 46 edges
-3. `ApiService` - 32 edges
-4. `useAuth()` - 25 edges
-5. `ThemeTokens` - 24 edges
-6. `useClipboardSync()` - 20 edges
-7. `fetch()` - 20 edges
-8. `ensureOk()` - 20 edges
+1. `useTheme()` - 67 edges
+2. `useThemedStyles()` - 52 edges
+3. `ApiService` - 47 edges
+4. `ensureOk()` - 30 edges
+5. `fetch()` - 29 edges
+6. `useAuth()` - 27 edges
+7. `ThemeTokens` - 27 edges
+8. `useClipboardSync()` - 20 edges
 9. `getMasterKey()` - 20 edges
-10. `SharedLinks()` - 18 edges
+10. `expo-router` - 19 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `RegionPicker()` --indirect_call--> `state()`  [INFERRED]
-  app/components/RegionPicker.tsx → app/service/__tests__/syncEngine.test.ts
-- `useClipboardSync()` --indirect_call--> `clip()`  [INFERRED]
-  app/hooks/useClipboardSync.ts → app/hooks/__tests__/useClipboardSync.test.tsx
-- `connectDB()` --references--> `User`  [EXTRACTED]
-  backend/src/config/db.ts → app/service/models.ts
 - `assertEncryptionKey()` --references--> `User`  [EXTRACTED]
   backend/src/services/encryption.ts → app/service/models.ts
-- `connectDB()` --references--> `Device`  [EXTRACTED]
-  backend/src/config/db.ts → app/service/models.ts
+- `lookupActiveSite()` --references--> `PublishedSite`  [EXTRACTED]
+  backend/src/routes/siteServe.ts → app/service/models.ts
+- `createSiteWithDeployment()` --references--> `PublishedSite`  [EXTRACTED]
+  backend/src/services/sitePublisher.ts → app/service/models.ts
+- `redeploySite()` --references--> `PublishedSite`  [EXTRACTED]
+  backend/src/services/sitePublisher.ts → app/service/models.ts
+- `verifyPublisherKey()` --references--> `PublisherKey`  [EXTRACTED]
+  backend/src/middleware/publisherAuth.ts → app/service/models.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (53 total, 29 thin omitted)
+## Communities (82 total, 38 thin omitted)
 
 ### Community 0 - "useTheme"
-Cohesion: 0.06
-Nodes (82): About(), makeStyles(), DeleteAccount(), makeStyles(), ThemeDocumentSync(), styles, makeStyles(), PrivacyPolicy() (+74 more)
+Cohesion: 0.05
+Nodes (101): About(), makeStyles(), DeleteAccount(), makeStyles(), ThemeDocumentSync(), styles, makeStyles(), PrivacyPolicy() (+93 more)
 
-### Community 1 - "shared.ts"
-Cohesion: 0.06
-Nodes (54): AppBundle, createApp(), connectDB(), closeRedis(), connectRedis(), RedisConnections, start(), Express (+46 more)
+### Community 1 - "app.ts"
+Cohesion: 0.05
+Nodes (56): AppBundle, createApp(), closeRedis(), connectRedis(), RedisConnections, start(), Express, getFirebaseAuth() (+48 more)
 
-### Community 2 - "sharedLinks.tsx"
-Cohesion: 0.10
-Nodes (41): DecoratedShared, makeStyles(), sharedId(), SharedLinks(), useAuth(), ClipboardScreen(), makeStyles(), makeStyles() (+33 more)
+### Community 2 - "keyService.ts"
+Cohesion: 0.06
+Nodes (85): Account(), makeStyles(), makeStyles(), sharedId(), SharedLinks(), AuthProvider(), makeStyles(), SharedContent() (+77 more)
 
 ### Community 3 - "ApiService"
 Cohesion: 0.11
-Nodes (17): app, firebaseConfig, clip(), Harness(), mockAuth, showAlert, API_ORIGIN, ApiService (+9 more)
+Nodes (22): DecoratedShared, ClipboardScreenProps, makeStyles(), Props, DisplayClip, API_ORIGIN, ApiService, ensureOk() (+14 more)
 
 ### Community 4 - "expo"
-Cohesion: 0.04
-Nodes (45): backgroundColor, foregroundImage, adaptiveIcon, allowBackup, blockedPermissions, intentFilters, package, projectId (+37 more)
+Cohesion: 0.13
+Nodes (14): typedRoutes, expo, description, experiments, icon, name, orientation, plugins (+6 more)
 
-### Community 5 - "backend/package.json"
-Cohesion: 0.04
-Nodes (45): author, dependencies, cors, dotenv, express, express-rate-limit, firebase-admin, helmet (+37 more)
+### Community 5 - "dependencies"
+Cohesion: 0.06
+Nodes (31): dependencies, cors, dotenv, express, express-rate-limit, fflate, firebase-admin, helmet (+23 more)
 
 ### Community 6 - "devDependencies"
-Cohesion: 0.05
-Nodes (43): socket.io-client, devDependencies, @babel/core, jest, jest-expo, @react-native/jest-preset, @types/jest, @types/react (+35 more)
+Cohesion: 0.04
+Nodes (47): author, description, devDependencies, jest, mongodb-memory-server, socket.io-client, supertest, ts-jest (+39 more)
 
-### Community 7 - "useClipboardSync.ts"
-Cohesion: 0.09
-Nodes (31): Account(), makeStyles(), TabLayout(), AuthContext, AuthContextProps, AuthProvider(), ClipboardScreenProps, TabBarIcon() (+23 more)
-
-### Community 8 - "keyService.ts"
-Cohesion: 0.16
-Nodes (33): makeStyles(), Mode, UnlockModal(), deriveKek(), formatRecoveryCode(), generateMasterKey(), generateRecoveryCode(), generateSaltB64() (+25 more)
+### Community 7 - "useDeviceDetails.ts"
+Cohesion: 0.42
+Nodes (7): defaultDeviceName(), DeviceDetails, useDeviceDetails(), getAppDeviceId(), getDeviceId(), getDeviceOS(), getWebDeviceId()
 
 ### Community 9 - "RegionPicker.tsx"
-Cohesion: 0.12
+Cohesion: 0.11
 Nodes (25): RootLayout(), clientSnapshot(), Description(), makeStyles(), platforms, serverSnapshot(), subscribe(), GatewayRegionRedirect() (+17 more)
 
 ### Community 10 - "app/package.json"
-Cohesion: 0.07
-Nodes (28): engines, node, jest, preset, transformIgnorePatterns, main, name, overrides (+20 more)
+Cohesion: 0.04
+Nodes (45): devDependencies, @babel/core, jest, jest-expo, @react-native/jest-preset, @types/jest, @types/react, @types/three (+37 more)
 
 ### Community 11 - "compilerOptions"
 Cohesion: 0.12
@@ -153,10 +179,6 @@ Nodes (13): background_color, categories, description, display, icons, name, ori
 Cohesion: 0.18
 Nodes (10): includeFiles, buildCommand, cleanUrls, devCommand, framework, functions, api/share-preview.js, headers (+2 more)
 
-### Community 15 - "dependencies"
-Cohesion: 0.25
-Nodes (8): dependencies, expo, expo-clipboard, expo-router, @expo/vector-icons, expo, expo-clipboard, @expo/vector-icons
-
 ### Community 16 - "check-release.mjs"
 Cohesion: 0.25
 Nodes (7): eas, env, envFile, errors, links, pkg, required
@@ -165,33 +187,121 @@ Nodes (7): eas, env, envFile, errors, links, pkg, required
 Cohesion: 0.60
 Nodes (4): distanceSquared(), handler(), header(), REGION_CENTERS
 
-### Community 21 - "react-native-qrcode-svg"
-Cohesion: 0.67
-Nodes (3): react-native-qrcode-svg, react-native-svg, react-native-svg
+### Community 27 - "dependencies"
+Cohesion: 0.22
+Nodes (9): dependencies, expo-constants, expo-device, expo-secure-store, @noble/ciphers, expo-constants, expo-device, expo-secure-store (+1 more)
 
-### Community 22 - "@zxcvbn-ts/language-common"
+### Community 29 - "CloudClip Hosted Sites — Build Plan"
+Cohesion: 0.06
+Nodes (30): API, Backend configuration, CloudClip Hosted Sites, How it works, Limits & safety, Not implemented (future), Acceptance criteria, Account > Developer (+22 more)
+
+### Community 36 - "sitePublisher.ts"
+Cohesion: 0.19
+Nodes (18): IPublishedSite, PublishedSiteSchema, SiteStatus, SiteVisibility, lookupActiveSite(), createSiteWithDeployment(), deploy(), PublicSite (+10 more)
+
+### Community 53 - "sitesService.ts"
+Cohesion: 0.17
+Nodes (17): makeStyles(), Sites(), detectSourceType(), formatBytes(), inferType(), isSupportedUpload(), isValidSlug(), MAX_ARCHIVE_BYTES (+9 more)
+
+### Community 54 - "Design System: CloudClip"
+Cohesion: 0.13
+Nodes (14): Buttons, Cards / Containers, Colors, Components, Design System: CloudClip, Elevation & Depth, Inputs / Fields, Layout (+6 more)
+
+### Community 55 - "README.md"
+Cohesion: 0.21
+Nodes (5): CloudClip app, CloudClip API, Repository guide, API contract, Development
+
+### Community 56 - "routes/sites.ts"
+Cohesion: 0.17
+Nodes (10): agentPublishLimiter, createKeySchema, createMetaSchema, handleSiteError(), patchSchema, publishLimiter, statusForCode(), upload (+2 more)
+
+### Community 57 - "services/sites.ts"
+Cohesion: 0.21
+Nodes (12): contentTypeFor(), ExtractedSite, extractUpload(), GeneratedPublisherKey, hasNonFallbackExtension(), isSafePath(), MAX_EXTRACTED_BYTES, MAX_FILES (+4 more)
+
+### Community 58 - "android"
+Cohesion: 0.17
+Nodes (12): backgroundColor, foregroundImage, adaptiveIcon, allowBackup, blockedPermissions, intentFilters, package, android (+4 more)
+
+### Community 59 - "siteStorage.ts"
+Cohesion: 0.20
+Nodes (10): DeploymentSourceType, DeploymentStatus, ISiteDeployment, IStoredFile, SiteDeploymentSchema, StoredFileSchema, ExtractedFile, deploymentHasFile() (+2 more)
+
+### Community 60 - "siteServe.ts"
+Cohesion: 0.24
+Nodes (9): accessCookie(), accessToken(), applyServingHeaders(), hasValidAccess(), notFound(), router, sessionSecret(), unlockLimiter (+1 more)
+
+### Community 61 - "deployment.md"
+Cohesion: 0.17
+Nodes (9): Backend release, Configure, Current verification, Deployment and rollback, Operations, Hosting on IBM instead of GCP, Backend setup, Regional deployment (+1 more)
+
+### Community 62 - "Product"
+Cohesion: 0.17
+Nodes (11): Accessibility & Inclusion, Brand Commitments, Capabilities and Constraints, Evidence on Hand, Operating Context, Platform, Positioning, Product (+3 more)
+
+### Community 63 - "publisherAuth.ts"
+Cohesion: 0.24
+Nodes (9): Express, Request, verifyPublisherKey(), IPublisherKey, PublisherKeySchema, generatePublisherKey(), hashPublisherKey(), isPublisherKeyFormat() (+1 more)
+
+### Community 64 - "High-level view"
+Cohesion: 0.22
+Nodes (8): Extraction DoS bounds — mostly covered, one cliff, High-level view, Hosted Sites: public static-site hosting at /s/&lt;slug&gt;, Ownership and publisher keys, Password gate — cryptographically fine, redeploy-invalidation is a nice property, Path traversal and zip-slip — sound, no escape found, Publish transaction — the rollback and swap ordering, Same-origin serving via Vercel rewrite — the isolation claim is false
+
+### Community 66 - "Architecture decisions"
+Cohesion: 0.25
+Nodes (8): Architecture decisions, Components, Deferred work, Deployment and scaling, Encryption contract, Identity and concurrency, Product scope, Write and sync contract
+
+### Community 67 - "ios"
+Cohesion: 0.33
+Nodes (6): ios, associatedDomains, bundleIdentifier, supportsTablet, applinks:in.cclip.cc, applinks:us.cclip.cc
+
+### Community 68 - "Google Play release checklist"
+Cohesion: 0.33
+Nodes (6): Assets, Build and device gates, Console requirements, Google Play release checklist, Listing draft, Submit
+
+### Community 69 - "CloudClip"
+Cohesion: 0.33
+Nodes (6): Architecture and release, Build an installable Android APK, CloudClip, How the regional deployment works, Run locally, Verify
+
+### Community 70 - "extra"
+Cohesion: 0.40
+Nodes (5): projectId, extra, eas, router, origin
+
+### Community 71 - "platforms"
+Cohesion: 0.50
+Nodes (4): platforms, android, ios, web
+
+### Community 72 - "web"
+Cohesion: 0.50
+Nodes (4): web, bundler, favicon, output
+
+### Community 73 - "Release readiness — 2026-09-08 snapshot"
+Cohesion: 0.50
+Nodes (4): Important fixes and cleanup, Release blockers requiring owner input or external validation, Release readiness — 2026-09-08 snapshot, Verified locally
+
+### Community 74 - "Do's and Don'ts"
 Cohesion: 0.67
-Nodes (3): @zxcvbn-ts/language-common, @zxcvbn-ts/language-en, @zxcvbn-ts/language-en
+Nodes (3): Do:, Do's and Don'ts, Don't:
 
 ## Knowledge Gaps
-- **250 isolated node(s):** `REGION_CENTERS`, `fs`, `path`, `name`, `slug` (+245 more)
+- **385 isolated node(s):** `REGION_CENTERS`, `fs`, `path`, `name`, `slug` (+380 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **29 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **38 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `dependencies` connect `dependencies` to `expo`, `devDependencies`, `app/package.json`, `react-native-qrcode-svg`, `@zxcvbn-ts/language-common`, `expo-constants`, `expo-crypto`, `expo-device`, `expo-font`, `expo-linking`, `expo-splash-screen`, `expo-status-bar`, `expo-system-ui`, `firebase`, `@noble/ciphers`, `@noble/hashes`, `react`, `react-dom`, `react-native`, `@react-native-async-storage/async-storage`, `react-native-gesture-handler`, `react-native-reanimated`, `react-native-safe-area-context`, `react-native-screens`, `react-native-web`, `react-native-worklets`, `@scure/base`, `three`, `@zxcvbn-ts/core`?**
-  _High betweenness centrality (0.338) - this node is a cross-community bridge._
-- **Why does `expo-router` connect `RegionPicker.tsx` to `useTheme`, `sharedLinks.tsx`, `expo`, `useClipboardSync.ts`, `keyService.ts`, `dependencies`?**
-  _High betweenness centrality (0.260) - this node is a cross-community bridge._
-- **Why does `expo-router` connect `dependencies` to `RegionPicker.tsx`?**
-  _High betweenness centrality (0.186) - this node is a cross-community bridge._
+- **Why does `dependencies` connect `dependencies` to `app/package.json`, `expo`, `react-native-svg`, `@zxcvbn-ts/language-en`, `expo-crypto`, `expo-font`, `expo-linking`, `expo-splash-screen`, `expo-status-bar`, `expo-system-ui`, `firebase`, `@noble/hashes`, `react`, `react-dom`, `react-native`, `@react-native-async-storage/async-storage`, `react-native-gesture-handler`, `react-native-reanimated`, `react-native-safe-area-context`, `react-native-screens`, `react-native-web`, `react-native-worklets`, `@scure/base`, `three`, `@zxcvbn-ts/core`, `expo-clipboard`, `expo-document-picker`, `expo-router`, `@expo/vector-icons`, `react-native-qrcode-svg`, `socket.io-client`, `@zxcvbn-ts/language-common`?**
+  _High betweenness centrality (0.152) - this node is a cross-community bridge._
+- **Why does `RecoveryCodeModal()` connect `useTheme` to `react`?**
+  _High betweenness centrality (0.143) - this node is a cross-community bridge._
+- **Why does `react` connect `react` to `useTheme`, `dependencies`?**
+  _High betweenness centrality (0.142) - this node is a cross-community bridge._
 - **What connects `REGION_CENTERS`, `fs`, `path` to the rest of the system?**
-  _250 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _385 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `useTheme` be split into smaller, more focused modules?**
-  _Cohesion score 0.05895987251919455 - nodes in this community are weakly interconnected._
-- **Should `shared.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.055379746835443035 - nodes in this community are weakly interconnected._
-- **Should `sharedLinks.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.09869375907111756 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05347189418989136 - nodes in this community are weakly interconnected._
+- **Should `app.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.05042016806722689 - nodes in this community are weakly interconnected._
+- **Should `keyService.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.05750224618149147 - nodes in this community are weakly interconnected._

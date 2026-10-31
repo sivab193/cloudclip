@@ -18,7 +18,7 @@ module.exports = function handler(request, response) {
   const imageUrl = `${protocol}://${host}/shared-preview.png`;
   const queryCode = Array.isArray(request.query?.code) ? request.query.code[0] : request.query?.code;
   const code = /^[A-Z0-9]{4}$/i.test(String(queryCode || '')) ? String(queryCode).toUpperCase() : '';
-  const shareUrl = code ? `${protocol}://${host}/s/${code}` : `${protocol}://${host}/shared`;
+  const shareUrl = code ? `${protocol}://${host}/t/${code}` : `${protocol}://${host}/shared`;
   const title = 'A private clip was shared with you | CloudClip';
   const description = 'Open an encrypted, expiring text clip on CloudClip. No account required.';
 

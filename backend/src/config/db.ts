@@ -3,6 +3,9 @@ import User from '../models/User';
 import Device from '../models/Device';
 import Clipboard from '../models/Clipboard';
 import Shared from '../models/Shared';
+import PublishedSite from '../models/PublishedSite';
+import SiteDeployment from '../models/SiteDeployment';
+import PublisherKey from '../models/PublisherKey';
 
 export const connectDB = async () => {
     try {
@@ -16,6 +19,9 @@ export const connectDB = async () => {
             Device.createIndexes(),
             Clipboard.createIndexes(),
             Shared.createIndexes(),
+            PublishedSite.createIndexes(),
+            SiteDeployment.createIndexes(),
+            PublisherKey.createIndexes(),
         ]);
     } catch (error) {
         throw new Error('Database connection or index initialization failed', { cause: error });

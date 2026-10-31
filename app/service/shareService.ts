@@ -49,7 +49,7 @@ export interface AnonymousShareResult {
 /** New links expose only the short code. Legacy links retain their token fragment. */
 export const getSharedLinkURL = (token: string): string => {
     const code = shareCodeFromToken(token);
-    return code.length === 4 ? `${getWebUrl()}/s/${code}` : `${getWebUrl()}/shared#${token}`;
+    return code.length === 4 ? `${getWebUrl()}/t/${code}` : `${getWebUrl()}/shared#${token}`;
 };
 
 export const isShareCode = (value: string): boolean => /^[A-Z0-9]{4}$/.test(value);
@@ -62,7 +62,8 @@ export const shareCredentialFromInput = (input: string | null | undefined): stri
     if (isShareCode(direct)) return direct;
     const fragment = normalizeShareToken(tokenFromFragment(value));
     if (isValidShareToken(fragment)) return fragment;
-    const match = value.match(/\/s\/([A-Z0-9]{4})(?:[/?#]|$)/i);
+    // Accept new /t/CODE links and still tolerate legacy /s/CODE links.
+    const match = value.match(/\/[st]\/([A-Z0-9]{4})(?:[/?#]|$)/i);
     if (match) return match[1].toUpperCase();
     const token = normalizeShareToken(value);
     return isValidShareToken(token) ? token : '';

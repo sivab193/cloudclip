@@ -16,7 +16,7 @@ describe('getSharedLinkURL', () => {
     it('creates a short URL containing only the four-character code', () => {
         const token = `A7K20${'1'.repeat(27)}`;
         const url = getSharedLinkURL(token);
-        expect(url).toBe('https://us.cclip.cc/s/A7K2');
+        expect(url).toBe('https://us.cclip.cc/t/A7K2');
         expect(url).not.toContain(token);
     });
 });
@@ -24,6 +24,8 @@ describe('getSharedLinkURL', () => {
 describe('shareCredentialFromInput', () => {
     it('accepts a code or short URL', () => {
         expect(shareCredentialFromInput('a7k2')).toBe('A7K2');
+        expect(shareCredentialFromInput('https://us.cclip.cc/t/a7k2')).toBe('A7K2');
+        // Legacy /s/ links remain parseable for anyone who saved one.
         expect(shareCredentialFromInput('https://us.cclip.cc/s/a7k2')).toBe('A7K2');
     });
 

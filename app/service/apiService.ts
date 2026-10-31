@@ -1,5 +1,5 @@
 import { auth } from '../firebaseConfig';
-import { Device, CustomClipboard, Shared, PublicShared, User, EncryptionKeys } from './models';
+import { Device, CustomClipboard, Shared, PublicShared, User, EncryptionKeys, PublishedSite, PublishResult, SiteDeploymentSummary, PublisherKey, SiteVisibility } from './models';
 
 // Bare origin (no /api suffix) — shared with socketService.
 export const API_ORIGIN = (process.env.EXPO_PUBLIC_API_URL || 'https://api-us.cclip.cc').replace(/\/+$/, '');
@@ -45,6 +45,16 @@ class ApiService {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     };
+  }
+
+  // Multipart uploads must NOT set Content-Type — the runtime adds the
+  // multipart boundary. Only the bearer token is attached.
+  private async getAuthOnlyHeaders(): Promise<HeadersInit> {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not authenticated');
+    const token = await user.getIdToken();
+    if (auth.currentUser !== user) throw new Error('Account changed; try again');
+    return { 'Authorization': `Bearer ${token}` };
   }
 
   // --- USERS ---
@@ -227,6 +237,114 @@ class ApiService {
       headers: await this.getHeaders()
     });
     await ensureOk(res, 'Failed to delete shared links');
+  }
+
+  // --- HOSTED SITES ---
+
+  async getSites(): Promise<PublishedSite[]> {
+    const res = await fetch(`${BACKEND_URL}/sites`, { headers: await this.getHeaders() });
+    await ensureOk(res, 'Failed to fetch sites');
+    return res.json();
+  }
+
+  async getSite(id: string): Promise<PublishedSite> {
+    const res = await fetch(`${BACKEND_URL}/sites/${encodeURIComponent(id)}`, { headers: await this.getHeaders() });
+    await ensureOk(res, 'Failed to fetch site');
+    return res.json();
+  }
+
+  // Uploads are larger than JSON requests, so use a generous timeout.
+  private async uploadMultipart(url: string, form: FormData): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 60_000);
+    try {
+      return await globalThis.fetch(url, {
+        method: 'POST',
+        headers: await this.getAuthOnlyHeaders(),
+        body: form as any,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async publishSite(params: {
+    source: Blob | { uri: string; name: string; type: string };
+    filename: string;
+    slug?: string;
+    displayName?: string;
+    visibility?: SiteVisibility;
+    password?: string;
+  }): Promise<PublishResult> {
+    const form = new FormData();
+    // On web `source` is a Blob/File; on native it's the {uri,name,type} shape.
+    form.append('source', params.source as any, params.filename);
+    if (params.slug) form.append('slug', params.slug);
+    if (params.displayName) form.append('displayName', params.displayName);
+    if (params.visibility) form.append('visibility', params.visibility);
+    if (params.password) form.append('password', params.password);
+    const res = await this.uploadMultipart(`${BACKEND_URL}/sites`, form);
+    await ensureOk(res, 'Failed to publish site');
+    return res.json();
+  }
+
+  async redeploySite(id: string, source: Blob | { uri: string; name: string; type: string }, filename: string): Promise<PublishResult> {
+    const form = new FormData();
+    form.append('source', source as any, filename);
+    const res = await this.uploadMultipart(`${BACKEND_URL}/sites/${encodeURIComponent(id)}/deployments`, form);
+    await ensureOk(res, 'Failed to redeploy site');
+    return res.json();
+  }
+
+  async getSiteDeployments(id: string): Promise<SiteDeploymentSummary[]> {
+    const res = await fetch(`${BACKEND_URL}/sites/${encodeURIComponent(id)}/deployments`, { headers: await this.getHeaders() });
+    await ensureOk(res, 'Failed to fetch deployments');
+    return res.json();
+  }
+
+  async updateSite(id: string, params: { displayName?: string; visibility?: SiteVisibility; password?: string }): Promise<PublishedSite> {
+    const res = await fetch(`${BACKEND_URL}/sites/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: await this.getHeaders(),
+      body: JSON.stringify(params),
+    });
+    await ensureOk(res, 'Failed to update site');
+    return res.json();
+  }
+
+  async deleteSite(id: string): Promise<void> {
+    const res = await fetch(`${BACKEND_URL}/sites/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: await this.getHeaders(),
+    });
+    await ensureOk(res, 'Failed to delete site');
+  }
+
+  // --- PUBLISHER KEYS ---
+
+  async getPublisherKeys(): Promise<PublisherKey[]> {
+    const res = await fetch(`${BACKEND_URL}/sites/keys/list`, { headers: await this.getHeaders() });
+    await ensureOk(res, 'Failed to fetch publisher keys');
+    return res.json();
+  }
+
+  async createPublisherKey(label: string): Promise<PublisherKey> {
+    const res = await fetch(`${BACKEND_URL}/sites/keys`, {
+      method: 'POST',
+      headers: await this.getHeaders(),
+      body: JSON.stringify({ label }),
+    });
+    await ensureOk(res, 'Failed to create publisher key');
+    return res.json();
+  }
+
+  async deletePublisherKey(id: string): Promise<void> {
+    const res = await fetch(`${BACKEND_URL}/sites/keys/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: await this.getHeaders(),
+    });
+    await ensureOk(res, 'Failed to revoke publisher key');
   }
 }
 

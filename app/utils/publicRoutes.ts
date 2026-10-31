@@ -5,4 +5,4 @@ export const isVaultFreeRoute = (pathname: string): boolean =>
   pathname === '/share' ||
   pathname === '/shared' ||
   pathname.startsWith('/shared/') ||
-  pathname.startsWith('/s/');
+  pathname.startsWith('/t/');

@@ -64,6 +64,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="sites"
+        options={{
+          title: 'Sites',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name={focused ? 'globe' : 'globe-outline'} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="account"
         options={{
           title: 'Account',

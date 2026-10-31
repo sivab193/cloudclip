@@ -17,7 +17,8 @@
             ]
         },
         {
-            "source": "/(.*)",
+            "comment": "App/SPA security headers. Excludes /s/* (hosted sites), which are proxied to the backend and must set their own headers so user HTML can render.",
+            "source": "/((?!s/).*)",
             "headers": [
                 {
                     "key": "Content-Security-Policy",
@@ -28,12 +29,23 @@
                 { "key": "X-Frame-Options", "value": "DENY" },
                 { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" }
             ]
+        },
+        {
+            "comment": "Transport security applies everywhere, including hosted sites.",
+            "source": "/s/(.*)",
+            "headers": [
+                { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" }
+            ]
         }
     ],
     "rewrites": [
         {
-            "source": "/s/:code",
+            "source": "/t/:code",
             "destination": "/api/share-preview?code=:code"
+        },
+        {
+            "source": "/s/:path*",
+            "destination": "https://api-us.cclip.cc/s/:path*"
         },
         {
             "source": "/:path*",
