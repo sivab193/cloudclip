@@ -1,0 +1,12 @@
+# Local graphify build artifacts — not part of the shared knowledge-graph map.
+# The committed map is graph.json, GRAPH_REPORT.md, graph.html and the
+# .graphify_* / manifest.json sidecars; everything below is machine-local.
+
+# Incremental AST cache and stat index (rebuilt on `graphify update`)
+cache/
+
+# Dated backups graphify writes before re-labelling
+[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
+
+# Machine-local pointer to the scan root (absolute path) — not portable
+.graphify_root
