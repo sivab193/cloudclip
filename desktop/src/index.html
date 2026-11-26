@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>CloudClip</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+  <a class="skip-link" href="#history-title">Skip to clipboard history</a>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="CloudClip tools">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 28 28"><path d="M8.5 21h11a5.5 5.5 0 0 0 .4-11 7.1 7.1 0 0 0-13.7 2A4.5 4.5 0 0 0 8.5 21Z"/><path d="M11 15h6m-3-3v6"/></svg></span><span>CloudClip</span></div>
+      <nav aria-label="Primary"><button class="nav-item active" data-view="history"><span>History</span><kbd>⌘⇧V</kbd></button><button class="nav-item" data-view="settings"><span>Settings</span></button></nav>
+      <div class="privacy-note"><span class="status-dot"></span><div><strong>Local by default</strong><small>Nothing leaves this Mac until you choose it.</small></div></div>
+    </aside>
+    <main>
+      <section id="history-view" class="view">
+        <header class="topbar"><div><h1 id="history-title" tabindex="-1">Clipboard history</h1><p>Copy, pin, and capture without sending anything to the cloud.</p></div><div class="capture-actions"><button id="capture-screen" class="secondary-button"><svg aria-hidden="true" viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 8h6v4H7Z"/></svg> Full screen</button><button id="capture-region" class="primary-button"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M7 3H3v4M13 3h4v4M17 13v4h-4M7 17H3v-4"/></svg> New snip <kbd>⌘⇧5</kbd></button></div></header>
+        <div class="toolbar"><label class="search"><span class="visually-hidden">Search clipboard history</span><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg><input id="search" type="search" placeholder="Search local history" autocomplete="off"></label><button id="clear-all" class="quiet-button">Clear history</button></div>
+        <div id="status" role="status" aria-live="polite" class="status-message"></div>
+        <ol id="history-list" class="history-list" aria-label="Clipboard items"></ol>
+        <div id="empty" class="empty-state" hidden><svg aria-hidden="true" viewBox="0 0 48 48"><rect x="12" y="10" width="24" height="30" rx="5"/><path d="M19 10V7h10v3M18 19h12M18 25h9"/></svg><h2>Your local history is ready</h2><p>Copy text, copy an image, or make a snip. It will stay on this Mac.</p><button class="primary-button" id="empty-capture">Capture a region</button></div>
+      </section>
+      <section id="settings-view" class="view settings" hidden>
+        <header class="topbar"><div><h1 tabindex="-1">Settings</h1><p>Choose what CloudClip keeps and when it may use the network.</p></div></header>
+        <form id="settings-form">
+          <fieldset><legend>Clipboard</legend><label class="setting-row" for="monitor"><span><strong>Watch the local clipboard</strong><small>Save new text and images while CloudClip is running.</small></span><input id="monitor" type="checkbox" role="switch"></label></fieldset>
+          <fieldset><legend>Storage</legend><label class="field-row" for="retention"><span><strong>Keep unpinned items</strong><small>Pinned clips are kept until you delete them.</small></span><select id="retention"><option value="7">7 days</option><option value="30">30 days</option><option value="90">90 days</option><option value="365">1 year</option></select></label><label class="field-row" for="max-items"><span><strong>Maximum history</strong><small>Oldest unpinned items are removed first.</small></span><select id="max-items"><option value="100">100 items</option><option value="500">500 items</option><option value="1000">1,000 items</option><option value="5000">5,000 items</option></select></label></fieldset>
+          <fieldset><legend>Mac</legend><label class="setting-row" for="launch"><span><strong>Launch at login</strong><small>Start CloudClip hidden in the menu bar.</small></span><input id="launch" type="checkbox" role="switch"></label></fieldset>
+          <fieldset><legend>Cloud sync</legend><div class="sync-explainer"><div><strong>Sync only when you ask</strong><p>Use “Send to CloudClip” on a text clip. CloudClip copies it, opens your encrypted account, and waits for you to paste and save. Background upload is never enabled.</p></div><span class="local-badge">Manual</span></div></fieldset>
+        </form>
+      </section>
+    </main>
+  </div>
+  <template id="text-item"><li class="history-item"><button class="item-main" data-action="copy"><span class="type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></span><span class="item-content"><strong></strong><small></small></span></button><div class="item-actions"><button data-action="pin" aria-label="Pin clip">Pin</button><button data-action="sync">Send to CloudClip</button><button data-action="delete" aria-label="Delete clip">Delete</button></div></li></template>
+  <template id="image-item"><li class="history-item image-item"><button class="item-main" data-action="copy"><img alt="Captured screen region"><span class="item-content"><strong>Screen capture</strong><small></small></span></button><div class="item-actions"><button data-action="pin" aria-label="Pin capture">Pin</button><button data-action="reveal">Show in Finder</button><button data-action="delete" aria-label="Delete capture">Delete</button></div></li></template>
+  <script src="renderer.js"></script>
+</body></html>

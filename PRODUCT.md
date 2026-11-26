@@ -22,7 +22,7 @@ CloudClip combines a lightweight personal clipboard stream with client-side encr
 
 ## Operating Context
 
-The web app is available now. Users choose an active geographic region before signing in or opening a shared clip. Native apps, encrypted file transfer, a custom CloudClip keyboard, and self-hosting are planned capabilities.
+The web app is available now. Users choose an active geographic region before signing in or opening a shared clip. A local-first macOS utility provides on-device text/image clipboard history and user-initiated screen capture. Network handoff is explicit; other native apps, encrypted file transfer, a custom CloudClip keyboard, and self-hosting remain planned capabilities.
 
 ## Capabilities and Constraints
 
@@ -31,7 +31,7 @@ The web app is available now. Users choose an active geographic region before si
 - Expiring encrypted links can be opened without an account using a short link or four-character code.
 - Expiry choices range from 10 minutes to 7 days anonymously and 30 days for signed-in users; signed-in owners can change an active link's expiry.
 - The US region is available today. The independent India deployment is coming soon.
-- Files, background clipboard monitoring, native platform releases, custom keyboard integration, and end-user self-hosting are not yet available and must be labeled as coming soon.
+- The macOS utility can monitor the local clipboard while it is running and retain captures locally. Cloud storage remains text-only and user-initiated. Other native platform releases, encrypted file transfer, custom keyboard integration, and end-user self-hosting are not yet available and must be labeled as coming soon.
 
 ## Brand Commitments
 

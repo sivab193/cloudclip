@@ -1,0 +1,46 @@
+{
+  "name": "cloudclip-macos",
+  "version": "1.0.0",
+  "description": "Local-first CloudClip clipboard history and screen capture for macOS",
+  "author": "siv19.dev",
+  "main": "src/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/history-store.js && node --check src/renderer.js && node --check src/overlay.js",
+    "build:mac": "electron-builder --mac dmg zip",
+    "build:dir": "electron-builder --mac dir"
+  },
+  "devDependencies": {
+    "electron": "45.5.0",
+    "electron-builder": "26.18.0"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "build": {
+    "appId": "com.cloudclip.desktop",
+    "productName": "CloudClip",
+    "asar": true,
+    "afterPack": "scripts/after-pack.js",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "../app/assets/images/icon.png",
+      "target": ["dmg", "zip"],
+      "minimumSystemVersion": "12.0",
+      "extendInfo": {
+        "NSAppleEventsUsageDescription": "CloudClip uses system services only when you choose a capture action.",
+        "NSScreenCaptureUsageDescription": "CloudClip needs screen recording permission when you choose a snip or screen capture."
+      }
+    },
+    "dmg": {
+      "sign": false
+    }
+  },
+  "private": true
+}

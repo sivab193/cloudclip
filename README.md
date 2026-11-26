@@ -1,6 +1,6 @@
 # CloudClip
 
-CloudClip is a quiet place to keep useful text and share it through private, expiring links. The [web app](https://cclip.cc) is available now. iOS, Android, macOS, Windows and Linux apps are on the roadmap.
+CloudClip is a quiet place to keep useful text and share it through private, expiring links. The [web app](https://cclip.cc) is available now. A local-first macOS app is available in [`desktop/`](desktop/README.md); iOS, Android, Windows and Linux apps remain on the roadmap.
 
 The website has an [About page](https://cclip.cc/about), a [privacy policy](https://cclip.cc/privacy), and an account-free sharing flow. CloudClip is built in the open by [siv19.dev](https://siv19.dev/); the site footer also links to [GitHub](https://github.com/sivab193), [LinkedIn](https://www.linkedin.com/in/sivab193/), and [Instagram](https://www.instagram.com/siv19.dev/). The source repository is [sivab193/cloudclip](https://github.com/sivab193/cloudclip).
 
@@ -8,7 +8,7 @@ Anyone can create a client-side encrypted, expiring text link without registerin
 
 Every new share has a four-character uppercase alphanumeric code (for example, `A7K2`) and a short URL such as `https://us.cclip.cc/s/A7K2`. Either is enough to open the clip. The text is encrypted in the client; the backend stores the decryption token encrypted at rest so it can recover it for tightly rate-limited code lookups. Personal clipboard sync uses a separate end-to-end encryption design whose key is not held by the backend.
 
-Clipboard content is encrypted on the client. Automatic clipboard access is opt-in and runs only while the app is visible. Encrypted file transfer, a custom CloudClip keyboard, native apps and a user-friendly self-hosted edition are coming soon. Images, background clipboard monitoring and an offline write queue are not implemented today.
+Clipboard content is encrypted on the client. Automatic clipboard access is opt-in and runs only while the web/mobile app is visible. Encrypted file transfer, a custom CloudClip keyboard, other native apps and a user-friendly self-hosted edition are coming soon. The macOS utility can retain text and image clipboard history locally while it runs, capture screen regions, and work fully offline. It never uploads local history automatically; cloud storage remains text-only and user-initiated.
 
 The web interface supports light and dark appearance. It follows the device theme until a visitor uses the header toggle, then remembers that choice. The current logo, colors, and component guidance are documented in [DESIGN.md](DESIGN.md).
 
@@ -76,6 +76,18 @@ eas build --platform android --profile preview
 ```
 
 When the build finishes, EAS provides an install link that can be shared directly with testers. The `production` profile creates an Android App Bundle (`.aab`) for Google Play instead of an APK.
+
+## Run the macOS app locally
+
+```sh
+cd desktop
+npm ci
+npm test
+npm run check
+npm start
+```
+
+See the [macOS development and packaging guide](desktop/README.md) for capture permissions, local storage behavior, keyboard shortcuts, and building a DMG.
 
 ## Architecture and release
 
