@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "check:release": "node scripts/check-release.mjs",
     "eas-build-post-install": "npm run typecheck && npm run check:release",
-    "build:web": "expo export --platform web && node scripts/fix-html-head.mjs",
+    "build:web": "expo export --platform web --clear && node scripts/fix-html-head.mjs",
     "cf:types": "wrangler types",
     "cf:deploy": "npm run build:web && wrangler deploy"
   },

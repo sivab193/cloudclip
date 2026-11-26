@@ -55,7 +55,7 @@ document.querySelector('#capture-window').addEventListener('click', async () => 
 });
 document.querySelector('#capture-screen').addEventListener('click', async () => {
   const count = await window.cloudclip.captureScreen();
-  announce(count ? `${count} ${count === 1 ? 'screen' : 'screens'} captured locally.` : 'Capture failed. Check Screen Recording permission in System Settings.');
+  announce(count ? `${count} ${count === 1 ? 'screen' : 'screens'} captured locally. The last screen is ready to paste.` : 'Capture failed. Check Screen Recording permission in System Settings.');
 });
 document.querySelector('#open-storage').addEventListener('click', async () => announce(await window.cloudclip.openStorage() ? 'Opened the local data folder in Finder.' : 'Could not open the local data folder.'));
 document.querySelector('#clear-all').addEventListener('click', async () => { if (confirm('Delete all local clipboard history? Pinned items will also be removed.')) { await window.cloudclip.clear(); announce('Local history cleared.'); } });

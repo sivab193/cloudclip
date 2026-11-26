@@ -59,14 +59,14 @@ function startClipboardMonitor() {
     const text = typeof clipboardText === 'string' ? clipboardText : '';
     const image = await readClipboardImage();
     let item = null;
-    if (text.trim()) {
-      const digest = hash(`text:${text}`);
-      if (digest !== previousClipboardHash) item = store.addText(text);
-      previousClipboardHash = digest;
-    } else if (!image.isEmpty()) {
+    if (!image.isEmpty()) {
       const png = image.toPNG();
       const digest = hash(png);
       if (digest !== previousClipboardHash) item = store.addImage(png);
+      previousClipboardHash = digest;
+    } else if (text.trim()) {
+      const digest = hash(`text:${text}`);
+      if (digest !== previousClipboardHash) item = store.addText(text);
       previousClipboardHash = digest;
     }
     if (item) broadcast();
@@ -127,11 +127,15 @@ async function copyItem(id) {
   const item = store.list().items.find((candidate) => candidate.id === id);
   if (!item) return false;
   if (item.type === 'text') {
+    clipboard.clear();
     await Promise.resolve(clipboard.writeText(item.text));
     previousClipboardHash = item.hash;
   } else if (item.path) {
     const image = nativeImage.createFromPath(item.path);
-    if (typeof clipboard.writeImage === 'function') await Promise.resolve(clipboard.writeImage(image));
+    if (image.isEmpty()) return false;
+    clipboard.clear();
+    if (typeof clipboard.write === 'function') await Promise.resolve(clipboard.write({ image }));
+    else if (typeof clipboard.writeImage === 'function') await Promise.resolve(clipboard.writeImage(image));
     else if (typeof clipboard.writeBuffer === 'function') await Promise.resolve(clipboard.writeBuffer('public.png', image.toPNG()));
     else return false;
     previousClipboardHash = item.hash;
@@ -155,7 +159,12 @@ async function captureScreen() {
     for (const [index, display] of screen.getAllDisplays().entries()) {
       const source = await getScreenSource(display);
       if (!source || source.thumbnail.isEmpty()) continue;
-      store.addImage(source.thumbnail.toPNG(), `full-screen capture · display ${index + 1}`);
+      const item = store.addImage(source.thumbnail.toPNG(), `full-screen capture · display ${index + 1}`);
+      if (item) {
+        clipboard.clear();
+        clipboard.write({ image: source.thumbnail });
+        previousClipboardHash = item.hash;
+      }
       captured += 1;
     }
     if (captured) broadcast();
@@ -275,7 +284,10 @@ function registerIpc() {
   ipcMain.on('window-capture:select', (_event, id) => {
     const source = windowCaptureSources.get(id);
     if (!source || source.thumbnail.isEmpty()) return;
-    store.addImage(source.thumbnail.toPNG(), 'window capture');
+    const item = store.addImage(source.thumbnail.toPNG(), 'window capture');
+    clipboard.clear();
+    clipboard.write({ image: source.thumbnail });
+    if (item) previousClipboardHash = item.hash;
     broadcast();
     closeWindowPicker();
   });
@@ -293,7 +305,14 @@ function registerIpc() {
     };
     const result = payload.image.crop(crop);
     closeOverlays();
-    if (!result.isEmpty()) { store.addImage(result.toPNG(), 'region capture'); broadcast(); showWindow(); }
+    if (!result.isEmpty()) {
+      const item = store.addImage(result.toPNG(), 'region capture');
+      clipboard.clear();
+      clipboard.write({ image: result });
+      if (item) previousClipboardHash = item.hash;
+      broadcast();
+      showWindow();
+    }
   });
 }
 
