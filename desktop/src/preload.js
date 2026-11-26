@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('cloudclip', {
   sendToCloudClip: (id) => ipcRenderer.invoke('sync:send', id),
   revealFile: (id) => ipcRenderer.invoke('history:reveal', id),
   showWindow: () => ipcRenderer.invoke('window:show'),
+  hideWindow: () => ipcRenderer.invoke('window:hide'),
   onChanged: (listener) => {
     const handler = (_event, state) => listener(state);
     ipcRenderer.on('history:changed', handler);
@@ -22,5 +23,10 @@ contextBridge.exposeInMainWorld('cloudclip', {
     const handler = () => listener();
     ipcRenderer.on('capture:trigger', handler);
     return () => ipcRenderer.removeListener('capture:trigger', handler);
+  },
+  onWindowShown: (listener) => {
+    const handler = (_event, options) => listener(options);
+    ipcRenderer.on('window:shown', handler);
+    return () => ipcRenderer.removeListener('window:shown', handler);
   },
 });

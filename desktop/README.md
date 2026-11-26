@@ -7,12 +7,22 @@ CloudClip for macOS is a local-first clipboard history and screen capture utilit
 - Local text and image clipboard history
 - Region snipping across connected displays (`⌘⇧5`)
 - Full-screen capture (`⌘⇧6`)
-- Quick history window (`⌘⇧V`) and menu-bar access
+- Quick history window (`⌘⇧V`) and a visible `CC` menu-bar item
+- Copy any of the five most recent items from anywhere (`⌘⌥1` through `⌘⌥5`)
 - Search, copy, pin, reveal in Finder, delete, and retention controls
 - Optional launch at login
 - Explicit text handoff to the existing encrypted CloudClip web app
 
 “Send to CloudClip” is deliberately manual: it copies the selected text and opens the signed-in web app. The user pastes and saves it there. The desktop app never uploads clipboard history in the background. Image sync is not represented as supported because the CloudClip API is text-only today.
+
+## Keyboard shortcuts
+
+- `⌘⇧V` — open Quick History and focus search
+- `⌘⌥1` … `⌘⌥5` — copy one of the five most recent clips without opening the window
+- `⌘K` — focus history search while the window is open
+- `Esc` — hide the window back to the menu bar
+- `⌘⇧5` — capture a region
+- `⌘⇧6` — capture the current screen
 
 ## Develop
 
