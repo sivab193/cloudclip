@@ -11,6 +11,8 @@ let store;
 let pollTimer;
 let previousClipboardHash = '';
 let overlayWindows = [];
+let windowPicker;
+let windowCaptureSources = new Map();
 const APP_URL = 'https://us.cclip.cc';
 
 function menuBarIcon() {
@@ -88,13 +90,14 @@ function rebuildTrayMenu() {
   if (!tray || !store) return;
   const recent = store.list().items.slice(0, 5).map((item, index) => ({
     label: `${index + 1}. ${item.type === 'text' ? item.text.replace(/\s+/g, ' ').slice(0, 38) : `Screen capture · ${new Date(item.createdAt).toLocaleTimeString()}`}`,
-    accelerator: `CommandOrControl+Alt+${index + 1}`,
+    accelerator: `Control+Alt+${index + 1}`,
     click: () => copyItem(item.id),
   }));
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Open Quick History', accelerator: 'CommandOrControl+Shift+V', click: () => showWindow(true) },
-    { label: 'Capture Region', accelerator: 'CommandOrControl+Shift+5', click: captureRegion },
-    { label: 'Capture Screen', click: captureScreen },
+    { label: 'Capture Window', accelerator: 'CommandOrControl+Alt+3', click: captureWindow },
+    { label: 'Capture Region', accelerator: 'CommandOrControl+Alt+4', click: captureRegion },
+    { label: 'Capture All Screens', accelerator: 'CommandOrControl+Alt+5', click: captureScreen },
     { type: 'separator' },
     ...(recent.length ? recent : [{ label: 'No recent clips', enabled: false }]),
     { type: 'separator' },
@@ -112,9 +115,11 @@ async function copyRecent(index) {
 
 function registerShortcuts() {
   globalShortcut.register('CommandOrControl+Shift+V', () => showWindow(true));
-  globalShortcut.register('CommandOrControl+Shift+5', captureRegion);
+  globalShortcut.register('CommandOrControl+Alt+3', captureWindow);
+  globalShortcut.register('CommandOrControl+Alt+4', captureRegion);
+  globalShortcut.register('CommandOrControl+Alt+5', captureScreen);
   for (let index = 0; index < 5; index++) {
-    globalShortcut.register(`CommandOrControl+Alt+${index + 1}`, () => void copyRecent(index));
+    globalShortcut.register(`Control+Alt+${index + 1}`, () => void copyRecent(index));
   }
 }
 
@@ -146,13 +151,63 @@ async function getScreenSource(display) {
 
 async function captureScreen() {
   try {
-    const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
-    const source = await getScreenSource(display);
-    if (!source || source.thumbnail.isEmpty()) return false;
-    store.addImage(source.thumbnail.toPNG(), 'full-screen capture');
-    broadcast();
-    return true;
+    let captured = 0;
+    for (const [index, display] of screen.getAllDisplays().entries()) {
+      const source = await getScreenSource(display);
+      if (!source || source.thumbnail.isEmpty()) continue;
+      store.addImage(source.thumbnail.toPNG(), `full-screen capture · display ${index + 1}`);
+      captured += 1;
+    }
+    if (captured) broadcast();
+    return captured;
   } catch { return false; }
+}
+
+async function captureWindow() {
+  closeWindowPicker();
+  mainWindow?.hide();
+  try {
+    const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    const sources = await desktopCapturer.getSources({
+      types: ['window'],
+      thumbnailSize: {
+        width: Math.max(2400, Math.round(display.size.width * display.scaleFactor)),
+        height: Math.max(1600, Math.round(display.size.height * display.scaleFactor)),
+      },
+      fetchWindowIcons: true,
+    });
+    const usableSources = sources.filter((source) => !source.thumbnail.isEmpty() && source.name !== 'CloudClip');
+    if (!usableSources.length) { showWindow(); return false; }
+    windowCaptureSources = new Map(usableSources.map((source) => [source.id, source]));
+    windowPicker = new BrowserWindow({
+      width: 820, height: 620, minWidth: 560, minHeight: 420,
+      title: 'Choose a window', backgroundColor: nativeTheme.shouldUseDarkColors ? '#10151b' : '#f6f5f1',
+      titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 18, y: 18 }, alwaysOnTop: true,
+      webPreferences: { preload: path.join(__dirname, 'window-picker-preload.js'), contextIsolation: true, sandbox: true },
+    });
+    windowPicker.on('closed', () => {
+      windowPicker = null;
+      windowCaptureSources.clear();
+      showWindow();
+    });
+    await windowPicker.loadFile(path.join(__dirname, 'window-picker.html'));
+    windowPicker.webContents.send('window-capture:sources', usableSources.map((source) => ({
+      id: source.id, name: source.name,
+      thumbnail: source.thumbnail.resize({ width: 440 }).toDataURL(),
+      icon: source.appIcon && !source.appIcon.isEmpty() ? source.appIcon.resize({ width: 32, height: 32 }).toDataURL() : null,
+    })));
+    return true;
+  } catch {
+    closeWindowPicker();
+    showWindow();
+    return false;
+  }
+}
+
+function closeWindowPicker() {
+  if (windowPicker && !windowPicker.isDestroyed()) windowPicker.destroy();
+  windowPicker = null;
+  windowCaptureSources.clear();
 }
 
 async function captureRegion() {
@@ -192,6 +247,7 @@ function registerIpc() {
     if (item?.path) shell.showItemInFolder(item.path);
     return Boolean(item?.path);
   });
+  ipcMain.handle('storage:open', async () => (await shell.openPath(store.root)) === '');
   ipcMain.handle('settings:update', (_event, settings) => {
     const result = store.updateSettings(settings);
     app.setLoginItemSettings({ openAtLogin: result.launchAtLogin, openAsHidden: true });
@@ -199,6 +255,7 @@ function registerIpc() {
     return result;
   });
   ipcMain.handle('capture:region', captureRegion);
+  ipcMain.handle('capture:window', captureWindow);
   ipcMain.handle('capture:screen', captureScreen);
   ipcMain.handle('window:show', () => { showWindow(); return true; });
   ipcMain.handle('window:hide', () => { mainWindow?.hide(); return true; });
@@ -214,6 +271,14 @@ function registerIpc() {
     return { ok: true, message: 'Copied locally and opened CloudClip. Paste, then save when you are ready to sync.' };
   });
   ipcMain.on('capture:cancel', closeOverlays);
+  ipcMain.on('window-capture:cancel', closeWindowPicker);
+  ipcMain.on('window-capture:select', (_event, id) => {
+    const source = windowCaptureSources.get(id);
+    if (!source || source.thumbnail.isEmpty()) return;
+    store.addImage(source.thumbnail.toPNG(), 'window capture');
+    broadcast();
+    closeWindowPicker();
+  });
   ipcMain.on('capture:complete', (event, selection) => {
     const overlay = BrowserWindow.fromWebContents(event.sender);
     const payload = overlay?.capturePayload;
@@ -238,8 +303,9 @@ function installMenu() {
     { label: 'Clip', submenu: [
       { label: 'Open Quick History', accelerator: 'CommandOrControl+Shift+V', click: () => showWindow(true) },
       { type: 'separator' },
-      { label: 'Capture Region', accelerator: 'CommandOrControl+Shift+5', click: captureRegion },
-      { label: 'Capture Screen', accelerator: 'CommandOrControl+Shift+6', click: captureScreen },
+      { label: 'Capture Window', accelerator: 'CommandOrControl+Alt+3', click: captureWindow },
+      { label: 'Capture Region', accelerator: 'CommandOrControl+Alt+4', click: captureRegion },
+      { label: 'Capture All Screens', accelerator: 'CommandOrControl+Alt+5', click: captureScreen },
       { type: 'separator' }, { role: 'close' },
     ] },
     { role: 'editMenu' }, { role: 'viewMenu' }, { role: 'windowMenu' },
@@ -261,5 +327,5 @@ app.whenReady().then(() => {
 });
 
 app.on('activate', () => showWindow());
-app.on('before-quit', () => { app.isQuitting = true; clearInterval(pollTimer); globalShortcut.unregisterAll(); closeOverlays(); });
+app.on('before-quit', () => { app.isQuitting = true; clearInterval(pollTimer); globalShortcut.unregisterAll(); closeOverlays(); closeWindowPicker(); });
 app.on('window-all-closed', () => { /* menu-bar utility remains available */ });

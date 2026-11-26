@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "cloudclip-web",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-11-26",
+  "upload_source_maps": true,
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "cclip.cc/*",
+      "zone_name": "cclip.cc"
+    }
+  ],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "r2_buckets": [
+    {
+      "binding": "RELEASES",
+      "bucket_name": "cloudclip-releases"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
+  }
+}

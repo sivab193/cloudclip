@@ -8,7 +8,7 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test test/*.test.js",
-    "check": "node --check src/main.js && node --check src/preload.js && node --check src/history-store.js && node --check src/renderer.js && node --check src/overlay.js",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/history-store.js && node --check src/renderer.js && node --check src/overlay.js && node --check src/window-picker-preload.js && node --check src/window-picker.js",
     "build:mac": "electron-builder --mac dmg zip",
     "build:dir": "electron-builder --mac dir"
   },

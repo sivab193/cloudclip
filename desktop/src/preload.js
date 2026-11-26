@@ -9,9 +9,11 @@ contextBridge.exposeInMainWorld('cloudclip', {
   togglePin: (id) => ipcRenderer.invoke('history:toggle-pin', id),
   updateSettings: (settings) => ipcRenderer.invoke('settings:update', settings),
   captureRegion: () => ipcRenderer.invoke('capture:region'),
+  captureWindow: () => ipcRenderer.invoke('capture:window'),
   captureScreen: () => ipcRenderer.invoke('capture:screen'),
   sendToCloudClip: (id) => ipcRenderer.invoke('sync:send', id),
   revealFile: (id) => ipcRenderer.invoke('history:reveal', id),
+  openStorage: () => ipcRenderer.invoke('storage:open'),
   showWindow: () => ipcRenderer.invoke('window:show'),
   hideWindow: () => ipcRenderer.invoke('window:hide'),
   onChanged: (listener) => {

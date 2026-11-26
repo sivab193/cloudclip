@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import LoginPopup from './LoginModal';
@@ -16,7 +16,7 @@ const platforms = [
   { name: 'Web', icon: 'globe-outline', live: true },
   { name: 'iOS', icon: 'logo-apple', live: false },
   { name: 'Android', icon: 'logo-android', live: false },
-  { name: 'macOS', icon: 'desktop-outline', live: false },
+  { name: 'macOS', icon: 'desktop-outline', live: true },
   { name: 'Windows', icon: 'logo-windows', live: false },
   { name: 'Linux', icon: 'terminal-outline', live: false },
 ] as const;
@@ -54,6 +54,10 @@ export default function Description({ openLoginInitially = false }: { openLoginI
           <Pressable accessibilityRole="button" onPress={() => go('/')} style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
             <Text style={styles.secondaryText}>Log in / Sign up</Text>
           </Pressable>
+          <Pressable accessibilityRole="link" accessibilityLabel="Download CloudClip for macOS" onPress={() => void Linking.openURL('https://cclip.cc/downloads/cloudclip-macos.dmg')} style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
+            <Ionicons name="logo-apple" size={17} color={t.primary} />
+            <Text style={styles.secondaryText}>Download for macOS</Text>
+          </Pressable>
         </View>
         <Pressable accessibilityRole="link" onPress={() => go('/shared')} style={styles.existingLink}>
           <Text style={styles.existingText}>Have a shared link? Open it</Text>
@@ -85,7 +89,7 @@ export default function Description({ openLoginInitially = false }: { openLoginI
     </View>
 
     <View style={styles.platformSection}>
-      <View style={styles.sectionHeading}><Text style={styles.sectionTitle}>Available today. More on the way.</Text><Text style={styles.sectionIntro}>CloudClip works on the web now. Native apps and file transfer are planned.</Text></View>
+      <View style={styles.sectionHeading}><Text style={styles.sectionTitle}>Available today. More on the way.</Text><Text style={styles.sectionIntro}>CloudClip works on the web and macOS now. The Mac app keeps clipboard history and screen captures local until you choose to sync.</Text></View>
       <View style={styles.platforms}>{platforms.map(platform => <View key={platform.name} style={[styles.platform, !platform.live && styles.platformSoon]}><Ionicons name={platform.icon} size={21} color={platform.live ? t.primary : t.textDisabled} /><Text style={[styles.platformName, !platform.live && styles.platformNameSoon]}>{platform.name}</Text><Text style={[styles.platformState, platform.live ? styles.platformLive : styles.platformStateSoon]}>{platform.live ? 'Live' : 'Coming soon'}</Text></View>)}</View>
       <View style={[styles.upNext, compact && styles.upNextCompact]}><View style={styles.nextItem}><Ionicons name="document-attach-outline" size={21} color={t.primary} /><Text style={styles.nextText}>Encrypted file transfer <Text style={styles.nextSoon}>— coming soon</Text></Text></View><View style={styles.nextItem}><Ionicons name="keypad-outline" size={21} color={t.primary} /><Text style={styles.nextText}>CloudClip keyboard <Text style={styles.nextSoon}>— coming soon</Text></Text></View></View>
     </View>
@@ -107,7 +111,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 11, marginTop: 32 },
   primary: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 20, borderRadius: 9, backgroundColor: t.primaryStrong },
   primaryText: { color: t.onPrimary, fontSize: 14, fontWeight: '700' },
-  secondary: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 19, borderRadius: 9, borderWidth: 1, borderColor: t.border, backgroundColor: t.surface },
+  secondary: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 19, borderRadius: 9, borderWidth: 1, borderColor: t.border, backgroundColor: t.surface },
   secondaryText: { color: t.text, fontSize: 14, fontWeight: '700' },
   pressed: { opacity: .76 },
   existingLink: { alignSelf: 'flex-start', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 11 },

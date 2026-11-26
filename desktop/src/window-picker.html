@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>Choose a window</title><link rel="stylesheet" href="window-picker.css"></head>
+<body>
+  <div class="window-drag-region" aria-hidden="true"></div>
+  <main>
+    <header><div><h1>Choose a window</h1><p>Select one window to save it directly to your local CloudClip history.</p></div><button id="cancel" type="button">Cancel <kbd>Esc</kbd></button></header>
+    <p id="status" role="status" class="visually-hidden">Loading open windows</p>
+    <div id="windows" class="window-grid" role="list" aria-label="Open windows"></div>
+  </main>
+  <template id="window-card"><div role="listitem"><button type="button" class="window-card"><img class="preview" alt=""><span class="window-name"><img class="app-icon" alt=""><strong></strong></span></button></div></template>
+  <script src="window-picker.js"></script>
+</body>
+</html>

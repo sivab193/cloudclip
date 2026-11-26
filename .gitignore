@@ -31,6 +31,7 @@ app/android/
 app/ios/
 app/dist-android/
 .impeccable/
+.wrangler/
 *.aab
 *.apk
 config.txt

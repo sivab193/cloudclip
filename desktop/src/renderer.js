@@ -18,12 +18,12 @@ function render() {
     element.dataset.id = item.id;
     const recentIndex = state.items.findIndex((candidate) => candidate.id === item.id);
     const shortcut = element.querySelector('.shortcut-number');
-    if (recentIndex >= 0 && recentIndex < 5) shortcut.textContent = `⌥⌘${recentIndex + 1}`;
+    if (recentIndex >= 0 && recentIndex < 5) shortcut.textContent = `⌃⌥${recentIndex + 1}`;
     if (item.type === 'text') element.querySelector('.item-content strong').textContent = item.text.replace(/\s+/g, ' ');
     else element.querySelector('img').src = fileUrl(item.path);
     const copyButton = element.querySelector('[data-action=copy]');
     const itemLabel = item.type === 'text' ? item.text.replace(/\s+/g, ' ').slice(0, 80) : 'screen capture';
-    copyButton.setAttribute('aria-label', `Copy ${itemLabel}${recentIndex < 5 ? `, shortcut Command Option ${recentIndex + 1}` : ''}`);
+    copyButton.setAttribute('aria-label', `Copy ${itemLabel}${recentIndex < 5 ? `, shortcut Control Option ${recentIndex + 1}` : ''}`);
     element.querySelector('.item-content small').textContent = `${item.pinned ? 'Pinned · ' : ''}${item.source} · ${timeLabel(item.createdAt)}${item.syncedAt ? ' · sent' : ''}`;
     const pin = element.querySelector('[data-action=pin]');
     if (pin) { pin.textContent = item.pinned ? 'Unpin' : 'Pin'; pin.setAttribute('aria-label', `${item.pinned ? 'Unpin' : 'Pin'} ${item.type === 'text' ? 'clip' : 'capture'}`); }
@@ -35,6 +35,7 @@ function render() {
   document.querySelector('#launch').checked = Boolean(state.settings.launchAtLogin);
   document.querySelector('#retention').value = String(state.settings.retentionDays || 30);
   document.querySelector('#max-items').value = String(state.settings.maxItems || 500);
+  document.querySelector('#storage-path').textContent = state.storageDirectory || 'Unavailable';
 }
 
 async function refresh() { state = await window.cloudclip.getState(); render(); }
@@ -49,7 +50,14 @@ window.cloudclip.onWindowShown(({ quickPick }) => {
 search.addEventListener('input', render);
 document.querySelector('#capture-region').addEventListener('click', () => window.cloudclip.captureRegion());
 document.querySelector('#empty-capture').addEventListener('click', () => window.cloudclip.captureRegion());
-document.querySelector('#capture-screen').addEventListener('click', async () => announce(await window.cloudclip.captureScreen() ? 'Screen captured locally.' : 'Capture failed. Check Screen Recording permission in System Settings.'));
+document.querySelector('#capture-window').addEventListener('click', async () => {
+  if (!await window.cloudclip.captureWindow()) announce('Window capture failed. Check Screen Recording permission in System Settings.');
+});
+document.querySelector('#capture-screen').addEventListener('click', async () => {
+  const count = await window.cloudclip.captureScreen();
+  announce(count ? `${count} ${count === 1 ? 'screen' : 'screens'} captured locally.` : 'Capture failed. Check Screen Recording permission in System Settings.');
+});
+document.querySelector('#open-storage').addEventListener('click', async () => announce(await window.cloudclip.openStorage() ? 'Opened the local data folder in Finder.' : 'Could not open the local data folder.'));
 document.querySelector('#clear-all').addEventListener('click', async () => { if (confirm('Delete all local clipboard history? Pinned items will also be removed.')) { await window.cloudclip.clear(); announce('Local history cleared.'); } });
 list.addEventListener('click', async (event) => {
   const button = event.target.closest('button'); const item = event.target.closest('.history-item');
@@ -98,3 +106,22 @@ document.querySelector('#settings-form').addEventListener('change', async () => 
 });
 
 refresh();
+
+const captureToolbar = document.querySelector('[role="toolbar"]');
+if (!('focusGroup' in HTMLElement.prototype)) {
+  const items = [...captureToolbar.querySelectorAll('button')];
+  items.forEach((button, index) => { button.tabIndex = index === 0 ? 0 : -1; });
+  captureToolbar.addEventListener('focusin', ({ target }) => {
+    if (items.includes(target)) items.forEach((button) => { button.tabIndex = button === target ? 0 : -1; });
+  });
+  captureToolbar.addEventListener('keydown', (event) => {
+    const steps = { ArrowRight: 1, ArrowLeft: -1 };
+    let nextIndex;
+    if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = items.length - 1;
+    else if (event.key in steps) nextIndex = (items.indexOf(document.activeElement) + steps[event.key] + items.length) % items.length;
+    if (nextIndex === undefined) return;
+    event.preventDefault();
+    items[nextIndex].focus();
+  });
+}

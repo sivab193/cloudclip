@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "check:release": "node scripts/check-release.mjs",
     "eas-build-post-install": "npm run typecheck && npm run check:release",
-    "build:web": "expo export --platform web && node scripts/fix-html-head.mjs"
+    "build:web": "expo export --platform web && node scripts/fix-html-head.mjs",
+    "cf:types": "wrangler types",
+    "cf:deploy": "npm run build:web && wrangler deploy"
   },
   "jest": {
     "preset": "jest-expo",
@@ -66,7 +68,8 @@
     "@types/three": "^0.185.4",
     "jest": "^29.2.1",
     "jest-expo": "~57.0.6",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "wrangler": "^4.168.0"
   },
   "overrides": {
     "shell-quote": "^1.11.0",

@@ -41,7 +41,7 @@ class HistoryStore {
   }
 
   list() {
-    return { items: [...this.state.items], settings: { ...this.state.settings } };
+    return { items: [...this.state.items], settings: { ...this.state.settings }, storageDirectory: this.root };
   }
 
   addText(text, source = 'clipboard') {
