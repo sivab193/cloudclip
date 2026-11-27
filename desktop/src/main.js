@@ -355,7 +355,6 @@ app.whenReady().then(() => {
   installMenu();
   createWindow();
   tray = new Tray(menuBarIcon());
-  tray.setTitle(' CC', { fontType: 'monospacedDigit' });
   tray.setToolTip('CloudClip — local clipboard history');
   tray.on('click', toggleWindow);
   rebuildTrayMenu();
