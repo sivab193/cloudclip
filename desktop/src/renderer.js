@@ -63,7 +63,10 @@ list.addEventListener('click', async (event) => {
   const button = event.target.closest('button'); const item = event.target.closest('.history-item');
   if (!button || !item) return;
   const id = item.dataset.id; const action = button.dataset.action;
-  if (action === 'copy') { await window.cloudclip.copy(id); announce('Copied to the Mac clipboard.'); }
+  if (action === 'copy') {
+    const copied = await window.cloudclip.copy(id);
+    announce(copied ? 'Copied to the Mac clipboard. Paste with Command V.' : 'Could not copy this item. Its local file may be unavailable.');
+  }
   if (action === 'pin') await window.cloudclip.togglePin(id);
   if (action === 'delete') await window.cloudclip.remove(id);
   if (action === 'reveal') await window.cloudclip.revealFile(id);

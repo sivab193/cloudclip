@@ -1,6 +1,6 @@
 const path = require('node:path');
 const {
-  app, BrowserWindow, Menu, Notification, Tray, clipboard, desktopCapturer,
+  app, BrowserWindow, ClipboardItem, Menu, Notification, Tray, clipboard, desktopCapturer,
   globalShortcut, ipcMain, nativeImage, nativeTheme, screen, shell,
 } = require('electron');
 const { HistoryStore, hash } = require('./history-store');
@@ -74,14 +74,15 @@ function startClipboardMonitor() {
 }
 
 async function readClipboardImage() {
-  if (typeof clipboard.readImage === 'function') return Promise.resolve(clipboard.readImage());
-  if (typeof clipboard.readBuffer !== 'function') return nativeImage.createEmpty();
-  for (const format of ['public.png', 'image/png', 'public.tiff', 'image/tiff']) {
+  const items = await clipboard.read();
+  for (const item of items) {
+    const imageType = item.types.find((type) => type.startsWith('image/'));
+    if (!imageType) continue;
     try {
-      const bytes = await Promise.resolve(clipboard.readBuffer(format));
-      const image = bytes.length ? nativeImage.createFromBuffer(bytes) : nativeImage.createEmpty();
+      const blob = await item.getType(imageType);
+      const image = nativeImage.createFromBuffer(Buffer.from(await blob.arrayBuffer()));
       if (!image.isEmpty()) return image;
-    } catch { /* format not present */ }
+    } catch { /* unreadable image representation */ }
   }
   return nativeImage.createEmpty();
 }
@@ -95,9 +96,9 @@ function rebuildTrayMenu() {
   }));
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Open Quick History', accelerator: 'CommandOrControl+Shift+V', click: () => showWindow(true) },
-    { label: 'Capture Window', accelerator: 'CommandOrControl+Alt+3', click: captureWindow },
-    { label: 'Capture Region', accelerator: 'CommandOrControl+Alt+4', click: captureRegion },
-    { label: 'Capture All Screens', accelerator: 'CommandOrControl+Alt+5', click: captureScreen },
+    { label: 'Capture Window', accelerator: 'CommandOrControl+Shift+3', click: captureWindow },
+    { label: 'Capture Region', accelerator: 'CommandOrControl+Shift+4', click: captureRegion },
+    { label: 'Capture All Screens', accelerator: 'CommandOrControl+Shift+5', click: captureScreen },
     { type: 'separator' },
     ...(recent.length ? recent : [{ label: 'No recent clips', enabled: false }]),
     { type: 'separator' },
@@ -115,12 +116,22 @@ async function copyRecent(index) {
 
 function registerShortcuts() {
   globalShortcut.register('CommandOrControl+Shift+V', () => showWindow(true));
-  globalShortcut.register('CommandOrControl+Alt+3', captureWindow);
-  globalShortcut.register('CommandOrControl+Alt+4', captureRegion);
-  globalShortcut.register('CommandOrControl+Alt+5', captureScreen);
+  globalShortcut.register('CommandOrControl+Shift+3', captureWindow);
+  globalShortcut.register('CommandOrControl+Shift+4', captureRegion);
+  globalShortcut.register('CommandOrControl+Shift+5', captureScreen);
   for (let index = 0; index < 5; index++) {
     globalShortcut.register(`Control+Alt+${index + 1}`, () => void copyRecent(index));
   }
+}
+
+async function writeImageToClipboard(image) {
+  if (!image || image.isEmpty()) return false;
+  const png = image.toPNG();
+  clipboard.clear();
+  await clipboard.write([new ClipboardItem({
+    'image/png': new Blob([new Uint8Array(png)], { type: 'image/png' }),
+  })]);
+  return clipboard.has('image/png');
 }
 
 async function copyItem(id) {
@@ -132,12 +143,7 @@ async function copyItem(id) {
     previousClipboardHash = item.hash;
   } else if (item.path) {
     const image = nativeImage.createFromPath(item.path);
-    if (image.isEmpty()) return false;
-    clipboard.clear();
-    if (typeof clipboard.write === 'function') await Promise.resolve(clipboard.write({ image }));
-    else if (typeof clipboard.writeImage === 'function') await Promise.resolve(clipboard.writeImage(image));
-    else if (typeof clipboard.writeBuffer === 'function') await Promise.resolve(clipboard.writeBuffer('public.png', image.toPNG()));
-    else return false;
+    if (!await writeImageToClipboard(image)) return false;
     previousClipboardHash = item.hash;
   }
   return true;
@@ -160,11 +166,7 @@ async function captureScreen() {
       const source = await getScreenSource(display);
       if (!source || source.thumbnail.isEmpty()) continue;
       const item = store.addImage(source.thumbnail.toPNG(), `full-screen capture · display ${index + 1}`);
-      if (item) {
-        clipboard.clear();
-        clipboard.write({ image: source.thumbnail });
-        previousClipboardHash = item.hash;
-      }
+      if (item && await writeImageToClipboard(source.thumbnail)) previousClipboardHash = item.hash;
       captured += 1;
     }
     if (captured) broadcast();
@@ -281,17 +283,15 @@ function registerIpc() {
   });
   ipcMain.on('capture:cancel', closeOverlays);
   ipcMain.on('window-capture:cancel', closeWindowPicker);
-  ipcMain.on('window-capture:select', (_event, id) => {
+  ipcMain.on('window-capture:select', async (_event, id) => {
     const source = windowCaptureSources.get(id);
     if (!source || source.thumbnail.isEmpty()) return;
     const item = store.addImage(source.thumbnail.toPNG(), 'window capture');
-    clipboard.clear();
-    clipboard.write({ image: source.thumbnail });
-    if (item) previousClipboardHash = item.hash;
+    if (item && await writeImageToClipboard(source.thumbnail)) previousClipboardHash = item.hash;
     broadcast();
     closeWindowPicker();
   });
-  ipcMain.on('capture:complete', (event, selection) => {
+  ipcMain.on('capture:complete', async (event, selection) => {
     const overlay = BrowserWindow.fromWebContents(event.sender);
     const payload = overlay?.capturePayload;
     if (!payload || selection.width < 2 || selection.height < 2) return closeOverlays();
@@ -307,9 +307,7 @@ function registerIpc() {
     closeOverlays();
     if (!result.isEmpty()) {
       const item = store.addImage(result.toPNG(), 'region capture');
-      clipboard.clear();
-      clipboard.write({ image: result });
-      if (item) previousClipboardHash = item.hash;
+      if (item && await writeImageToClipboard(result)) previousClipboardHash = item.hash;
       broadcast();
       showWindow();
     }
@@ -322,9 +320,9 @@ function installMenu() {
     { label: 'Clip', submenu: [
       { label: 'Open Quick History', accelerator: 'CommandOrControl+Shift+V', click: () => showWindow(true) },
       { type: 'separator' },
-      { label: 'Capture Window', accelerator: 'CommandOrControl+Alt+3', click: captureWindow },
-      { label: 'Capture Region', accelerator: 'CommandOrControl+Alt+4', click: captureRegion },
-      { label: 'Capture All Screens', accelerator: 'CommandOrControl+Alt+5', click: captureScreen },
+      { label: 'Capture Window', accelerator: 'CommandOrControl+Shift+3', click: captureWindow },
+      { label: 'Capture Region', accelerator: 'CommandOrControl+Shift+4', click: captureRegion },
+      { label: 'Capture All Screens', accelerator: 'CommandOrControl+Shift+5', click: captureScreen },
       { type: 'separator' }, { role: 'close' },
     ] },
     { role: 'editMenu' }, { role: 'viewMenu' }, { role: 'windowMenu' },
