@@ -20,6 +20,10 @@ jest.mock('../../service/apiService', () => ({
 jest.mock('../../service/keyService', () => ({ getMasterKey: jest.fn(), getMasterKeyId: () => 'key', lockLocal: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../../service/cryptoService', () => ({ isEnvelope: () => false, encryptEntry: () => 'ciphertext', hashText: (text: string) => text }));
 jest.mock('../../service/syncEngine', () => ({ getAutoReadSetting: jest.fn().mockResolvedValue(false) }));
+jest.mock('../../service/localSyncService', () => ({
+  getLocalServerConfig: jest.fn().mockResolvedValue({ enabled: false, url: '', token: '' }),
+  getLocalClips: jest.fn(), addLocalClip: jest.fn(), deleteLocalClip: jest.fn(), clearLocalClips: jest.fn(),
+}));
 jest.mock('../../service/socketService', () => ({ socketService: {
   connect: jest.fn(), disconnect: jest.fn(), onClipboardNew: jest.fn(), onClipboardDeleted: jest.fn(),
   onClipboardCleared: jest.fn(), onEncryptionReset: jest.fn(), onReconnect: jest.fn(),
