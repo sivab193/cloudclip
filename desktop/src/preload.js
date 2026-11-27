@@ -16,6 +16,10 @@ contextBridge.exposeInMainWorld('cloudclip', {
   openStorage: () => ipcRenderer.invoke('storage:open'),
   showWindow: () => ipcRenderer.invoke('window:show'),
   hideWindow: () => ipcRenderer.invoke('window:hide'),
+  getLocalServerStatus: () => ipcRenderer.invoke('local-server:status'),
+  startLocalServer: (port) => ipcRenderer.invoke('local-server:start', port),
+  stopLocalServer: () => ipcRenderer.invoke('local-server:stop'),
+  copyText: (text) => ipcRenderer.invoke('clipboard:write-text', text),
   onChanged: (listener) => {
     const handler = (_event, state) => listener(state);
     ipcRenderer.on('history:changed', handler);

@@ -7,6 +7,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   launchAtLogin: false,
   retentionDays: 30,
   maxItems: 500,
+  localServerPort: 8765,
+  localServerToken: null,
 });
 
 const hash = (value) => crypto.createHash('sha256').update(value).digest('hex');
@@ -96,6 +98,8 @@ class HistoryStore {
       launchAtLogin: Boolean(next.launchAtLogin),
       retentionDays,
       maxItems,
+      localServerPort: Math.min(65535, Math.max(1024, Number(next.localServerPort) || this.state.settings.localServerPort || 8765)),
+      localServerToken: typeof next.localServerToken === 'string' && next.localServerToken ? next.localServerToken : this.state.settings.localServerToken,
     };
     this.prune();
     this.persist();

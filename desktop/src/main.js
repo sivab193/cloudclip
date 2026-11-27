@@ -1,9 +1,11 @@
 const path = require('node:path');
+const crypto = require('node:crypto');
 const {
   app, BrowserWindow, ClipboardItem, Menu, Notification, Tray, clipboard, desktopCapturer,
   globalShortcut, ipcMain, nativeImage, nativeTheme, screen, shell,
 } = require('electron');
 const { HistoryStore, hash } = require('./history-store');
+const { LocalClipboardServer } = require('./local-server');
 
 let mainWindow;
 let tray;
@@ -13,6 +15,8 @@ let previousClipboardHash = '';
 let overlayWindows = [];
 let windowPicker;
 let windowCaptureSources = new Map();
+let localServer;
+let localServerToken;
 const APP_URL = 'https://us.cclip.cc';
 
 function menuBarIcon() {
@@ -91,7 +95,7 @@ function rebuildTrayMenu() {
   if (!tray || !store) return;
   const recent = store.list().items.slice(0, 5).map((item, index) => ({
     label: `${index + 1}. ${item.type === 'text' ? item.text.replace(/\s+/g, ' ').slice(0, 38) : `Screen capture · ${new Date(item.createdAt).toLocaleTimeString()}`}`,
-    accelerator: `Control+Alt+${index + 1}`,
+    accelerator: `CommandOrControl+${index + 1}`,
     click: () => copyItem(item.id),
   }));
   tray.setContextMenu(Menu.buildFromTemplate([
@@ -110,7 +114,8 @@ async function copyRecent(index) {
   const item = store.list().items[index];
   if (!item || !await copyItem(item.id)) return;
   if (Notification.isSupported()) {
-    new Notification({ title: 'Copied from CloudClip', body: `Recent item ${index + 1} is ready to paste.` }).show();
+    const description = item.type === 'text' ? item.text.replace(/\s+/g, ' ').slice(0, 90) : 'Image';
+    new Notification({ title: `CloudClip copied item ${index + 1}`, body: `${description} — ready to paste.` }).show();
   }
 }
 
@@ -120,6 +125,7 @@ function registerShortcuts() {
   globalShortcut.register('CommandOrControl+Shift+4', captureRegion);
   globalShortcut.register('CommandOrControl+Shift+5', captureScreen);
   for (let index = 0; index < 5; index++) {
+    globalShortcut.register(`CommandOrControl+${index + 1}`, () => void copyRecent(index));
     globalShortcut.register(`Control+Alt+${index + 1}`, () => void copyRecent(index));
   }
 }
@@ -265,6 +271,14 @@ function registerIpc() {
     broadcast();
     return result;
   });
+  ipcMain.handle('local-server:status', () => localServer.status());
+  ipcMain.handle('local-server:start', async (_event, port) => {
+    const settings = store.updateSettings({ ...store.list().settings, localServerPort: port });
+    broadcast();
+    return localServer.start(settings.localServerPort, localServerToken);
+  });
+  ipcMain.handle('local-server:stop', () => localServer.stop());
+  ipcMain.handle('clipboard:write-text', async (_event, text) => { await clipboard.writeText(String(text)); return true; });
   ipcMain.handle('capture:region', captureRegion);
   ipcMain.handle('capture:window', captureWindow);
   ipcMain.handle('capture:screen', captureScreen);
@@ -331,6 +345,12 @@ function installMenu() {
 
 app.whenReady().then(() => {
   store = new HistoryStore(app.getPath('userData'));
+  localServerToken = store.list().settings.localServerToken;
+  if (!localServerToken) {
+    localServerToken = crypto.randomBytes(18).toString('base64url');
+    store.updateSettings({ ...store.list().settings, localServerToken });
+  }
+  localServer = new LocalClipboardServer({ list: () => store.list(), addText: (text, source) => store.addText(text, source), remove: (id) => store.remove(id), onChange: broadcast });
   registerIpc();
   installMenu();
   createWindow();
@@ -344,5 +364,5 @@ app.whenReady().then(() => {
 });
 
 app.on('activate', () => showWindow());
-app.on('before-quit', () => { app.isQuitting = true; clearInterval(pollTimer); globalShortcut.unregisterAll(); closeOverlays(); closeWindowPicker(); });
+app.on('before-quit', () => { app.isQuitting = true; clearInterval(pollTimer); globalShortcut.unregisterAll(); void localServer?.stop(); closeOverlays(); closeWindowPicker(); });
 app.on('window-all-closed', () => { /* menu-bar utility remains available */ });

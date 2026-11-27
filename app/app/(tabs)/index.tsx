@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, ScrollView, TextInput, Platform, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, ScrollView, TextInput, Platform, useWindowDimensions, ActivityIndicator } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
@@ -18,6 +18,7 @@ import Reveal from '@/components/Reveal';
 import SiteFooter from '@/components/SiteFooter';
 import GatewayRegionRedirect from '@/components/GatewayRegionRedirect';
 import { useLocalSearchParams } from 'expo-router';
+import { getLocalServerConfig, setLocalServerConfig, testLocalServer } from '@/service/localSyncService';
 
 export default function Homepage() {
  const { login } = useLocalSearchParams<{ login?: string }>();
@@ -28,6 +29,10 @@ export default function Homepage() {
  const [alertMessage, setAlertMessage] = useState('');
  const [confirmationVisible, setConfirmationVisible] = useState(false);
  const [legacyPromptVisible, setLegacyPromptVisible] = useState(false);
+ const [localUrl, setLocalUrl] = useState('');
+ const [localToken, setLocalToken] = useState('');
+ const [localBusy, setLocalBusy] = useState(false);
+ const [localConfigured, setLocalConfigured] = useState(false);
  const { user } = useAuth();
  const { width } = useWindowDimensions();
  const wide = width >= 860;
@@ -47,6 +52,7 @@ export default function Homepage() {
   setLegacyPromptVisible(false);
  }, [user?.uid]);
  useEffect(() => () => { if (alertTimer.current) clearTimeout(alertTimer.current); }, []);
+ useEffect(() => { void getLocalServerConfig().then(config => { setLocalUrl(config.url); setLocalToken(config.token); setLocalConfigured(Boolean(config.enabled && config.url && config.token)); }); }, []);
  useEffect(() => {
   if (!legacyPromptShownRef.current && clipboardEntries.some(entry => entry.legacy)) {
    legacyPromptShownRef.current = true;
@@ -54,6 +60,15 @@ export default function Homepage() {
   }
  }, [clipboardEntries]);
  const handleCopy = (text: string) => { void setClipboard(text, showAlert, 'Copied to clipboard'); };
+ const connectLocal = async () => {
+  setLocalBusy(true);
+  try {
+   const config = await setLocalServerConfig({ enabled: true, url: localUrl, token: localToken });
+   await testLocalServer(config); setLocalConfigured(true);
+   showAlert('Connected. Reopen CloudClip once to start local sync.');
+  } catch (error) { showAlert(error instanceof Error ? error.message : 'Could not reach the Mac'); }
+  finally { setLocalBusy(false); }
+ };
  const handlePaste = async () => {
   try { setSaveTextData(await getClipboard()); }
   catch { showAlert('Clipboard access was blocked. Paste into the text field instead.'); }
@@ -107,8 +122,8 @@ export default function Homepage() {
 					<AmbientBackdrop />
 					<Header />
 					<ThemedView style={styles.centerContainer}>
-						{!user ? (
-							<Description openLoginInitially={login === '1'} />
+						{!user && !localConfigured ? (
+							<View><Description openLoginInitially={login === '1'} /><ThemedView style={styles.localSetup}><ThemedText style={styles.cardTitle}>Connect directly to your Mac</ThemedText><Text style={styles.localHint}>Start the local server in CloudClip for macOS, then enter its address and pairing token here. No cloud account is required.</Text><TextInput autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="http://192.168.1.20:8765" placeholderTextColor={t.placeholder} style={styles.localInput} value={localUrl} onChangeText={setLocalUrl} /><TextInput autoCapitalize="none" autoCorrect={false} secureTextEntry placeholder="Pairing token" placeholderTextColor={t.placeholder} style={styles.localInput} value={localToken} onChangeText={setLocalToken} /><TouchableOpacity disabled={localBusy || !localUrl.trim() || !localToken.trim()} style={[styles.saveButton, { alignSelf: 'flex-start', opacity: localUrl.trim() && localToken.trim() ? 1 : .5 }]} onPress={connectLocal}>{localBusy ? <ActivityIndicator color={t.onPrimary} /> : <Text style={styles.saveButtonText}>Connect locally</Text>}</TouchableOpacity></ThemedView></View>
 						) : (
 							<Reveal>
 							<View style={styles.workspace}>
@@ -192,6 +207,9 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
 		borderRadius: 16,
 	},
 	workspace: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingTop: 54, paddingBottom: 90 },
+	localSetup: { width: '90%', maxWidth: 620, alignSelf: 'center', marginTop: 24, marginBottom: 80, padding: 22, borderRadius: 12, borderWidth: 1, borderColor: t.border, backgroundColor: t.surface },
+	localHint: { color: t.textMuted, fontSize: 13, lineHeight: 20, marginTop: 8, marginBottom: 14 },
+	localInput: { minHeight: 48, borderWidth: 1, borderColor: t.border, borderRadius: 9, color: t.text, backgroundColor: t.surfaceAlt, paddingHorizontal: 13, marginBottom: 10 },
 	workspaceHero: { paddingHorizontal: 6, marginBottom: 30 },
 	eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
 	liveDot: { width: 7, height: 7, borderRadius: 8, backgroundColor: t.accent, shadowColor: t.accent, shadowOpacity: 0.5, shadowRadius: 7 },

@@ -25,6 +25,7 @@ import PasswordField from '@/components/PasswordField';
 import PasswordStrength from '@/components/PasswordStrength';
 import { passwordAssessment } from '@/utils/passwordStrength';
 import { useRouter } from 'expo-router';
+import { getLocalServerConfig, setLocalServerConfig, testLocalServer } from '@/service/localSyncService';
 
 export default function Account() {
     const router = useRouter();
@@ -56,6 +57,10 @@ export default function Account() {
     const [recoveryConfirmVisible, setRecoveryConfirmVisible] = useState(false);
     const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
     const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+    const [localEnabled, setLocalEnabled] = useState(false);
+    const [localUrl, setLocalUrl] = useState('');
+    const [localToken, setLocalToken] = useState('');
+    const [localBusy, setLocalBusy] = useState(false);
 
 
     const showAlert = (message: string) => {
@@ -86,6 +91,10 @@ export default function Account() {
             }
         };
         initialize();
+        void getLocalServerConfig().then(config => {
+            if (!active) return;
+            setLocalEnabled(config.enabled); setLocalUrl(config.url); setLocalToken(config.token);
+        });
 
         return () => { active = false; subscription.remove(); };
     }, [user, deviceId]);
@@ -114,6 +123,19 @@ export default function Account() {
         if (Platform.OS === 'ios' && value) {
             showAlert('Note: iOS shows a paste banner whenever the app reads the clipboard.');
         }
+    };
+
+    const handleSaveLocalServer = async () => {
+        if (!/^https?:\/\/[^\s]+$/i.test(localUrl.trim()) || !localToken.trim()) {
+            showAlert('Enter the Mac server URL and pairing token.'); return;
+        }
+        setLocalBusy(true);
+        try {
+            const config = await setLocalServerConfig({ enabled: localEnabled, url: localUrl, token: localToken });
+            await testLocalServer(config);
+            showAlert('Connected to the Mac. Reopen CloudClip to use local sync.');
+        } catch (error) { showAlert(error instanceof Error ? error.message : 'Could not reach the Mac'); }
+        finally { setLocalBusy(false); }
     };
 
     const handleRenameDevice = async () => {
@@ -393,6 +415,12 @@ export default function Account() {
                                 </ThemedView>
                                 <ThemedView style={styles.containerLight}>
                                     <View style={styles.sectionHeading}><View style={styles.sectionIcon}><Ionicons name="shield-checkmark-outline" size={19} color={t.primary} /></View><View><ThemedText style={styles.sectionTitle}>Sync & security</ThemedText><Text style={styles.sectionHint}>Privacy controls for your encrypted data</Text></View></View>
+                                    <View style={styles.localConnectCard}>
+                                        <View style={styles.settingRow}><View style={styles.settingTextContainer}><Text style={styles.settingTitle}>Use Mac local server</Text><Text style={styles.settingSubtitle}>Sync directly over your Wi-Fi instead of CloudClip's cloud. The Mac server must be running.</Text></View><Switch value={localEnabled} onValueChange={setLocalEnabled} /></View>
+                                        <Text style={styles.fieldLabel}>SERVER URL</Text><TextInput autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="http://192.168.1.20:8765" placeholderTextColor={t.placeholder} style={styles.inputLight} value={localUrl} onChangeText={setLocalUrl} />
+                                        <Text style={[styles.fieldLabel, { marginTop: 14 }]}>PAIRING TOKEN</Text><TextInput autoCapitalize="none" autoCorrect={false} secureTextEntry placeholder="Paste the token shown on your Mac" placeholderTextColor={t.placeholder} style={styles.inputLight} value={localToken} onChangeText={setLocalToken} />
+                                        <TouchableOpacity disabled={localBusy} style={styles.buttonPrimary} onPress={handleSaveLocalServer}>{localBusy ? <ActivityIndicator color={t.onPrimary} /> : <Text style={styles.buttonPrimaryText}>Save & test connection</Text>}</TouchableOpacity>
+                                    </View>
                                     <View style={styles.settingRow}>
                                         <View style={styles.settingTextContainer}>
                                             <Text style={styles.settingTitle}>Read clipboard on open</Text>
@@ -589,6 +617,7 @@ const makeStyles = (t: ThemeTokens) => StyleSheet.create({
         paddingVertical: 16,
         paddingHorizontal: 2,
     },
+    localConnectCard: { paddingBottom: 18, marginBottom: 6, borderBottomWidth: 1, borderBottomColor: t.borderSubtle },
     settingTextContainer: {
         flex: 1,
         marginRight: 12,

@@ -11,6 +11,7 @@ import { decide, getSyncState, setSyncState, getAutoReadSetting } from '@/servic
 import { CustomClipboard } from '@/service/models';
 import useDeviceDetails from './useDeviceDetails';
 import useAccountGuard from './useAccountGuard';
+import { addLocalClip, clearLocalClips, deleteLocalClip, getLocalClips, getLocalServerConfig, LocalServerConfig } from '@/service/localSyncService';
 
 export interface DisplayClip extends CustomClipboard { legacy?: boolean; unreadable?: boolean }
 const id = (clip: CustomClipboard) => clip._id || clip.id || '';
@@ -27,18 +28,22 @@ export default function useClipboardSync(showAlert: (message: string) => void) {
   const { user, encryptionReady, refreshEncryptionReady } = useAuth();
   const { deviceId, deviceName } = useDeviceDetails();
   const [data, setData] = useState<{ uid?: string; entries: DisplayClip[] }>({ entries: [] });
+  const [localConfig, setLocalConfig] = useState<LocalServerConfig | null>(null);
   const revision = useRef(0);
   const running = useRef<{ valid: () => boolean; rerun: boolean } | null>(null);
   const busy = useRef<(() => boolean) | null>(null);
   const { capture, invalidate } = useAccountGuard();
-  const uid = user?.uid;
-  const entries = data.uid === uid && encryptionReady ? data.entries : [];
+  const localMode = Boolean(localConfig?.enabled && localConfig.url && localConfig.token);
+  const uid = localMode ? `local:${localConfig!.url}` : user?.uid;
+  const entries = data.uid === uid && (localMode || encryptionReady) ? data.entries : [];
   const update = (change: (current: DisplayClip[]) => DisplayClip[], valid = capture()) => {
     if (!valid()) return;
     revision.current++;
     setData(current => valid() ? { uid, entries: change(current.uid === uid ? current.entries : []) } : current);
   };
   const prepend = (clip: DisplayClip, valid: () => boolean) => update(current => [clip, ...current.filter(c => id(c) !== id(clip))].slice(0, 100), valid);
+
+  useEffect(() => { void getLocalServerConfig().then(setLocalConfig); }, []);
 
   const persist = async (text: string, key: Uint8Array, valid: () => boolean) => {
     const requestId = randomUUID();
@@ -101,7 +106,7 @@ export default function useClipboardSync(showAlert: (message: string) => void) {
   runRef.current = runForegroundSync;
 
   useEffect(() => {
-    if (!uid || !encryptionReady || !deviceId) return;
+    if (localMode || !uid || !encryptionReady || !deviceId) return;
     socketService.connect();
     socketService.onClipboardNew(async clip => {
       const valid = capture();
@@ -135,10 +140,44 @@ export default function useClipboardSync(showAlert: (message: string) => void) {
       subscription.remove();
       if (Platform.OS === 'web') document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [uid, encryptionReady, deviceId, capture, invalidate]);
+  }, [uid, encryptionReady, deviceId, capture, invalidate, localMode]);
+
+  useEffect(() => {
+    if (!localMode || !localConfig || !deviceId) return;
+    let active = true;
+    const sync = async () => {
+      if (!active || !foreground()) return;
+      try {
+        const clips = await getLocalClips(localConfig);
+        if (!active) return;
+        setData({ uid, entries: clips });
+        if (!await getAutoReadSetting()) return;
+        const deviceText = await Clipboard.getStringAsync();
+        const latest = clips[0] ? { id: id(clips[0]), text: clips[0].content } : null;
+        const syncKey = `local:${localConfig.url}`;
+        const decision = decide(deviceText, latest, await getSyncState(syncKey));
+        if (decision.action === 'push') {
+          const saved = await addLocalClip(localConfig, decision.text, deviceName ?? 'Android');
+          if (active) setData({ uid, entries: [saved, ...clips.filter(item => id(item) !== id(saved))] });
+          await setSyncState({ lastSyncedHash: hashText(decision.text), lastSeenServerId: id(saved) }, syncKey);
+        } else if (decision.action === 'pull') {
+          if (await Clipboard.getStringAsync() === deviceText) await Clipboard.setStringAsync(decision.entry.text);
+          await setSyncState({ lastSyncedHash: hashText(decision.entry.text), lastSeenServerId: decision.entry.id }, syncKey);
+        }
+      } catch (error) { if (active) showAlert(error instanceof Error ? error.message : 'Local sync failed'); }
+    };
+    void sync();
+    const subscription = AppState.addEventListener('change', state => { if (state === 'active') void sync(); });
+    return () => { active = false; subscription.remove(); };
+  }, [localMode, localConfig?.url, localConfig?.token, deviceId, deviceName, uid]);
 
   const save = async (text: string) => {
     if (!text.trim()) throw new Error('Please enter some text to save');
+    if (localMode && localConfig) {
+      const saved = await addLocalClip(localConfig, text, deviceName ?? 'Android');
+      setData(current => ({ uid, entries: [saved, ...current.entries.filter(item => id(item) !== id(saved))] }));
+      return true;
+    }
     const valid = capture();
     if (!valid()) throw new Error('Unlock your data first');
     if (busy.current?.()) return false;
@@ -153,12 +192,22 @@ export default function useClipboardSync(showAlert: (message: string) => void) {
     } finally { if (busy.current === valid) busy.current = null; }
   };
   const remove = async (clipId: string) => {
+    if (localMode && localConfig) {
+      await deleteLocalClip(localConfig, clipId);
+      setData(current => ({ uid, entries: current.entries.filter(clip => id(clip) !== clipId) }));
+      return;
+    }
     const valid = capture();
     if (!valid()) return;
     await apiService.deleteClipboard(clipId);
     update(current => current.filter(clip => id(clip) !== clipId), valid);
   };
   const clear = async () => {
+    if (localMode && localConfig) {
+      await clearLocalClips(localConfig);
+      setData({ uid, entries: [] });
+      return;
+    }
     const valid = capture();
     if (!valid()) return;
     await apiService.clearAllClipboards();

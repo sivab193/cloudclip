@@ -3,6 +3,7 @@ const empty = document.querySelector('#empty');
 const search = document.querySelector('#search');
 const status = document.querySelector('#status');
 let state = { items: [], settings: {} };
+let localServerStatus = { running: false };
 
 const announce = (message) => { status.textContent = ''; requestAnimationFrame(() => { status.textContent = message; }); };
 const timeLabel = (iso) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
@@ -18,12 +19,12 @@ function render() {
     element.dataset.id = item.id;
     const recentIndex = state.items.findIndex((candidate) => candidate.id === item.id);
     const shortcut = element.querySelector('.shortcut-number');
-    if (recentIndex >= 0 && recentIndex < 5) shortcut.textContent = `⌃⌥${recentIndex + 1}`;
+    if (recentIndex >= 0 && recentIndex < 5) shortcut.textContent = `⌘${recentIndex + 1}`;
     if (item.type === 'text') element.querySelector('.item-content strong').textContent = item.text.replace(/\s+/g, ' ');
     else element.querySelector('img').src = fileUrl(item.path);
     const copyButton = element.querySelector('[data-action=copy]');
     const itemLabel = item.type === 'text' ? item.text.replace(/\s+/g, ' ').slice(0, 80) : 'screen capture';
-    copyButton.setAttribute('aria-label', `Copy ${itemLabel}${recentIndex < 5 ? `, shortcut Control Option ${recentIndex + 1}` : ''}`);
+    copyButton.setAttribute('aria-label', `Copy ${itemLabel}${recentIndex < 5 ? `, shortcut Command ${recentIndex + 1}` : ''}`);
     element.querySelector('.item-content small').textContent = `${item.pinned ? 'Pinned · ' : ''}${item.source} · ${timeLabel(item.createdAt)}${item.syncedAt ? ' · sent' : ''}`;
     const pin = element.querySelector('[data-action=pin]');
     if (pin) { pin.textContent = item.pinned ? 'Unpin' : 'Pin'; pin.setAttribute('aria-label', `${item.pinned ? 'Unpin' : 'Pin'} ${item.type === 'text' ? 'clip' : 'capture'}`); }
@@ -35,8 +36,32 @@ function render() {
   document.querySelector('#launch').checked = Boolean(state.settings.launchAtLogin);
   document.querySelector('#retention').value = String(state.settings.retentionDays || 30);
   document.querySelector('#max-items').value = String(state.settings.maxItems || 500);
+  document.querySelector('#local-port').value = String(state.settings.localServerPort || 8765);
   document.querySelector('#storage-path').textContent = state.storageDirectory || 'Unavailable';
 }
+
+function renderLocalServer() {
+  document.querySelector('#local-server-state').textContent = localServerStatus.running ? 'Local server running' : 'Server stopped';
+  document.querySelector('#local-server-details').textContent = localServerStatus.running ? 'Keep CloudClip open while Android is connected.' : 'Nothing is listening on your network.';
+  document.querySelector('#local-server-toggle').textContent = localServerStatus.running ? 'Stop local server' : 'Start local server';
+  document.querySelector('#local-pairing').hidden = !localServerStatus.running;
+  document.querySelector('#local-server-url').textContent = localServerStatus.url || '';
+  document.querySelector('#local-server-token').textContent = localServerStatus.token || '';
+}
+
+document.querySelector('#local-server-toggle').addEventListener('click', async () => {
+  try {
+    localServerStatus = localServerStatus.running
+      ? await window.cloudclip.stopLocalServer()
+      : await window.cloudclip.startLocalServer(document.querySelector('#local-port').value);
+    renderLocalServer();
+    announce(localServerStatus.running ? `Local server started at ${localServerStatus.url}.` : 'Local server stopped.');
+  } catch (error) { announce(`Could not start local server: ${error.message || 'check the port and firewall'}.`); }
+});
+document.querySelector('#copy-pairing').addEventListener('click', async () => {
+  await window.cloudclip.copyText(`CloudClip server: ${localServerStatus.url}\nPairing token: ${localServerStatus.token}`);
+  announce('Local connection details copied.');
+});
 
 async function refresh() { state = await window.cloudclip.getState(); render(); }
 window.cloudclip.onChanged((next) => { state = next; render(); });
@@ -108,7 +133,7 @@ document.querySelector('#settings-form').addEventListener('change', async () => 
   announce('Settings saved.');
 });
 
-refresh();
+Promise.all([refresh(), window.cloudclip.getLocalServerStatus()]).then(([, status]) => { localServerStatus = status; renderLocalServer(); });
 
 const captureToolbar = document.querySelector('[role="toolbar"]');
 if (!('focusGroup' in HTMLElement.prototype)) {
